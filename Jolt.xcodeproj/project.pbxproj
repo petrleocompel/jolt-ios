@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05C9AE950B595877457F54F1 /* PairedDeviceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */; };
 		0B02F2792CB1D29B9B74242E /* AlarmRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E17268D8924C74C31F94055 /* AlarmRepository.swift */; };
 		0BF481DB1EBDD6396CB3FBF3 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4593DB54C3694E3E6816A45 /* OnboardingView.swift */; };
 		1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */; };
@@ -18,12 +19,14 @@
 		45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */; };
 		47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E384B1B21237F275A6BFD96D /* SettingsView.swift */; };
 		526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */; };
+		59B75D1E9C7AEA9CDACAF934 /* ReconnectingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6BFB9D725E515D520B69B4F /* ReconnectingView.swift */; };
 		5B24563B50F504A69F9072AF /* AlarmsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C6032A5F5BDE8FC6D26ACE /* AlarmsListView.swift */; };
 		5CE3F9BD22878110F967EED4 /* AlarmEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */; };
 		5FE7217D03B8299037E52843 /* SCMaxDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */; };
 		647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76CFA2F23E100D332D35DEB5 /* Assets.xcassets */; };
 		68E6E86FF009CA9EF78ABE8F /* JoltApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */; };
 		6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */; };
+		70AD6C566FFE28941C32F690 /* PairedDeviceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF3896FDA7D5E6870CF29B1 /* PairedDeviceStore.swift */; };
 		70E9BB3EC8B7F946E212F82F /* AlarmNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5753BAC54DB529C99386DEE4 /* AlarmNotificationDelegate.swift */; };
 		73887A0E5FFBCC78A00F3A6B /* FakeDeviceRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */; };
 		79497BC11FB358372C1F9843 /* LegacyGATT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4EC50C13E10218F83C0380 /* LegacyGATT.swift */; };
@@ -93,7 +96,9 @@
 		4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodecTests.swift; sourceTree = "<group>"; };
 		47AE24FF61360EB0E33E17AB /* DeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceRepository.swift; sourceTree = "<group>"; };
 		48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositeDeviceRepository.swift; sourceTree = "<group>"; };
+		4BF3896FDA7D5E6870CF29B1 /* PairedDeviceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairedDeviceStore.swift; sourceTree = "<group>"; };
 		4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEB128Tests.swift; sourceTree = "<group>"; };
+		510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairedDeviceStoreTests.swift; sourceTree = "<group>"; };
 		574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JumpingJacksChallengeView.swift; sourceTree = "<group>"; };
 		5753BAC54DB529C99386DEE4 /* AlarmNotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmNotificationDelegate.swift; sourceTree = "<group>"; };
 		5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokDevice.swift; sourceTree = "<group>"; };
@@ -121,6 +126,7 @@
 		CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeviceController.swift; sourceTree = "<group>"; };
 		CD9EF092B259B55847C7549D /* RemoteControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlView.swift; sourceTree = "<group>"; };
 		D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusConfigTests.swift; sourceTree = "<group>"; };
+		D6BFB9D725E515D520B69B4F /* ReconnectingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconnectingView.swift; sourceTree = "<group>"; };
 		D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFamily.swift; sourceTree = "<group>"; };
 		DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxDeviceController.swift; sourceTree = "<group>"; };
 		E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAlarmScheduler.swift; sourceTree = "<group>"; };
@@ -184,6 +190,7 @@
 				1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */,
 				48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */,
 				3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */,
+				4BF3896FDA7D5E6870CF29B1 /* PairedDeviceStore.swift */,
 				400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */,
 			);
 			path = Data;
@@ -205,6 +212,7 @@
 			children = (
 				4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */,
 				4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */,
+				510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */,
 				D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */,
 			);
 			path = JoltTests;
@@ -314,6 +322,7 @@
 			isa = PBXGroup;
 			children = (
 				B4593DB54C3694E3E6816A45 /* OnboardingView.swift */,
+				D6BFB9D725E515D520B69B4F /* ReconnectingView.swift */,
 			);
 			path = Onboarding;
 			sourceTree = "<group>";
@@ -485,6 +494,7 @@
 			files = (
 				FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */,
 				F0FF866C00905EAF5E5F2B37 /* LEB128Tests.swift in Sources */,
+				05C9AE950B595877457F54F1 /* PairedDeviceStoreTests.swift in Sources */,
 				1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -526,10 +536,12 @@
 				79497BC11FB358372C1F9843 /* LegacyGATT.swift in Sources */,
 				FC3A4120D7FADA17AB573B1B /* MathPuzzleChallengeView.swift in Sources */,
 				0BF481DB1EBDD6396CB3FBF3 /* OnboardingView.swift in Sources */,
+				70AD6C566FFE28941C32F690 /* PairedDeviceStore.swift in Sources */,
 				6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */,
 				9BD33171E530E1939245CB7B /* PhoneAlarmScheduler.swift in Sources */,
 				D05B77BF63E019DFD2DF285F /* ProtocolMap.swift in Sources */,
 				45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */,
+				59B75D1E9C7AEA9CDACAF934 /* ReconnectingView.swift in Sources */,
 				A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */,
 				ECEBD8CE2FB5208A43336B4D /* RootView.swift in Sources */,
 				5FE7217D03B8299037E52843 /* SCMaxDeviceController.swift in Sources */,

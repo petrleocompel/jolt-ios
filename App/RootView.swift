@@ -9,6 +9,8 @@ struct RootView: View {
             if let viewModel = deviceControlViewModel {
                 if viewModel.connectedDevice != nil {
                     MainTabView(deviceControlViewModel: viewModel)
+                } else if viewModel.connectionState == .connecting && !viewModel.isManualConnectInProgress {
+                    ReconnectingView(onCancel: viewModel.forgetPairedDevice)
                 } else {
                     OnboardingView(viewModel: viewModel)
                 }

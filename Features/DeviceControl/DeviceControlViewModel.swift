@@ -5,11 +5,16 @@ import Observation
 @Observable
 final class DeviceControlViewModel {
     private let repository: DeviceRepository
-    // `nonisolated(unsafe)`: only touched from `init` (main actor) and
+    // `@ObservationIgnored`: bookkeeping, not UI state — also required for
+    // `nonisolated(unsafe)` to apply (the @Observable macro rejects it on a
+    // tracked stored property). Touched from `init` (main actor) and
     // `deinit` (always nonisolated, even on an @MainActor class) to call
-    // `.cancel()`, which is safe to call from any context.
+    // `.cancel()`, which is safe from any context.
+    @ObservationIgnored
     nonisolated(unsafe) private var observationTask: Task<Void, Never>?
+    @ObservationIgnored
     nonisolated(unsafe) private var deviceObservationTask: Task<Void, Never>?
+    @ObservationIgnored
     nonisolated(unsafe) private var scanTask: Task<Void, Never>?
 
     private(set) var connectionState: DeviceConnectionState = .disconnected
@@ -55,10 +60,18 @@ final class DeviceControlViewModel {
         repository.stopScan()
     }
 
+    /// True while a *manually initiated* connect (from onboarding) is in
+    /// flight — distinguishes that from an automatic reconnect-on-launch,
+    /// which also passes through `connectionState == .connecting` but
+    /// should show a different screen (see `RootView`).
+    private(set) var isManualConnectInProgress = false
+
     func connect(to device: PavlokDevice) {
         stopScan()
+        isManualConnectInProgress = true
         Task { [weak self] in
             guard let self else { return }
+            defer { isManualConnectInProgress = false }
             do {
                 try await repository.connect(to: device)
             } catch {
@@ -69,6 +82,10 @@ final class DeviceControlViewModel {
 
     func disconnect() {
         Task { await repository.disconnect() }
+    }
+
+    func forgetPairedDevice() {
+        Task { await repository.forgetPairedDevice() }
     }
 
     func fire(_ stimulus: StimulusConfig) {

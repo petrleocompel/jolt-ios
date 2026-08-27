@@ -55,6 +55,11 @@ final class FakeDeviceRepository: DeviceRepository {
         connectedDeviceContinuation?.yield(nil)
     }
 
+    func forgetPairedDevice() async {
+        connectionStateContinuation?.yield(.disconnected)
+        connectedDeviceContinuation?.yield(nil)
+    }
+
     func fire(_ stimulus: StimulusConfig) async throws {}
 
     func readDeviceInfo() async throws -> DeviceInfo { fakeDevice.info }

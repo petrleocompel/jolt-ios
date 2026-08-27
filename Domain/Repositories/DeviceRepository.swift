@@ -17,6 +17,9 @@ protocol DeviceRepository {
     func stopScan()
     func connect(to device: PavlokDevice) async throws
     func disconnect() async
+    /// Disconnects (if connected) and forgets the persisted pairing, so the
+    /// next launch goes back to onboarding instead of auto-reconnecting.
+    func forgetPairedDevice() async
     func fire(_ stimulus: StimulusConfig) async throws
     func readDeviceInfo() async throws -> DeviceInfo
     func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws

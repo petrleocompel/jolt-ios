@@ -16,7 +16,16 @@ final class BluetoothCentralManager: NSObject {
         case readFailed(Error?)
     }
 
-    private lazy var central = CBCentralManager(delegate: self, queue: nil)
+    /// Fixed identifier so iOS can relaunch us in the background and hand
+    /// this exact `CBCentralManager` instance's state back via
+    /// `willRestoreState`, instead of us losing track of the connection.
+    static let restorationIdentifier = "cz.peelco.jolt.central"
+
+    private lazy var central = CBCentralManager(
+        delegate: self,
+        queue: nil,
+        options: [CBCentralManagerOptionRestoreIdentifierKey: Self.restorationIdentifier]
+    )
 
     private var scanContinuation: AsyncStream<CBPeripheral>.Continuation?
     private var connectContinuations: [UUID: CheckedContinuation<Void, Error>] = [:]
@@ -27,7 +36,42 @@ final class BluetoothCentralManager: NSObject {
     private var readContinuations: [UUID: [CBUUID: CheckedContinuation<Data, Error>]] = [:]
     private var writeContinuations: [UUID: [CBUUID: CheckedContinuation<Void, Error>]] = [:]
 
+    private var stateContinuation: AsyncStream<CBManagerState>.Continuation?
+    private var disconnectionContinuation: AsyncStream<(peripheralID: UUID, error: Error?)>.Continuation?
+    private var restoredPeripheralsContinuation: AsyncStream<[CBPeripheral]>.Continuation?
+
     var isPoweredOn: Bool { central.state == .poweredOn }
+
+    /// Fires on every Bluetooth power/authorization change. Subscribers
+    /// should react to `.poweredOff` (surface an error, clear connection
+    /// state) and `.poweredOn` (retry a pending reconnect).
+    private(set) lazy var stateUpdates: AsyncStream<CBManagerState> = AsyncStream { continuation in
+        self.stateContinuation = continuation
+        continuation.yield(self.central.state)
+    }
+
+    /// Fires when a peripheral disconnects, expectedly or not. `error` is
+    /// non-nil for an unexpected drop (out of range, powered off, crashed) —
+    /// callers use that to decide whether to auto-reconnect.
+    private(set) lazy var disconnections: AsyncStream<(peripheralID: UUID, error: Error?)> = AsyncStream { continuation in
+        self.disconnectionContinuation = continuation
+    }
+
+    /// Fires once per cold launch when iOS relaunches us in the background
+    /// on behalf of a restored `CBCentralManager` session (see
+    /// `CBCentralManagerOptionRestoreIdentifierKey`). Peripherals here are
+    /// already connected or connecting — callers should adopt them rather
+    /// than calling `connect(_:)` again.
+    private(set) lazy var restoredPeripherals: AsyncStream<[CBPeripheral]> = AsyncStream { continuation in
+        self.restoredPeripheralsContinuation = continuation
+    }
+
+    /// Looks up an already-known (previously connected or bonded)
+    /// peripheral by identifier without scanning — the right way to
+    /// reconnect to a device you've paired before.
+    func retrieveKnownPeripheral(_ identifier: UUID) -> CBPeripheral? {
+        central.retrievePeripherals(withIdentifiers: [identifier]).first
+    }
 
     func startScan(serviceUUIDs: [CBUUID]?) -> AsyncStream<CBPeripheral> {
         AsyncStream { continuation in
@@ -126,7 +170,19 @@ final class BluetoothCentralManager: NSObject {
 }
 
 extension BluetoothCentralManager: CBCentralManagerDelegate {
-    nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {}
+    nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        Task { @MainActor in
+            stateContinuation?.yield(central.state)
+        }
+    }
+
+    nonisolated func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any]) {
+        let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral] ?? []
+        Task { @MainActor in
+            for peripheral in peripherals { peripheral.delegate = self }
+            restoredPeripheralsContinuation?.yield(peripherals)
+        }
+    }
 
     nonisolated func centralManager(
         _ central: CBCentralManager,
@@ -156,6 +212,7 @@ extension BluetoothCentralManager: CBCentralManagerDelegate {
     nonisolated func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         Task { @MainActor in
             notifyContinuations.removeValue(forKey: peripheral.identifier)?.values.forEach { $0.finish() }
+            disconnectionContinuation?.yield((peripheralID: peripheral.identifier, error: error))
         }
     }
 }
