@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+app_identifier(ENV.fetch("APP_IDENTIFIER", "cz.peelco.jolt"))
+apple_id(ENV["FASTLANE_APPLE_ID"]) if ENV["FASTLANE_APPLE_ID"]
+team_id(ENV.fetch("APPLE_TEAM_ID", "REDACTED"))

@@ -1,0 +1,243 @@
+# frozen_string_literal: true
+
+# Peelco iOS Fastfile — keep only lanes for enabled modules.
+# Never hardcode ASC key IDs; use env or gitignored fastlane/AuthKey_<KEY_ID>.p8
+#
+# Env:
+#   APP_STORE_CONNECT_KEY_ID / ISSUER_ID / KEY_PATH or KEY (base64)
+#   FASTLANE_RUN_XCODEGEN=1  — run xcodegen before build/screenshots
+#   CHANGELOG — TestFlight notes
+#   VERSION_CODE — CI build number (optional; set CURRENT_PROJECT_VERSION)
+
+def load_asc_api_key
+  key_id = ENV["APP_STORE_CONNECT_KEY_ID"]
+  issuer_id = ENV["APP_STORE_CONNECT_ISSUER_ID"]
+
+  unless key_id.to_s.empty? || issuer_id.to_s.empty?
+    opts = { key_id: key_id, issuer_id: issuer_id, in_house: false }
+    if (path = ENV["APP_STORE_CONNECT_KEY_PATH"])
+      opts[:key_filepath] = File.expand_path(path)
+    elsif (content = ENV["APP_STORE_CONNECT_KEY"])
+      opts[:key_content] = content
+      opts[:is_key_content_base64] = true
+    else
+      local = Dir.glob(File.expand_path("AuthKey_*.p8", __dir__)).first
+      if local
+        opts[:key_filepath] = local
+      else
+        UI.user_error!("Set APP_STORE_CONNECT_KEY_PATH or APP_STORE_CONNECT_KEY (base64), or place AuthKey_*.p8 in fastlane/")
+      end
+    end
+    return app_store_connect_api_key(**opts)
+  end
+
+  local = Dir.glob(File.expand_path("AuthKey_*.p8", __dir__)).first
+  if local
+    # KEY_ID must match filename AuthKey_<KEY_ID>.p8 — prefer env on CI
+    UI.user_error!("Set APP_STORE_CONNECT_KEY_ID and APP_STORE_CONNECT_ISSUER_ID when using a local AuthKey_*.p8")
+  end
+
+  UI.important("No App Store Connect API key configured. Falling back to interactive auth.")
+  nil
+end
+
+def apply_ci_build_number
+  return unless ENV["VERSION_CODE"].to_s.length.positive?
+
+  increment_build_number(
+    build_number: ENV["VERSION_CODE"],
+    xcodeproj: "Jolt.xcodeproj"
+  )
+end
+
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    ENV["APP_IDENTIFIER"] ||= "cz.peelco.jolt"
+  end
+
+  desc "Regenerate Xcode project with XcodeGen"
+  lane :generate_project do
+    sh("xcodegen", "--spec", "project.yml")
+  end
+
+  desc "Run SwiftLint"
+  lane :lint do
+    sh("swiftlint", "--strict")
+  end
+
+  # --- tests (include when unit/UI tests exist) ---
+  desc "Run tests on simulator"
+  lane :test_dev do
+    run_tests(
+      scheme: "Jolt",
+      project: "Jolt.xcodeproj",
+      derived_data_path: "DerivedData",
+      destination: ENV.fetch("FASTLANE_SIMULATOR", "platform=iOS Simulator,name=iPhone 16")
+    )
+  end
+
+  desc "Build Debug development IPA"
+  lane :build_dev do
+    generate_project if ENV["FASTLANE_RUN_XCODEGEN"] == "1"
+    apply_ci_build_number
+    gym(
+      project: "Jolt.xcodeproj",
+      scheme: "Jolt",
+      configuration: "Debug",
+      export_method: "development",
+      output_directory: "build/dev",
+      output_name: "Jolt-dev.ipa",
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
+    )
+  end
+
+  desc "CI validation: lint + test + dev build"
+  lane :dev do
+    lint
+    test_dev
+    build_dev
+  end
+
+  desc "Build Release IPA for App Store / TestFlight"
+  lane :build do
+    generate_project if ENV["FASTLANE_RUN_XCODEGEN"] == "1"
+    apply_ci_build_number
+    gym(
+      project: "Jolt.xcodeproj",
+      scheme: "Jolt",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build/prod",
+      output_name: "Jolt-prod.ipa",
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
+    )
+  end
+
+  # MODULE: internal
+  desc "Build Release ad-hoc IPA for internal distribution"
+  lane :build_internal do
+    generate_project if ENV["FASTLANE_RUN_XCODEGEN"] == "1"
+    apply_ci_build_number
+    gym(
+      project: "Jolt.xcodeproj",
+      scheme: "Jolt",
+      configuration: "Release",
+      export_method: "ad-hoc",
+      output_directory: "build/internal",
+      output_name: "Jolt-internal.ipa",
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
+    )
+  end
+
+  desc "Internal distribution flow"
+  lane :internal do
+    lint
+    test_dev
+    build_internal
+  end
+  # END MODULE: internal
+
+  # MODULE: testflight
+  desc "Upload IPA to TestFlight"
+  lane :upload_testflight do |options|
+    ipa = options[:ipa] || lane_context[SharedValues::IPA_OUTPUT_PATH] || "build/prod/Jolt-prod.ipa"
+    UI.user_error!("No IPA at #{ipa}. Run build first.") unless ipa && File.exist?(ipa)
+
+    upload_params = {
+      ipa: ipa,
+      skip_waiting_for_build_processing: true,
+      uses_non_exempt_encryption: false,
+      changelog: ENV["CHANGELOG"] || "Automated build"
+    }
+    key = load_asc_api_key
+    upload_params[:api_key] = key if key
+    upload_to_testflight(**upload_params)
+  end
+
+  desc "Build Release and upload to TestFlight"
+  lane :beta do
+    build
+    upload_testflight
+  end
+
+  desc "CI TestFlight lane (alias)"
+  lane :testflight do
+    beta
+  end
+  # END MODULE: testflight
+
+
+  # MODULE: screenshots
+  desc "Capture App Store screenshots, then flatten alpha"
+  lane :screenshots do
+    generate_project if ENV["FASTLANE_RUN_XCODEGEN"] == "1"
+    capture_screenshots
+    flatten_screenshots
+  end
+
+  private_lane :flatten_screenshots do
+    unless system("command -v magick > /dev/null 2>&1")
+      UI.user_error!("ImageMagick required. Install: brew install imagemagick")
+    end
+    screenshots_root = File.expand_path("screenshots", __dir__)
+    pngs = Dir.glob(File.join(screenshots_root, "**", "*.png")).reject { |f| File.basename(f).start_with?(".") }
+    if pngs.empty?
+      UI.important("No PNG screenshots under #{screenshots_root}")
+      next
+    end
+    pngs.each do |path|
+      tmp = "#{path}.flat.png"
+      sh("magick", path, "-background", "white", "-alpha", "remove", "-alpha", "off", tmp, log: false)
+      FileUtils.mv(tmp, path)
+    end
+    UI.success("Flattened #{pngs.size} screenshot(s).")
+  end
+
+  desc "Upload screenshots only to App Store Connect"
+  lane :upload_screenshots do
+    deliver_params = {
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: false,
+      overwrite_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false,
+      screenshots_path: File.expand_path("screenshots", __dir__)
+    }
+    key = load_asc_api_key
+    deliver_params[:api_key] = key if key
+    upload_to_app_store(**deliver_params)
+  end
+  # END MODULE: screenshots
+
+  # MODULE: metadata
+  desc "Upload text metadata from fastlane/metadata"
+  lane :upload_metadata do
+    deliver_params = {
+      skip_binary_upload: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false,
+      metadata_path: File.expand_path("metadata", __dir__)
+    }
+    key = load_asc_api_key
+    deliver_params[:api_key] = key if key
+    upload_to_app_store(**deliver_params)
+  end
+  # END MODULE: metadata
+
+  # MODULE: screenshots + metadata
+  desc "Capture screenshots, flatten, upload screenshots + metadata"
+  lane :store_assets do
+    screenshots
+    upload_screenshots
+    upload_metadata
+  end
+  # END MODULE: screenshots + metadata
+end

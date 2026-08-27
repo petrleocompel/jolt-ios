@@ -1,0 +1,69 @@
+# Peelco iOS GitLab CI — keep only jobs for enabled modules.
+# Runner tag: macos. Set CI variables: APP_IDENTIFIER, APPLE_TEAM_ID,
+# APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY (base64).
+
+stages:
+  - validate
+  - build
+  - distribute
+
+variables:
+  LC_ALL: "en_US.UTF-8"
+  LANG: "en_US.UTF-8"
+  APP_IDENTIFIER: "cz.peelco.jolt"
+  FASTLANE_RUN_XCODEGEN: "1"
+
+default:
+  tags:
+    - macos
+  before_script:
+    - export VERSION_CODE=$CI_PIPELINE_IID && echo "VERSION_CODE=$VERSION_CODE"
+    - command -v xcodegen >/dev/null && xcodegen --spec project.yml || true
+    - bundle config set --local path 'vendor/bundle'
+    - bundle install
+
+ios_validate:
+  stage: validate
+  script:
+    - bundle exec fastlane dev
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+  artifacts:
+    when: always
+    paths:
+      - build/dev
+      - fastlane
+      - DerivedData/Logs/Test
+    expire_in: 3 days
+
+# MODULE: internal
+ios_internal_release:
+  stage: distribute
+  script:
+    - bundle exec fastlane internal
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    when: always
+    paths:
+      - build/internal
+      - fastlane
+    expire_in: 7 days
+# END MODULE: internal
+
+# MODULE: testflight
+ios_testflight_release:
+  stage: distribute
+  script:
+    - bundle exec fastlane testflight
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  artifacts:
+    when: always
+    paths:
+      - build/prod
+      - fastlane
+    expire_in: 14 days
+# END MODULE: testflight
+

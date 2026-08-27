@@ -1,0 +1,32 @@
+# frozen_string_literal: true
+
+# Snapfile — App Store screenshots (6.5" iPhone + 13" iPad when universal)
+# Override: IPHONE_65_NAME="…" IPAD_13_NAME="…" bundle exec fastlane screenshots
+
+iphone_65_name = ENV.fetch("IPHONE_65_NAME", "iPhone 14 Plus")
+ipad_13_name   = ENV.fetch("IPAD_13_NAME", "iPad Pro 13-inch (M5)")
+
+devices([
+  iphone_65_name,
+  ipad_13_name
+])
+
+languages([
+  "en-GB"
+])
+
+scheme("Jolt")
+
+output_directory("./fastlane/screenshots")
+
+clear_previous_screenshots(true)
+
+override_status_bar(true)
+
+concurrent_simulators(true)
+
+launch_arguments([
+  "-snapshotMode 1"
+])
+
+stop_after_first_error(true)

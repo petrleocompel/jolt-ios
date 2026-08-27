@@ -1,0 +1,20 @@
+included:
+  - App
+  - Features
+  - Domain
+  - BLE
+  - Data
+  - UITests
+
+excluded:
+  # Vendored fastlane boilerplate (`fastlane snapshot init`) — not our style to enforce.
+  - UITests/SnapshotHelper.swift
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+
+disabled_rules:
+  - todo
+
+line_length: 140

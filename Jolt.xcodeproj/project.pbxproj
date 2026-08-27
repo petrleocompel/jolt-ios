@@ -1,0 +1,844 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B02F2792CB1D29B9B74242E /* AlarmRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E17268D8924C74C31F94055 /* AlarmRepository.swift */; };
+		0BF481DB1EBDD6396CB3FBF3 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4593DB54C3694E3E6816A45 /* OnboardingView.swift */; };
+		1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */; };
+		18FBF1D0C00D357AF7A747D9 /* ESFValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6A8B311C6A28084B089F241 /* ESFValue.swift */; };
+		2088D9579DB4A4076737B96B /* ActiveAlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */; };
+		308801E2765557C880FD2CDB /* AlarmsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */; };
+		324BC0A3BA0B51BEAA7D5601 /* DeviceInformationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39907CAE49AD52A1983BA283 /* DeviceInformationService.swift */; };
+		422BD76A2ACC9BE204805192 /* LEB128.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640EE3B1818CA1E92C4120AE /* LEB128.swift */; };
+		45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */; };
+		47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E384B1B21237F275A6BFD96D /* SettingsView.swift */; };
+		526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */; };
+		5B24563B50F504A69F9072AF /* AlarmsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C6032A5F5BDE8FC6D26ACE /* AlarmsListView.swift */; };
+		5CE3F9BD22878110F967EED4 /* AlarmEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */; };
+		5FE7217D03B8299037E52843 /* SCMaxDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */; };
+		647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76CFA2F23E100D332D35DEB5 /* Assets.xcassets */; };
+		68E6E86FF009CA9EF78ABE8F /* JoltApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */; };
+		6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */; };
+		70E9BB3EC8B7F946E212F82F /* AlarmNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5753BAC54DB529C99386DEE4 /* AlarmNotificationDelegate.swift */; };
+		73887A0E5FFBCC78A00F3A6B /* FakeDeviceRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */; };
+		79497BC11FB358372C1F9843 /* LegacyGATT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4EC50C13E10218F83C0380 /* LegacyGATT.swift */; };
+		7F871FB232A8A6DCB34EB05B /* AlarmEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED2121BD0EF6642C97D055D /* AlarmEditView.swift */; };
+		83F5B48F34F86D0813B99CC6 /* SCMaxGATT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 805E27A53B607DB735ECDCD8 /* SCMaxGATT.swift */; };
+		8549B5F735481140189D2F55 /* DeviceRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AE24FF61360EB0E33E17AB /* DeviceRepository.swift */; };
+		8576F98F90F514A29E076544 /* CompositeDeviceRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */; };
+		8A938625795098D44B05D78D /* SwiftDataAlarmRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */; };
+		9086786CD110801CC188BE3A /* ESFTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2188183D844D85E718C1FF /* ESFTag.swift */; };
+		9BD33171E530E1939245CB7B /* PhoneAlarmScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */; };
+		A0804437F1B22C18B3FDB601 /* ButtonConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A28EB2EAA454759713C1E5FB /* ButtonConfig.swift */; };
+		A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */; };
+		A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9EF092B259B55847C7549D /* RemoteControlView.swift */; };
+		A9502C9B2BE1F8C56014FF7A /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B8896F658741B48ABE9882 /* AboutView.swift */; };
+		AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */; };
+		B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */; };
+		BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */; };
+		C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */; };
+		C7C6B8E97608B484362DB3BC /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DCDC72F43CB8947131C023 /* AppEnvironment.swift */; };
+		CA1C3F6B4A8D989A66F2D672 /* DeviceInformationReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */; };
+		CAA5D425D0EF9DE269EBD96E /* DismissChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */; };
+		D05B77BF63E019DFD2DF285F /* ProtocolMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39C152013BB7A25769E438DB /* ProtocolMap.swift */; };
+		D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */; };
+		DC15FE1AFB23B9A52A211C31 /* ScreenshotsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */; };
+		E51216EC1387F8A478306FF9 /* Alarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE988AF1F2845FA5280393 /* Alarm.swift */; };
+		ECEBD8CE2FB5208A43336B4D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED177E123C49A2F9DEA54E05 /* RootView.swift */; };
+		F0FF866C00905EAF5E5F2B37 /* LEB128Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */; };
+		F117091CE8F0C7B5EF82BEF2 /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD0154A817E7BE315780729 /* SnapshotHelper.swift */; };
+		F290A76E43B763F6743332DD /* DeviceFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */; };
+		F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73676EE1B7477970179576C5 /* Stimulus.swift */; };
+		FB68389C147A45679D03E4F9 /* ESFCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */; };
+		FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */; };
+		FC3A4120D7FADA17AB573B1B /* MathPuzzleChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		98B66164DDACD1409BE85816 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A97450DD3C42AB63E8A3A869 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2546FC3379D8F6AC9675B44E;
+			remoteInfo = Jolt;
+		};
+		DAF408B952746AD570399B8C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A97450DD3C42AB63E8A3A869 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2546FC3379D8F6AC9675B44E;
+			remoteInfo = Jolt;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		005F907E84DDB3B357B7C0D9 /* Jolt.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Jolt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathPuzzleChallengeView.swift; sourceTree = "<group>"; };
+		19DCDC72F43CB8947131C023 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmEntity.swift; sourceTree = "<group>"; };
+		21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlViewModel.swift; sourceTree = "<group>"; };
+		25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissChallenge.swift; sourceTree = "<group>"; };
+		3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeDeviceRepository.swift; sourceTree = "<group>"; };
+		33C6032A5F5BDE8FC6D26ACE /* AlarmsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsListView.swift; sourceTree = "<group>"; };
+		39907CAE49AD52A1983BA283 /* DeviceInformationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInformationService.swift; sourceTree = "<group>"; };
+		39C152013BB7A25769E438DB /* ProtocolMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMap.swift; sourceTree = "<group>"; };
+		3ED2121BD0EF6642C97D055D /* AlarmEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmEditView.swift; sourceTree = "<group>"; };
+		400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataAlarmRepository.swift; sourceTree = "<group>"; };
+		40AE988AF1F2845FA5280393 /* Alarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Alarm.swift; sourceTree = "<group>"; };
+		4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodecTests.swift; sourceTree = "<group>"; };
+		47AE24FF61360EB0E33E17AB /* DeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceRepository.swift; sourceTree = "<group>"; };
+		48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositeDeviceRepository.swift; sourceTree = "<group>"; };
+		4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEB128Tests.swift; sourceTree = "<group>"; };
+		574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JumpingJacksChallengeView.swift; sourceTree = "<group>"; };
+		5753BAC54DB529C99386DEE4 /* AlarmNotificationDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmNotificationDelegate.swift; sourceTree = "<group>"; };
+		5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokDevice.swift; sourceTree = "<group>"; };
+		640EE3B1818CA1E92C4120AE /* LEB128.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEB128.swift; sourceTree = "<group>"; };
+		73676EE1B7477970179576C5 /* Stimulus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stimulus.swift; sourceTree = "<group>"; };
+		73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodec.swift; sourceTree = "<group>"; };
+		76CFA2F23E100D332D35DEB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInformationReader.swift; sourceTree = "<group>"; };
+		7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoltApp.swift; sourceTree = "<group>"; };
+		7E17268D8924C74C31F94055 /* AlarmRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmRepository.swift; sourceTree = "<group>"; };
+		805E27A53B607DB735ECDCD8 /* SCMaxGATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxGATT.swift; sourceTree = "<group>"; };
+		8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsViewModel.swift; sourceTree = "<group>"; };
+		930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotsUITests.swift; sourceTree = "<group>"; };
+		96B8896F658741B48ABE9882 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		9A4EC50C13E10218F83C0380 /* LegacyGATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyGATT.swift; sourceTree = "<group>"; };
+		9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfigView.swift; sourceTree = "<group>"; };
+		A28EB2EAA454759713C1E5FB /* ButtonConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfig.swift; sourceTree = "<group>"; };
+		ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAlarmView.swift; sourceTree = "<group>"; };
+		B4593DB54C3694E3E6816A45 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCentralManager.swift; sourceTree = "<group>"; };
+		C01F19C56F89D3CD4CA64257 /* JoltUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JoltUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1B9758A8D03F37235AF02AA /* JoltTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JoltTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6A8B311C6A28084B089F241 /* ESFValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFValue.swift; sourceTree = "<group>"; };
+		CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
+		CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeviceController.swift; sourceTree = "<group>"; };
+		CD9EF092B259B55847C7549D /* RemoteControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlView.swift; sourceTree = "<group>"; };
+		D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusConfigTests.swift; sourceTree = "<group>"; };
+		D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFamily.swift; sourceTree = "<group>"; };
+		DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxDeviceController.swift; sourceTree = "<group>"; };
+		E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAlarmScheduler.swift; sourceTree = "<group>"; };
+		E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeChallengeView.swift; sourceTree = "<group>"; };
+		E384B1B21237F275A6BFD96D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		ED177E123C49A2F9DEA54E05 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		FDD0154A817E7BE315780729 /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
+		FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDiagnosticsView.swift; sourceTree = "<group>"; };
+		FE2188183D844D85E718C1FF /* ESFTag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFTag.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		44BB84AEF1E7F3722A60E3E7 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */,
+				FDD0154A817E7BE315780729 /* SnapshotHelper.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		466FD7965E2F611C834C925E /* Transport */ = {
+			isa = PBXGroup;
+			children = (
+				BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */,
+			);
+			path = Transport;
+			sourceTree = "<group>";
+		};
+		470E3B0159BCA554FCDAC744 /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+				7E17268D8924C74C31F94055 /* AlarmRepository.swift */,
+				47AE24FF61360EB0E33E17AB /* DeviceRepository.swift */,
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		4888D7FDAC7AC991571F082F /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				96B8896F658741B48ABE9882 /* AboutView.swift */,
+				E384B1B21237F275A6BFD96D /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		538B07B9A68049E2CCF61FBD /* Challenges */ = {
+			isa = PBXGroup;
+			children = (
+				574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */,
+				1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */,
+				E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */,
+			);
+			path = Challenges;
+			sourceTree = "<group>";
+		};
+		5BD28E752A29D7C37A6CE7B7 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */,
+				48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */,
+				3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */,
+				400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		6A458766A37EDA5681A055D3 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				E31415E91D2A3536079E813C /* Alarms */,
+				B8076E225DDC7FF1F21D2773 /* DeviceControl */,
+				DE262A2774115A3A96473C18 /* Onboarding */,
+				4888D7FDAC7AC991571F082F /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		750B4CC90F78A54A1931F933 /* JoltTests */ = {
+			isa = PBXGroup;
+			children = (
+				4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */,
+				4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */,
+				D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */,
+			);
+			path = JoltTests;
+			sourceTree = "<group>";
+		};
+		7FBBC6795DF56FE5B0A5DB8F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				005F907E84DDB3B357B7C0D9 /* Jolt.app */,
+				C1B9758A8D03F37235AF02AA /* JoltTests.xctest */,
+				C01F19C56F89D3CD4CA64257 /* JoltUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		93E06B9244396A22A5742008 /* ESF */ = {
+			isa = PBXGroup;
+			children = (
+				73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */,
+				FE2188183D844D85E718C1FF /* ESFTag.swift */,
+				C6A8B311C6A28084B089F241 /* ESFValue.swift */,
+				640EE3B1818CA1E92C4120AE /* LEB128.swift */,
+			);
+			path = ESF;
+			sourceTree = "<group>";
+		};
+		AA7F307FACAF39A9ACFCC72D = {
+			isa = PBXGroup;
+			children = (
+				CA616FE23E5C3AED8C59E4B0 /* App */,
+				B3AE3145FCBF978D3F26073C /* BLE */,
+				5BD28E752A29D7C37A6CE7B7 /* Data */,
+				D3F3F6B00033640D07520C3F /* Domain */,
+				6A458766A37EDA5681A055D3 /* Features */,
+				750B4CC90F78A54A1931F933 /* JoltTests */,
+				FFC5F9F65E22F3AB976DD2DD /* Resources */,
+				44BB84AEF1E7F3722A60E3E7 /* UITests */,
+				7FBBC6795DF56FE5B0A5DB8F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AB2DB7DA7E0919C4086565DC /* DIS */ = {
+			isa = PBXGroup;
+			children = (
+				7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */,
+				39907CAE49AD52A1983BA283 /* DeviceInformationService.swift */,
+			);
+			path = DIS;
+			sourceTree = "<group>";
+		};
+		B390FB65C966D2772DEFBF62 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				40AE988AF1F2845FA5280393 /* Alarm.swift */,
+				A28EB2EAA454759713C1E5FB /* ButtonConfig.swift */,
+				D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */,
+				25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */,
+				5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */,
+				73676EE1B7477970179576C5 /* Stimulus.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		B3AE3145FCBF978D3F26073C /* BLE */ = {
+			isa = PBXGroup;
+			children = (
+				AB2DB7DA7E0919C4086565DC /* DIS */,
+				F7B8ED5A1A7E149D84343E04 /* Legacy */,
+				DFDFDFA553BDD95489A8F4A6 /* SCMax */,
+				466FD7965E2F611C834C925E /* Transport */,
+			);
+			path = BLE;
+			sourceTree = "<group>";
+		};
+		B8076E225DDC7FF1F21D2773 /* DeviceControl */ = {
+			isa = PBXGroup;
+			children = (
+				9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */,
+				21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */,
+				FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */,
+				CD9EF092B259B55847C7549D /* RemoteControlView.swift */,
+			);
+			path = DeviceControl;
+			sourceTree = "<group>";
+		};
+		CA616FE23E5C3AED8C59E4B0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */,
+				19DCDC72F43CB8947131C023 /* AppEnvironment.swift */,
+				7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */,
+				ED177E123C49A2F9DEA54E05 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D3F3F6B00033640D07520C3F /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				B390FB65C966D2772DEFBF62 /* Models */,
+				470E3B0159BCA554FCDAC744 /* Repositories */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		DE262A2774115A3A96473C18 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				B4593DB54C3694E3E6816A45 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		DFDFDFA553BDD95489A8F4A6 /* SCMax */ = {
+			isa = PBXGroup;
+			children = (
+				39C152013BB7A25769E438DB /* ProtocolMap.swift */,
+				DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */,
+				805E27A53B607DB735ECDCD8 /* SCMaxGATT.swift */,
+				93E06B9244396A22A5742008 /* ESF */,
+			);
+			path = SCMax;
+			sourceTree = "<group>";
+		};
+		E31415E91D2A3536079E813C /* Alarms */ = {
+			isa = PBXGroup;
+			children = (
+				ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */,
+				3ED2121BD0EF6642C97D055D /* AlarmEditView.swift */,
+				5753BAC54DB529C99386DEE4 /* AlarmNotificationDelegate.swift */,
+				33C6032A5F5BDE8FC6D26ACE /* AlarmsListView.swift */,
+				8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */,
+				E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */,
+				538B07B9A68049E2CCF61FBD /* Challenges */,
+			);
+			path = Alarms;
+			sourceTree = "<group>";
+		};
+		F7B8ED5A1A7E149D84343E04 /* Legacy */ = {
+			isa = PBXGroup;
+			children = (
+				CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */,
+				9A4EC50C13E10218F83C0380 /* LegacyGATT.swift */,
+			);
+			path = Legacy;
+			sourceTree = "<group>";
+		};
+		FFC5F9F65E22F3AB976DD2DD /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				76CFA2F23E100D332D35DEB5 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2546FC3379D8F6AC9675B44E /* Jolt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 374E054DDDA9F770D8E965BE /* Build configuration list for PBXNativeTarget "Jolt" */;
+			buildPhases = (
+				FDE9660CC5DA3C21201639C0 /* Sources */,
+				18A7A45C1ECF629492358D7A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Jolt;
+			packageProductDependencies = (
+			);
+			productName = Jolt;
+			productReference = 005F907E84DDB3B357B7C0D9 /* Jolt.app */;
+			productType = "com.apple.product-type.application";
+		};
+		806F6681133A879E21CD422F /* JoltTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D45C35E9FA2F887790E473D1 /* Build configuration list for PBXNativeTarget "JoltTests" */;
+			buildPhases = (
+				5E234818E9EF045EFABE6209 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D48E0BAC99650E3094DE055B /* PBXTargetDependency */,
+			);
+			name = JoltTests;
+			packageProductDependencies = (
+			);
+			productName = JoltTests;
+			productReference = C1B9758A8D03F37235AF02AA /* JoltTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		AC2A9B67567D69D441D19263 /* JoltUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9C4525EA1230CAC01BACF500 /* Build configuration list for PBXNativeTarget "JoltUITests" */;
+			buildPhases = (
+				23607FE6CA7FE43DF3009CF4 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				398D06F4E3C71DC238AF3F2F /* PBXTargetDependency */,
+			);
+			name = JoltUITests;
+			packageProductDependencies = (
+			);
+			productName = JoltUITests;
+			productReference = C01F19C56F89D3CD4CA64257 /* JoltUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A97450DD3C42AB63E8A3A869 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					2546FC3379D8F6AC9675B44E = {
+						DevelopmentTeam = REDACTED;
+						ProvisioningStyle = Automatic;
+					};
+					AC2A9B67567D69D441D19263 = {
+						DevelopmentTeam = REDACTED;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 2546FC3379D8F6AC9675B44E;
+					};
+				};
+			};
+			buildConfigurationList = 979F25599A3B2E8A6BA8B32D /* Build configuration list for PBXProject "Jolt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = AA7F307FACAF39A9ACFCC72D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 7FBBC6795DF56FE5B0A5DB8F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2546FC3379D8F6AC9675B44E /* Jolt */,
+				AC2A9B67567D69D441D19263 /* JoltUITests */,
+				806F6681133A879E21CD422F /* JoltTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		18A7A45C1ECF629492358D7A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		23607FE6CA7FE43DF3009CF4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC15FE1AFB23B9A52A211C31 /* ScreenshotsUITests.swift in Sources */,
+				F117091CE8F0C7B5EF82BEF2 /* SnapshotHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E234818E9EF045EFABE6209 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */,
+				F0FF866C00905EAF5E5F2B37 /* LEB128Tests.swift in Sources */,
+				1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FDE9660CC5DA3C21201639C0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A9502C9B2BE1F8C56014FF7A /* AboutView.swift in Sources */,
+				2088D9579DB4A4076737B96B /* ActiveAlarmView.swift in Sources */,
+				E51216EC1387F8A478306FF9 /* Alarm.swift in Sources */,
+				7F871FB232A8A6DCB34EB05B /* AlarmEditView.swift in Sources */,
+				5CE3F9BD22878110F967EED4 /* AlarmEntity.swift in Sources */,
+				70E9BB3EC8B7F946E212F82F /* AlarmNotificationDelegate.swift in Sources */,
+				0B02F2792CB1D29B9B74242E /* AlarmRepository.swift in Sources */,
+				5B24563B50F504A69F9072AF /* AlarmsListView.swift in Sources */,
+				308801E2765557C880FD2CDB /* AlarmsViewModel.swift in Sources */,
+				AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */,
+				C7C6B8E97608B484362DB3BC /* AppEnvironment.swift in Sources */,
+				BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */,
+				A0804437F1B22C18B3FDB601 /* ButtonConfig.swift in Sources */,
+				C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */,
+				8576F98F90F514A29E076544 /* CompositeDeviceRepository.swift in Sources */,
+				A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */,
+				D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */,
+				F290A76E43B763F6743332DD /* DeviceFamily.swift in Sources */,
+				CA1C3F6B4A8D989A66F2D672 /* DeviceInformationReader.swift in Sources */,
+				324BC0A3BA0B51BEAA7D5601 /* DeviceInformationService.swift in Sources */,
+				8549B5F735481140189D2F55 /* DeviceRepository.swift in Sources */,
+				CAA5D425D0EF9DE269EBD96E /* DismissChallenge.swift in Sources */,
+				FB68389C147A45679D03E4F9 /* ESFCodec.swift in Sources */,
+				9086786CD110801CC188BE3A /* ESFTag.swift in Sources */,
+				18FBF1D0C00D357AF7A747D9 /* ESFValue.swift in Sources */,
+				73887A0E5FFBCC78A00F3A6B /* FakeDeviceRepository.swift in Sources */,
+				68E6E86FF009CA9EF78ABE8F /* JoltApp.swift in Sources */,
+				526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */,
+				422BD76A2ACC9BE204805192 /* LEB128.swift in Sources */,
+				B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */,
+				79497BC11FB358372C1F9843 /* LegacyGATT.swift in Sources */,
+				FC3A4120D7FADA17AB573B1B /* MathPuzzleChallengeView.swift in Sources */,
+				0BF481DB1EBDD6396CB3FBF3 /* OnboardingView.swift in Sources */,
+				6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */,
+				9BD33171E530E1939245CB7B /* PhoneAlarmScheduler.swift in Sources */,
+				D05B77BF63E019DFD2DF285F /* ProtocolMap.swift in Sources */,
+				45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */,
+				A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */,
+				ECEBD8CE2FB5208A43336B4D /* RootView.swift in Sources */,
+				5FE7217D03B8299037E52843 /* SCMaxDeviceController.swift in Sources */,
+				83F5B48F34F86D0813B99CC6 /* SCMaxGATT.swift in Sources */,
+				47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */,
+				F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */,
+				8A938625795098D44B05D78D /* SwiftDataAlarmRepository.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		398D06F4E3C71DC238AF3F2F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2546FC3379D8F6AC9675B44E /* Jolt */;
+			targetProxy = 98B66164DDACD1409BE85816 /* PBXContainerItemProxy */;
+		};
+		D48E0BAC99650E3094DE055B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2546FC3379D8F6AC9675B44E /* Jolt */;
+			targetProxy = DAF408B952746AD570399B8C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		06EA08E480EAB09C05459D1F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = REDACTED;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Jolt;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt;
+				PRODUCT_NAME = Jolt;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2E40BEC82111CE55EE140BCB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Jolt.app/Jolt";
+			};
+			name = Release;
+		};
+		35ACE5AC1962376E6877AAD5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Jolt.app/Jolt";
+			};
+			name = Debug;
+		};
+		3F2DE7E815C2CA4467D81438 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = REDACTED;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Jolt;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt;
+				PRODUCT_NAME = Jolt;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4EF0F81EFE8E6B5CEA1581F8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.1;
+			};
+			name = Release;
+		};
+		5E856394CD7F519B5A94F310 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = REDACTED;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Jolt;
+			};
+			name = Release;
+		};
+		6AB553C94A3228DA3716AB5A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = REDACTED;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Jolt;
+			};
+			name = Debug;
+		};
+		D054540A1845C23BA7AFF7FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		374E054DDDA9F770D8E965BE /* Build configuration list for PBXNativeTarget "Jolt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				06EA08E480EAB09C05459D1F /* Debug */,
+				3F2DE7E815C2CA4467D81438 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		979F25599A3B2E8A6BA8B32D /* Build configuration list for PBXProject "Jolt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D054540A1845C23BA7AFF7FD /* Debug */,
+				4EF0F81EFE8E6B5CEA1581F8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9C4525EA1230CAC01BACF500 /* Build configuration list for PBXNativeTarget "JoltUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6AB553C94A3228DA3716AB5A /* Debug */,
+				5E856394CD7F519B5A94F310 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D45C35E9FA2F887790E473D1 /* Build configuration list for PBXNativeTarget "JoltTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				35ACE5AC1962376E6877AAD5 /* Debug */,
+				2E40BEC82111CE55EE140BCB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A97450DD3C42AB63E8A3A869 /* Project object */;
+}
