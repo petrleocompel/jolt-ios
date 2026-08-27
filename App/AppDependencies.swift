@@ -9,10 +9,20 @@ import UserNotifications
 @MainActor
 @Observable
 final class AppDependencies {
+    /// `JoltAppDelegate` can't be constructed with dependencies injected
+    /// (UIKit owns its lifecycle via `@UIApplicationDelegateAdaptor`), so it
+    /// reads this at the moment a remote notification actually arrives
+    /// instead. The one deliberate exception to "everything flows through
+    /// the environment" in this codebase.
+    static private(set) var shared: AppDependencies?
+
     let deviceRepository: DeviceRepository
     let alarmRepository: AlarmRepository
     let phoneAlarmScheduler: PhoneAlarmScheduler
-    let notificationDelegate: AlarmNotificationDelegate
+    let authRepository: AuthRepository
+    let friendsRepository: FriendsRepository
+    let pokeRepository: PokeRepository
+    let notificationDelegate: AppNotificationDelegate
     let modelContainer: ModelContainer
 
     init() {
@@ -28,8 +38,16 @@ final class AppDependencies {
         self.deviceRepository = AppEnvironment.isSnapshotMode
             ? FakeDeviceRepository()
             : CompositeDeviceRepository()
-        let delegate = AlarmNotificationDelegate()
+
+        let social = MockSocialBackend(deviceRepository: deviceRepository)
+        self.authRepository = social
+        self.friendsRepository = social
+        self.pokeRepository = social
+
+        let delegate = AppNotificationDelegate(pokeRepository: social)
         self.notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
+
+        Self.shared = self
     }
 }

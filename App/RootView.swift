@@ -51,6 +51,9 @@ private struct MainTabView: View {
             AlarmsListView()
                 .tabItem { Label("Alarms", systemImage: "alarm.fill") }
 
+            FriendsRootView()
+                .tabItem { Label("Friends", systemImage: "person.2.fill") }
+
             SettingsView(deviceControlViewModel: deviceControlViewModel)
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }

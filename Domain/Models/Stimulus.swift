@@ -16,6 +16,16 @@ enum StimulusKind: String, CaseIterable, Codable, Identifiable {
         case .beep: return "Beep"
         }
     }
+
+    /// Used in activity-log sentences ("Alice {verb} you") — `rawValue`
+    /// alone reads wrong for zap ("zaped").
+    var pastTenseVerb: String {
+        switch self {
+        case .zap: return "zapped"
+        case .vibe: return "buzzed"
+        case .beep: return "beeped"
+        }
+    }
 }
 
 /// Intensity is device-relative, not absolute volts/amps — the legacy and
