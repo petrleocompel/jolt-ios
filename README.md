@@ -72,6 +72,16 @@ Configure protected CI variables for the ASC API key trio and team ID.
 - Privacy: https://petrleocompel.github.io/jolt-ios/privacy/
 - Support: https://petrleocompel.github.io/jolt-ios/support/
 
+## Brand & assets
+
+App icon, launch screen, and accent color are documented in [`docs/BRAND.md`](docs/BRAND.md).
+
+| Element | Asset | Notes |
+|---------|-------|-------|
+| App icon | `Resources/Assets.xcassets/AppIcon.appiconset/` | Green J-bolt; light (white) and dark (black) variants |
+| Launch screen | `LaunchBackground` + `LaunchLogo` in asset catalog | Configured via `UILaunchScreen` in `Info.plist` |
+| Accent color | `Resources/Assets.xcassets/AccentColor.colorset/` | Electric green `#00E676` |
+
 ## Project layout
 
 ```
@@ -79,6 +89,7 @@ App/           # @main, root UI, AppEnvironment
 Features/      # feature modules
 Domain/        # non-UI logic
 Resources/     # Info.plist, assets, localizations
+docs/          # RE notes, brand guide (BRAND.md)
 UITests/       # UI / screenshot tests
 project.yml    # XcodeGen source of truth
 fastlane/      # lanes, Snapfile, metadata
