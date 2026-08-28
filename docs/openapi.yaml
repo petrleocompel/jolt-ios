@@ -1,3 +1,24 @@
+# ---------------------------------------------------------------------------
+# SUPERSEDED — the canonical contract now lives in the server repo:
+#
+#     petrleocompel/jolt-server -> openapi/jolt-v1.yaml
+#
+# That copy is what the server implements and what `pnpm openapi:check`
+# enforces against src/api/schemas.ts. It differs from this file in three
+# ways, all decided during implementation:
+#
+#   1. `pending` was added to PokeDeliveryStatus. Every poke is created
+#      pending; only the recipient's ack moves it to a terminal value.
+#   2. The PokePushPayload example was split in two. A single payload with
+#      both `alert` and `content-available` does not work — iOS suppresses
+#      the background wake — so a poke sends two separate pushes.
+#   3. servers: is now https://jolt.example.com/api/v1 (the base path
+#      is /api/v1, not /v1).
+#
+# This file is kept only so existing references don't break. Update the
+# server repo's copy, not this one.
+# ---------------------------------------------------------------------------
+
 openapi: 3.0.3
 info:
   title: Jolt Social API
