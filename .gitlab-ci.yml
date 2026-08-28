@@ -12,6 +12,10 @@ variables:
   LANG: "en_US.UTF-8"
   APP_IDENTIFIER: "cz.peelco.jolt"
   FASTLANE_RUN_XCODEGEN: "1"
+  # xcodegen regenerates the project each run, so -showBuildSettings is always
+  # cold (~23s measured); fastlane defaults to 3s x 4 retries.
+  FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
+  FASTLANE_XCODEBUILD_SETTINGS_RETRIES: "5"
 
 default:
   tags:

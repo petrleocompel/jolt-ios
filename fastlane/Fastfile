@@ -82,7 +82,7 @@ platform :ios do
       scheme: "Jolt",
       project: "Jolt.xcodeproj",
       derived_data_path: "DerivedData",
-      destination: ENV.fetch("FASTLANE_SIMULATOR", "platform=iOS Simulator,name=iPhone 16")
+      destination: ENV.fetch("FASTLANE_SIMULATOR", "platform=iOS Simulator,name=iPhone 17")
     )
   end
 
