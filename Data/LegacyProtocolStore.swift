@@ -3,10 +3,10 @@ import Foundation
 
 /// User-correctable parts of the Pavlok 2/3 wire protocol.
 ///
-/// The characteristic-to-stimulus assignment in `LegacyGATT` is an inference,
-/// not a capture (see that file's header). Persisting an override here means
-/// a wrong inference is a thirty-second fix in Diagnostics → Protocol lab
-/// with the device in hand, instead of a rebuild.
+/// The mapping in `LegacyGATT` is now decompiled ground truth, so an
+/// override should never be needed on a stock Pavlok 2/3. It is kept for
+/// firmware that turns out to differ, and because it costs nothing — but
+/// "reset to defaults" is the right first move if a stimulus misbehaves.
 struct LegacyProtocolStore {
     private let defaults: UserDefaults
     private let key = "cz.peelco.jolt.legacyStimulusCharacteristics"
@@ -19,7 +19,7 @@ struct LegacyProtocolStore {
     /// been set.
     func characteristic(for kind: StimulusKind) -> CBUUID {
         guard let overrides = loadOverrides(), let raw = overrides[kind.rawValue] else {
-            return LegacyGATT.defaultCharacteristic(for: kind)
+            return LegacyGATT.characteristic(for: kind)
         }
         return CBUUID(string: raw)
     }

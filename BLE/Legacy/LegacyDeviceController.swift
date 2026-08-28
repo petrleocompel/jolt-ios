@@ -3,52 +3,51 @@ import Foundation
 
 /// Talks to Pavlok 2/3 over `LegacyGATT`.
 ///
-/// ## The config service stores settings; it does not fire
+/// The wire format below is decompiled, not guessed: blutter
+/// (OWASP MASTG-TOOL-0116) against the Android app's Dart AOT snapshot gives
+/// `BleManager::performZap` / `performMotor` / `performPiezo` and their
+/// `update*` counterparts in full.
 ///
-/// Read off a real Pavlok 3 (fw 6.10.0), `156E1000` holds eight structs:
+/// All three outputs are characteristics of the config service, and firing
+/// and configuring are *the same write* — they differ only in a flag added
+/// to the first byte:
 ///
-///     1001  01 0C 23 16 16            1005  05 01 00 29 06 08 26 08
-///     1002  01 0C 64 16 16            1006  06 70 02 1E
-///     1003  01 19                     1007  03 00 00 00
-///     1004  01 00 00 00 29            1008  00 02 00 00 00 00 00 00
+///     performZap   → add 0x80      updateZap   → add 0x40
+///     performMotor → add 0x80      updateMotor → add 0x40
+///     performPiezo → add 0x80      updatePiezo → add 0x40
 ///
-/// `1001` and `1002` are identical except at index 2 — `0x23` (35) against
-/// `0x64` (100) — which is a zap at 35% and a motor at 100%. That is the
-/// intensity byte, and `1003`'s `01 19` is the same idea two bytes wide.
+/// That is why every earlier write was acknowledged and did nothing: the
+/// first byte was copied back from the device with neither bit set, so the
+/// device was told to neither fire nor store.
 ///
-/// Writing them is acknowledged and produces nothing audible. Index 1 was
-/// briefly set to `0x14` (20) by an earlier version of this file: if that
-/// field were a pulse count, twenty pulses would have been felt. Nothing
-/// was. So a config write configures, exactly as the Android binary's split
-/// between `updateDeviceZap` and `performDeviceZap` implies.
+/// Payloads, cross-checked against a live Pavlok 3 (fw 6.10.0):
 ///
-/// ## Triggering is not recovered
+///     zap   1003  [count|flag, level]                              2 bytes
+///     vibe  1001  [count|flag, 0x0C, level, onInterval, offInterval] 5 bytes
+///     beep  1002  [count|flag, 0x0C, level, onInterval, offInterval] 5 bytes
 ///
-/// The command that actually fires is somewhere else — most likely the
-/// application service's write-only control points (`2002`, `2009`), which
-/// hold no readable value to inspect. `fire(_:on:)` therefore sets the
-/// intensity and then throws, rather than reporting success for something
-/// that produced no sensation.
-///
-/// The way to close this without an HCI capture is
-/// `Diagnostics → Listen for device events`: subscribe to every notifying
-/// characteristic, press the button on the Pavlok, and read what the device
-/// says about a stimulus it fired itself.
+/// The device read back `01 0C 23 16 16` on `1001`, `01 0C 64 16 16` on
+/// `1002` and `01 19` on `1003` — count 1; the constant `0x0C` that
+/// `performMotor` writes literally; vibration 35, beep 100, zap 25; and the
+/// two encoded interval bytes. Every field lines up.
 struct LegacyDeviceController {
     enum ControllerError: LocalizedError {
         case unknownLayout(String, Int)
-        case triggerNotRecovered
 
         var errorDescription: String? {
             switch self {
             case .unknownLayout(let uuid, let length):
-                return "\(uuid) holds \(length) bytes in a layout this app doesn't know. Nothing was written."
-            case .triggerNotRecovered:
-                return "Intensity saved to the device, but the command that actually fires a stimulus "
-                    + "hasn't been recovered yet. Use Diagnostics → Listen for device events and press "
-                    + "the button on your Pavlok to capture it."
+                return "\(uuid) returned \(length) bytes, which doesn't match any known Pavlok layout. Nothing was written."
             }
         }
+    }
+
+    /// The flag added to byte 0. Fire and store are otherwise identical.
+    enum Command: UInt8 {
+        /// `perform*` — fire immediately.
+        case fire = 0x80
+        /// `update*` — store as the device-side default.
+        case store = 0x40
     }
 
     private let central: BluetoothCentralManager
@@ -59,51 +58,35 @@ struct LegacyDeviceController {
         self.protocolStore = protocolStore
     }
 
-    /// Where the intensity byte sits, by characteristic length.
+    /// Builds the payload from the device's current value.
     ///
-    /// Read off a real Pavlok 3 (fw 6.10.0). `1001` and `1002` are
-    /// byte-for-byte identical except at index 2:
+    /// Count and level are overwritten; the constant at index 1 and the two
+    /// encoded interval bytes are carried through from `existing` rather than
+    /// recomputed. `MotorConfig.encodedOnInterval` / `encodedOffInterval`
+    /// derive those from millisecond fields this app doesn't expose, so
+    /// preserving whatever the device already has keeps the user's pattern
+    /// intact instead of flattening it to a default.
     ///
-    ///     1001 zap       01 0C 23 16 16      0x23 =  35
-    ///     1002 vibration 01 0C 64 16 16      0x64 = 100
-    ///     1003 piezo     01 19               0x19 =  25
-    ///
-    /// A zap defaulting to 35% and a motor to 100% is exactly the shape you
-    /// would expect, and nothing else in the struct differs — so index 2 is
-    /// the level. Index 1 is a bounded field shared by both (it holds `0x0C`
-    /// on each, accepted `0x05` and `0x14`, and rejected `0x32` outright).
-    /// An earlier version wrote the level *there*, which corrupted a field it
-    /// did not understand and never set the intensity at all.
-    static func levelOffset(forLength length: Int) -> Int? {
-        switch length {
-        case 2: return 1
-        case 5: return 2
-        default: return nil
+    /// Count is masked to 6 bits so it can never carry into the command flag.
+    static func payload(for stimulus: StimulusConfig, existing: Data, command: Command) -> Data? {
+        let level = UInt8(clamping: stimulus.intensity)
+        let count = UInt8(clamping: stimulus.repetitions) & 0x3F
+        let first = count | command.rawValue
+
+        var bytes = [UInt8](existing)
+        switch bytes.count {
+        case 2:
+            return Data([first, level])
+        case 5:
+            bytes[0] = first
+            bytes[2] = level
+            return Data(bytes)
+        default:
+            return nil
         }
     }
 
-    /// Rewrites only the intensity byte, leaving every other byte exactly as
-    /// the device reported it.
-    ///
-    /// Deliberately minimal: the remaining fields are not understood, and on
-    /// this firmware an out-of-range value in one of them is rejected with a
-    /// bare ATT error. Preserving them means the write either sets the
-    /// intensity or changes nothing.
-    ///
-    /// Returns nil when the length is unrecognised — better to refuse than to
-    /// scribble on an unknown struct.
-    static func payload(for stimulus: StimulusConfig, existing: Data?) -> Data? {
-        guard let existing, let offset = levelOffset(forLength: existing.count) else { return nil }
-        var bytes = existing
-        bytes[bytes.startIndex + offset] = UInt8(clamping: stimulus.intensity)
-        return bytes
-    }
-
-    /// Writes the intensity into the kind's config characteristic.
-    ///
-    /// This *configures*; it does not fire. See the type header — a write
-    /// here is acknowledged and silent, which is what configuring looks like.
-    private func writeConfig(_ stimulus: StimulusConfig, on peripheral: CBPeripheral) async throws {
+    private func write(_ stimulus: StimulusConfig, command: Command, on peripheral: CBPeripheral) async throws {
         let characteristic = protocolStore.characteristic(for: stimulus.kind)
         let existing = try await central.read(
             characteristic,
@@ -111,36 +94,31 @@ struct LegacyDeviceController {
             on: peripheral,
             timeout: .seconds(3)
         )
-        let hex = existing.map { String(format: "%02X", $0) }.joined(separator: " ")
-        BLELog.info("\(characteristic.uuidString) currently holds \(existing.count) byte(s): \(hex)")
-
-        guard let payload = Self.payload(for: stimulus, existing: existing) else {
-            BLELog.error("Unrecognised \(existing.count)-byte layout for \(characteristic.uuidString) — refusing to write")
+        guard let payload = Self.payload(for: stimulus, existing: existing, command: command) else {
+            BLELog.error("Unrecognised \(existing.count)-byte layout at \(characteristic.uuidString) — refusing to write")
             throw ControllerError.unknownLayout(characteristic.uuidString, existing.count)
         }
-        BLELog.info("Set \(stimulus.kind.rawValue) intensity=\(stimulus.intensity) → \(characteristic.uuidString)")
+        BLELog.info(
+            "\(command == .fire ? "Fire" : "Store") \(stimulus.kind.rawValue) "
+                + "intensity=\(stimulus.intensity) reps=\(stimulus.repetitions) → \(characteristic.uuidString)"
+        )
         try await central.write(payload, to: characteristic, serviceUUID: LegacyGATT.service, on: peripheral)
     }
 
-    /// Sets the intensity, then reports that triggering is not yet known.
-    ///
-    /// The config write is still worth doing — it is the half that works, and
-    /// it is what the physical button and on-device alarms use. Throwing
-    /// afterwards keeps the UI honest instead of showing "sent" for something
-    /// that produced no sensation.
     func fire(_ stimulus: StimulusConfig, on peripheral: CBPeripheral) async throws {
-        try await writeConfig(stimulus, on: peripheral)
-        throw ControllerError.triggerNotRecovered
+        try await write(stimulus, command: .fire, on: peripheral)
     }
 
+    /// Stores `stimulus` as the device-side default, so the physical button
+    /// and on-device alarms use it.
     func saveStimulusConfig(_ stimulus: StimulusConfig, on peripheral: CBPeripheral) async throws {
-        try await writeConfig(stimulus, on: peripheral)
+        try await write(stimulus, command: .store, on: peripheral)
     }
 
-    /// Alarm slot layout (hour, minute, day bitmask, enabled, id prefix) is
-    /// unverified against real hardware — the alarm characteristics live in
-    /// `kApplicationServiceUuid`, whose UUID is inferred the same way as the
-    /// stimulus ones.
+    /// Alarm slot layout is still unverified — the alarm characteristics are
+    /// `kApplicationAlarmNotifyCharcUuid` (`5003`) and
+    /// `kApplicationControlCharcUuid` (`5001`) in the application service.
+    /// Their UUIDs are now confirmed; the payloads are not.
     func syncAlarm(_ alarm: Alarm, on peripheral: CBPeripheral) async throws {
         var dayBitmask: UInt8 = 0
         for day in alarm.repeatDays {

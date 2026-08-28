@@ -83,139 +83,55 @@ Shock Clock Max (`SCMaxControlPointsService`), Bluetooth-SIG-style v1 UUIDs:
 - Service `66657000-39F4-11ED-92BD-832ABAC11AB4`
   - `66657001-…`
 
-Legacy Pavlok 2/3 proprietary — **confirmed against a real Pavlok 3**
-(fw 6.10.0, model `Pavlok-S`, advertised `Pavlok-3-E11D`).
+Legacy Pavlok 2/3 — **decompiled ground truth**, cross-checked against a real
+Pavlok 3 (fw 6.10.0, model `Pavlok-S`).
 
-Services use a vendor base; characteristics inside them are plain 16-bit:
+### UUIDs (from `ble_uuids_constants.dart`)
 
-| Service | Characteristics on device | Constant |
+Services use a vendor base, written in the Dart source with a stray dash
+(`156E-1000-A300-…`), which is why a UUID-shaped regex over the string table
+misses them. **The service names do not follow the numbering**: `156E5000` is
+the application service, `156E0000` the diagnostic one.
+
+| Service | Constant | Characteristics |
 |---|---|---|
-| `156E0000-A300-4FEA-897B-86F698D74461` | `0001`–`0008` | `kSetupServiceUuid` |
-| `156E1000-…` | `1001`–`1008` | `kConfigServiceUuid` |
-| `156E2000-…` | `2001`–`200A` | `kApplicationServiceUuid` |
-| `156E4000-…` | `4001`, `4002` | *not referenced by the app* |
-| `156E5000-…` | `5001`–`5003` | `kDiagnosticServiceUuid` |
-| `156E6000-…` | `6002` | `kNotificationServiceUuid` |
-| `156E7000-…` | `7001`, `7999` | `kFirmwareServiceUuid` |
+| `156E0000` | `kPavlokService` | `0001` battery diagnostic, `0008` diagnostic command |
+| `156E1000` | `kConfigServiceUuid` | `1001` vibration, `1002` beep, `1003` zap, `1005` time, `1006` hand-detect, `1008` DAQ control |
+| `156E2000` | `kNotificationServiceUuid` | `2002` events, `2009` notification files, `200A` alarm loaded |
+| `156E5000` | `kApplicationServiceUuid` | `5001` control, `5002` download, `5003` alarm notify |
+| `156E6000` | `kFirmwareServiceUuid` | `6002` |
+| `156E7000` | `kSetupServiceUuid` | `7001` |
 
-The six vendor service UUIDs *are* in `libapp.so`, written with a stray dash
-(`156E-1000-A300-4FEA-897B-86F698D74461`) — which is why a UUID-shaped regex
-misses them. Grep for `156E`, not for a UUID pattern.
+**Zap is `1003`, not `1001`.** The order is vibration, beep, zap.
 
-The sixteen 16-bit values in the binary are **characteristics**, not
-services: `0x0001`, `0x0008`, `0x1001`, `0x1002`, `0x1003`, `0x1005`,
-`0x1006`, `0x1008`, `0x2002`, `0x2009`, `0x200A`, `0x5001`, `0x5002`,
-`0x5003`, `0x6002`, `0x7001`. (`flutter_blue_plus` renders 16-bit UUIDs
-expanded against the Bluetooth base, which is why they appear as
-`00001001-0000-1000-8000-00805f9b34fb` in the string table.) An earlier pass
-read `0x1001` as the config *service* — it is a characteristic, and every
-write failed at service lookup as a result.
+### Stimulus wire format (from `ble_manager.dart`)
 
-Note `1004` and `1007` exist on the device but appear nowhere in the binary,
-so the three stimulus outputs are among `1001 1002 1003 1005 1006 1008`.
-Config-service properties as reported by the device: all `read|write`, except
-`1003` which is `read|write|notify`.
+`performZap` / `performMotor` / `performPiezo` and `updateZap` /
+`updateMotor` / `updatePiezo` write to the **same** characteristic. They
+differ only by a constant added to byte 0:
 
-#### Config service contents (Pavlok 3, fw 6.10.0)
+    perform* → + 0x80   (fire now)
+    update*  → + 0x40   (store as device default)
 
-Read non-destructively from the device:
-
-| Char | Value | Reading |
+| Output | Char | Payload |
 |---|---|---|
-| `1001` | `01 0C 23 16 16` | zap config, level `0x23` = 35 at index 2 |
-| `1002` | `01 0C 64 16 16` | motor config, level `0x64` = 100 at index 2 |
-| `1003` | `01 19` | piezo config, level `0x19` = 25 at index 1 |
-| `1004` | `01 00 00 00 29` | |
-| `1005` | `05 01 00 29 06 08 26 08` | |
-| `1006` | `06 70 02 1E` | |
-| `1007` | `03 00 00 00` | |
-| `1008` | `00 02 00 00 00 00 00 00` | |
+| zap | `1003` | `[count｜flag, level]` |
+| vibration | `1001` | `[count｜flag, 0x0C, level, onInterval, offInterval]` |
+| beep | `1002` | `[count｜flag, 0x0C, level, onInterval, offInterval]` |
 
-**`1001` and `1002` are byte-identical except at index 2** — 35 against 100,
-i.e. a zap at 35% and a motor at 100%. That identifies the intensity byte.
-Index 1 holds `0x0C` on both, accepts `0x05` and `0x14`, and rejects `0x32`
-with a bare ATT error, so it is a bounded field of unknown meaning; index 3
-and 4 are `0x16` on both.
+The `0x0C` at index 1 is a literal in `performMotor`. The interval bytes come
+from `MotorConfig.encodedOnInterval` / `encodedOffInterval`, which derive them
+from millisecond fields.
 
-**Writing a config does not fire.** Index 1 was set to `0x14` (20) during
-testing — had that been a pulse count, twenty pulses would have been felt.
-Nothing was. This matches the binary's `updateDeviceZap` / `performDeviceZap`
-split: the config service stores settings only.
+Live device readback confirms every field:
 
-Elsewhere, decoded for orientation:
+    1001  01 0C 23 16 16    vibration, level 0x23 = 35
+    1002  01 0C 64 16 16    beep,      level 0x64 = 100
+    1003  01 19             zap,       level 0x19 = 25
 
-- setup `0001` = `8A 0F 4E 00` → `0x0F8A` = 3978 mV, then `0x4E` = 78 %,
-  matching the standard battery characteristic `2A19` = `0x4E`
-- diagnostic `5001` = `49 44 02 00 02 00` → begins with ASCII `"ID"`
-- `2002` and `2009` (application) and `0007`/`0008` (setup) are write-only,
-  so they hold no value to inspect — the trigger command is most likely one
-  of these
-
-#### Observed write behaviour (Pavlok 3, fw 6.10.0)
-
-| Characteristic | 2-byte write | Result |
-|---|---|---|
-| `1001` | `01 14` | rejected — invalid attribute value length |
-| `1002` | `01 3C` | rejected — invalid attribute value length |
-| `1003` | `01 0A` | acknowledged, nothing audible |
-
-`1001` and `1002` are therefore fixed-length and *not* two bytes. Every
-config characteristic is readable, so the length and current contents can be
-measured rather than guessed — `Diagnostics → Read all values` does this,
-and `LegacyDeviceController` reads before every write to size its payload.
-
-#### Fire vs. configure are different operations
-
-The binary names both, separately:
-
-- `performDeviceZap` / `PerformDeviceZapUsecase`, `performDeviceMotor`,
-  `performDevicePiezo`, `performBeep`, `performStimulusBundle` — **fire**
-- `updateDeviceZap` / `UpdateDeviceZapUsecase`, `updateMotor`, `updatePiezo`
-  — **configure**, backed by `deviceZapConfig` / `deviceMotorConfig` /
-  `devicePiezoConfig`
-
-`1003` accepting a write while producing no output is what *configuring*
-looks like. There is also `encodeTimerStimulusIntensityAndCount`, so
-intensity and count are **packed into a combined value** somewhere in this
-protocol rather than sent as two independent bytes — consistent with `1001`
-and `1002` rejecting a 2-byte write.
-
-Not found anywhere in the binary: `writeZap`, `writeStimulus`,
-`writeVibration`. The full `write*` vocabulary is alarms, current time,
-hand-detect config, ANCS config, and handshake/read commands — so firing does
-not go through the same "write X to device" helpers the other features use.
-
-#### Legacy constant names (`ble_uuids_constants.dart`)
-
-The Dart snapshot's string table carries the *names* of every UUID constant,
-recovered by grepping `re/libapp.strings.txt` for `init:k*Uuid`:
-
-| Services | Characteristics |
-|---|---|
-| `kConfigServiceUuid` | `kZapCaracUuid`, `kVibrationCaracUuid`, `kBeepCaracUuid`, `kHandDetectCaracUuid`, `kTimeCaracUuid` |
-| `kApplicationServiceUuid` | `kApplicationControlCharcUuid`, `kApplicationAlarmNotifyCharcUuid`, `kApplicationAlarmLoadedCharacUuid`, `kApplicationDownloadCharcUuid` |
-| `kSetupServiceUuid` | `kSetupCharacUuid`, `kDaqControlCharacUuid` |
-| `kDiagnosticServiceUuid` | `kDiagnosticCommandCharcUuid` |
-| `kFirmwareServiceUuid` | `kFirmwareCharacUuid` |
-| `kNotificationServiceUuid` | — |
-| `kBatteryServiceUuid` (`180F`) | `kBatteryCracUuid` (`2A19`), `kBatteryDiagnosticCaracUuid` |
-| `kDeviceInformationServiceUuid` (`180A`) | `cccdUuid` (`2902`) |
-
-**The load-bearing conclusion: zap, vibe and beep are three separate
-characteristics in `156E1000-…`, not one control point with a leading opcode
-byte.**
-
-Name→value assignment within the config service is still an inference: the
-names are strings, the values they are initialised with are AOT machine code.
-`BLE/Legacy/LegacyGATT.swift` carries the current best assignment
-(`1001`/`1002`/`1003`); Diagnostics → "Read all values" dumps every readable
-characteristic non-destructively, and Protocol lab sends arbitrary bytes, so
-it is correctable against real hardware without a rebuild.
-
-Stimulus payload fields come from the freezed `toString` fragments
-`ZapConfig(count: `, `MotorConfig(count: `, `PiezoConfig(count: ` and the
-shared separator `, level: ` — so each config is `(count, level)`. Byte order
-between the two is not settled.
+**This is why earlier writes did nothing.** Byte 0 was copied back from the
+device as `0x01`, with neither `0x80` nor `0x40` set — the device was told to
+neither fire nor store, so it acknowledged the write and ignored it.
 
 Advertised names: `Pavlok-1`, `pavlok-2`, `pavlok-3`, `Pavlok-RingL`,
 `Pavlok-Smart-Ring`.

@@ -18,30 +18,29 @@ final class LegacyProtocolStoreTests: XCTestCase {
         XCTAssertFalse(store.hasOverride(for: .zap))
     }
 
-    func testConfigServiceUsesTheVendorBaseNotTheBluetoothBase() {
-        // Confirmed against a Pavlok 3 (fw 6.10.0): the service is
-        // `156E1000-…`, and `1001` is a characteristic inside it. Treating
-        // `1001` as the service is what made every write fail at lookup.
+    func testServiceUUIDsMatchTheDecompiledConstants() {
+        // Values read out of ble_uuids_constants.dart via blutter. The
+        // numbering is not what it looks like: 156E5000 is the application
+        // service and 156E0000 is the diagnostic one.
         XCTAssertEqual(LegacyGATT.service.uuidString, "156E1000-A300-4FEA-897B-86F698D74461")
-        XCTAssertEqual(LegacyGATT.applicationService.uuidString, "156E2000-A300-4FEA-897B-86F698D74461")
-        XCTAssertNotEqual(LegacyGATT.service, CBUUID(string: "1001"))
+        XCTAssertEqual(LegacyGATT.pavlokService.uuidString, "156E0000-A300-4FEA-897B-86F698D74461")
+        XCTAssertEqual(LegacyGATT.notificationService.uuidString, "156E2000-A300-4FEA-897B-86F698D74461")
+        XCTAssertEqual(LegacyGATT.applicationService.uuidString, "156E5000-A300-4FEA-897B-86F698D74461")
+        XCTAssertEqual(LegacyGATT.firmwareService.uuidString, "156E6000-A300-4FEA-897B-86F698D74461")
+        XCTAssertEqual(LegacyGATT.setupService.uuidString, "156E7000-A300-4FEA-897B-86F698D74461")
     }
 
-    func testStimulusCharacteristicsAreOnesTheAndroidAppActuallyReferences() {
-        // 1004 and 1007 exist on the device but appear nowhere in the binary,
-        // so no stimulus output can be behind them.
-        for kind in StimulusKind.allCases {
-            XCTAssertTrue(
-                LegacyGATT.configServiceCharacteristics.contains(LegacyGATT.defaultCharacteristic(for: kind)),
-                "\(kind) maps outside the referenced config characteristics"
-            )
-        }
-        XCTAssertFalse(LegacyGATT.configServiceCharacteristics.contains(CBUUID(string: "1004")))
-        XCTAssertFalse(LegacyGATT.configServiceCharacteristics.contains(CBUUID(string: "1007")))
+    func testStimulusCharacteristicsMatchTheDecompiledConstants() {
+        // kVibrationCaracUuid=1001, kBeepCaracUuid=1002, kZapCaracUuid=1003.
+        // Zap is last. An earlier guess had zap first, which pointed "Beep"
+        // at the zap output.
+        XCTAssertEqual(LegacyGATT.characteristic(for: .vibe).uuidString, "1001")
+        XCTAssertEqual(LegacyGATT.characteristic(for: .beep).uuidString, "1002")
+        XCTAssertEqual(LegacyGATT.characteristic(for: .zap).uuidString, "1003")
     }
 
     func testEachStimulusKindMapsToADistinctCharacteristic() {
-        let mapped = StimulusKind.allCases.map { LegacyGATT.defaultCharacteristic(for: $0).uuidString }
+        let mapped = StimulusKind.allCases.map { LegacyGATT.characteristic(for: $0).uuidString }
         XCTAssertEqual(Set(mapped).count, StimulusKind.allCases.count)
     }
 
@@ -66,60 +65,82 @@ final class LegacyProtocolStoreTests: XCTestCase {
         // `CBUUID.uuidString` collapses Bluetooth-base UUIDs to their 16-bit
         // form, which is what the picker compares against.
         let store = LegacyProtocolStore(defaults: defaults)
-        XCTAssertEqual(store.characteristicUUIDString(for: .zap), "1001")
+        XCTAssertEqual(store.characteristicUUIDString(for: .zap), "1003")
 
-        store.setCharacteristicUUIDString("1003", for: .zap)
+        store.setCharacteristicUUIDString("1002", for: .zap)
         XCTAssertEqual(store.characteristic(for: .zap), LegacyGATT.beep)
     }
 }
 
 final class LegacyStimulusPayloadTests: XCTestCase {
     /// Exactly what a Pavlok 3 (fw 6.10.0) reports.
-    private let zapConfig = Data([0x01, 0x0C, 0x23, 0x16, 0x16])
-    private let vibeConfig = Data([0x01, 0x0C, 0x64, 0x16, 0x16])
-    private let beepConfig = Data([0x01, 0x19])
+    private let vibeConfig = Data([0x01, 0x0C, 0x23, 0x16, 0x16])
+    private let beepConfig = Data([0x01, 0x0C, 0x64, 0x16, 0x16])
+    private let zapConfig = Data([0x01, 0x19])
 
-    func testLevelGoesAtIndexTwoInTheFiveByteLayout() {
-        let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1),
-            existing: zapConfig
-        )
-        XCTAssertEqual([UInt8](payload!), [0x01, 0x0C, 0x14, 0x16, 0x16])
-    }
-
-    func testEveryOtherByteIsPreservedExactly() {
-        // Index 1 is a bounded field that rejected 0x32 outright on real
-        // hardware. Writing anything into fields we don't understand is how
-        // an acknowledged write ends up doing nothing.
-        let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .vibe, intensity: 60, repetitions: 4),
-            existing: vibeConfig
+    func testFireSetsBit7AndStoreSetsBit6() {
+        // performZap adds 0x80, updateZap adds 0x40, to the same byte of the
+        // same characteristic. Writing neither is what made every earlier
+        // write acknowledged and inert.
+        let fired = LegacyDeviceController.payload(
+            for: StimulusConfig(kind: .zap, intensity: 25, repetitions: 1),
+            existing: zapConfig, command: .fire
         )!
-        XCTAssertEqual(payload[0], vibeConfig[0])
-        XCTAssertEqual(payload[1], vibeConfig[1])
-        XCTAssertEqual(payload[3], vibeConfig[3])
-        XCTAssertEqual(payload[4], vibeConfig[4])
-        XCTAssertEqual(payload[2], 60)
+        let stored = LegacyDeviceController.payload(
+            for: StimulusConfig(kind: .zap, intensity: 25, repetitions: 1),
+            existing: zapConfig, command: .store
+        )!
+        XCTAssertEqual([UInt8](fired), [0x81, 0x19])
+        XCTAssertEqual([UInt8](stored), [0x41, 0x19])
     }
 
-    func testLevelGoesAtIndexOneInTheTwoByteLayout() {
+    func testZapPayloadIsCountThenLevel() {
         let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .beep, intensity: 10, repetitions: 1),
-            existing: beepConfig
-        )
-        XCTAssertEqual([UInt8](payload!), [0x01, 0x0A])
+            for: StimulusConfig(kind: .zap, intensity: 40, repetitions: 3),
+            existing: zapConfig, command: .fire
+        )!
+        XCTAssertEqual([UInt8](payload), [0x83, 0x28])
     }
 
-    func testRepetitionsAreNotWrittenAnywhere() {
-        // The count field has not been identified. Until it is, changing
-        // repetitions must not alter a single byte.
-        let one = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1), existing: zapConfig
-        )
-        let five = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 5), existing: zapConfig
-        )
-        XCTAssertEqual(one, five)
+    func testFiveBytePayloadPreservesTheConstantAndIntervals() {
+        // performMotor writes a literal 0x0C at index 1 and two encoded
+        // interval bytes at 3 and 4. Those come from millisecond fields this
+        // app doesn't expose, so they're carried through untouched.
+        let payload = LegacyDeviceController.payload(
+            for: StimulusConfig(kind: .vibe, intensity: 60, repetitions: 2),
+            existing: vibeConfig, command: .fire
+        )!
+        XCTAssertEqual([UInt8](payload), [0x82, 0x0C, 0x3C, 0x16, 0x16])
+    }
+
+    func testBeepUsesTheSameFiveByteShape() {
+        let payload = LegacyDeviceController.payload(
+            for: StimulusConfig(kind: .beep, intensity: 100, repetitions: 1),
+            existing: beepConfig, command: .fire
+        )!
+        XCTAssertEqual([UInt8](payload), [0x81, 0x0C, 0x64, 0x16, 0x16])
+    }
+
+    func testCountCanNeverCarryIntoTheCommandFlag() {
+        // Count is masked to 6 bits: a large repetition count must not turn a
+        // store into a fire, or vice versa.
+        for reps in 1...100 {
+            let payload = LegacyDeviceController.payload(
+                for: StimulusConfig(kind: .zap, intensity: 10, repetitions: reps),
+                existing: zapConfig, command: .store
+            )!
+            XCTAssertEqual(payload[0] & 0xC0, 0x40, "reps \(reps) corrupted the command flag")
+        }
+    }
+
+    func testPayloadLengthAlwaysMatchesTheDevice() {
+        for existing in [vibeConfig, beepConfig, zapConfig] {
+            let payload = LegacyDeviceController.payload(
+                for: StimulusConfig(kind: .zap, intensity: 77, repetitions: 1),
+                existing: existing, command: .fire
+            )
+            XCTAssertEqual(payload?.count, existing.count)
+        }
     }
 
     func testUnrecognisedLayoutsAreRefusedRatherThanScribbledOn() {
@@ -127,32 +148,11 @@ final class LegacyStimulusPayloadTests: XCTestCase {
             XCTAssertNil(
                 LegacyDeviceController.payload(
                     for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1),
-                    existing: Data(repeating: 0, count: length)
+                    existing: Data(repeating: 0, count: length), command: .fire
                 ),
                 "\(length)-byte layout should be refused"
             )
         }
-        XCTAssertNil(
-            LegacyDeviceController.payload(
-                for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1), existing: nil
-            )
-        )
-    }
-
-    func testPayloadLengthAlwaysMatchesTheDevice() {
-        for existing in [zapConfig, vibeConfig, beepConfig] {
-            let payload = LegacyDeviceController.payload(
-                for: StimulusConfig(kind: .zap, intensity: 77, repetitions: 1), existing: existing
-            )
-            XCTAssertEqual(payload?.count, existing.count)
-        }
-    }
-
-    func testIntensityIsClampedIntoAByte() {
-        let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .zap, intensity: 100, repetitions: 1), existing: zapConfig
-        )
-        XCTAssertEqual(payload?[2], 100)
     }
 }
 
