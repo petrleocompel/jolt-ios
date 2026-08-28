@@ -50,6 +50,14 @@ def apply_ci_build_number
   )
 end
 
+# fastlane's `sh` runs commands from fastlane/, not the repo root, so anything
+# resolving a repo-relative path (project.yml, .swiftlint.yml) has to chdir first.
+def sh_at_root(*args, **kwargs)
+  Dir.chdir(File.expand_path("..", __dir__)) do
+    sh(*args, **kwargs)
+  end
+end
+
 default_platform(:ios)
 
 platform :ios do
@@ -59,12 +67,12 @@ platform :ios do
 
   desc "Regenerate Xcode project with XcodeGen"
   lane :generate_project do
-    sh("xcodegen", "--spec", "project.yml")
+    sh_at_root("xcodegen", "--spec", "project.yml")
   end
 
   desc "Run SwiftLint"
   lane :lint do
-    sh("swiftlint", "--strict")
+    sh_at_root("swiftlint", "--strict")
   end
 
   # --- tests (include when unit/UI tests exist) ---
