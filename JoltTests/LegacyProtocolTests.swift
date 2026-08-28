@@ -74,58 +74,85 @@ final class LegacyProtocolStoreTests: XCTestCase {
 }
 
 final class LegacyStimulusPayloadTests: XCTestCase {
-    func testPayloadFallsBackToTwoBytesWhenTheDeviceCouldNotBeRead() {
+    /// Exactly what a Pavlok 3 (fw 6.10.0) reports.
+    private let zapConfig = Data([0x01, 0x0C, 0x23, 0x16, 0x16])
+    private let vibeConfig = Data([0x01, 0x0C, 0x64, 0x16, 0x16])
+    private let beepConfig = Data([0x01, 0x19])
+
+    func testLevelGoesAtIndexTwoInTheFiveByteLayout() {
         let payload = LegacyDeviceController.payload(
             for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1),
-            existing: nil
+            existing: zapConfig
         )
-        XCTAssertEqual([UInt8](payload), [0x01, 0x14])
+        XCTAssertEqual([UInt8](payload!), [0x01, 0x0C, 0x14, 0x16, 0x16])
     }
 
-    func testPayloadMatchesASingleByteCharacteristic() {
-        // A 2-byte write to a 1-byte characteristic is rejected outright with
-        // "invalid attribute value length" — observed on 1001 and 1002.
+    func testEveryOtherByteIsPreservedExactly() {
+        // Index 1 is a bounded field that rejected 0x32 outright on real
+        // hardware. Writing anything into fields we don't understand is how
+        // an acknowledged write ends up doing nothing.
         let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1),
-            existing: Data([0x00])
-        )
-        XCTAssertEqual([UInt8](payload), [0x14])
+            for: StimulusConfig(kind: .vibe, intensity: 60, repetitions: 4),
+            existing: vibeConfig
+        )!
+        XCTAssertEqual(payload[0], vibeConfig[0])
+        XCTAssertEqual(payload[1], vibeConfig[1])
+        XCTAssertEqual(payload[3], vibeConfig[3])
+        XCTAssertEqual(payload[4], vibeConfig[4])
+        XCTAssertEqual(payload[2], 60)
     }
 
-    func testPayloadPreservesTrailingBytesItDoesNotUnderstand() {
+    func testLevelGoesAtIndexOneInTheTwoByteLayout() {
         let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .vibe, intensity: 60, repetitions: 2),
-            existing: Data([0xAA, 0xBB, 0xCC, 0xDD])
+            for: StimulusConfig(kind: .beep, intensity: 10, repetitions: 1),
+            existing: beepConfig
         )
-        XCTAssertEqual([UInt8](payload), [0x02, 0x3C, 0xCC, 0xDD])
+        XCTAssertEqual([UInt8](payload!), [0x01, 0x0A])
     }
 
-    func testPayloadLengthAlwaysMatchesWhatTheDeviceHolds() {
-        for length in 1...8 {
-            let existing = Data(repeating: 0, count: length)
-            let payload = LegacyDeviceController.payload(
-                for: StimulusConfig(kind: .beep, intensity: 10, repetitions: 1),
-                existing: existing
+    func testRepetitionsAreNotWrittenAnywhere() {
+        // The count field has not been identified. Until it is, changing
+        // repetitions must not alter a single byte.
+        let one = LegacyDeviceController.payload(
+            for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1), existing: zapConfig
+        )
+        let five = LegacyDeviceController.payload(
+            for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 5), existing: zapConfig
+        )
+        XCTAssertEqual(one, five)
+    }
+
+    func testUnrecognisedLayoutsAreRefusedRatherThanScribbledOn() {
+        for length in [0, 1, 3, 4, 6, 8] {
+            XCTAssertNil(
+                LegacyDeviceController.payload(
+                    for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1),
+                    existing: Data(repeating: 0, count: length)
+                ),
+                "\(length)-byte layout should be refused"
             )
-            XCTAssertEqual(payload.count, length, "length \(length) not preserved")
+        }
+        XCTAssertNil(
+            LegacyDeviceController.payload(
+                for: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1), existing: nil
+            )
+        )
+    }
+
+    func testPayloadLengthAlwaysMatchesTheDevice() {
+        for existing in [zapConfig, vibeConfig, beepConfig] {
+            let payload = LegacyDeviceController.payload(
+                for: StimulusConfig(kind: .zap, intensity: 77, repetitions: 1), existing: existing
+            )
+            XCTAssertEqual(payload?.count, existing.count)
         }
     }
 
-    func testPayloadCarriesNoOpcodeByte() {
-        // Each stimulus kind has its own characteristic, so the same
-        // intensity and count produce identical bytes regardless of kind.
-        let zap = LegacyDeviceController.payload(for: StimulusConfig(kind: .zap, intensity: 50, repetitions: 2), existing: nil)
-        let beep = LegacyDeviceController.payload(for: StimulusConfig(kind: .beep, intensity: 50, repetitions: 2), existing: nil)
-        XCTAssertEqual(zap, beep)
-        XCTAssertEqual(zap.count, 2)
-    }
-
-    func testClampedValuesStayInByteRange() {
+    func testIntensityIsClampedIntoAByte() {
         let payload = LegacyDeviceController.payload(
-            for: StimulusConfig(kind: .vibe, intensity: 100, repetitions: 5),
-            existing: nil
+            for: StimulusConfig(kind: .zap, intensity: 100, repetitions: 1), existing: zapConfig
         )
-        XCTAssertEqual([UInt8](payload), [0x05, 0x64])
+        XCTAssertEqual(payload?[2], 100)
     }
 }
 

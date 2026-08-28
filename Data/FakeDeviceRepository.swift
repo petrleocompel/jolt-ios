@@ -84,6 +84,11 @@ final class FakeDeviceRepository: DeviceRepository {
 
     func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {}
 
+    @discardableResult
+    func startListeningForDeviceEvents() async throws -> Int { 0 }
+
+    func stopListeningForDeviceEvents() {}
+
     func readDeviceInfo() async throws -> DeviceInfo { fakeDevice.info }
 
     func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws {}

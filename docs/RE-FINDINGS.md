@@ -116,6 +116,41 @@ so the three stimulus outputs are among `1001 1002 1003 1005 1006 1008`.
 Config-service properties as reported by the device: all `read|write`, except
 `1003` which is `read|write|notify`.
 
+#### Config service contents (Pavlok 3, fw 6.10.0)
+
+Read non-destructively from the device:
+
+| Char | Value | Reading |
+|---|---|---|
+| `1001` | `01 0C 23 16 16` | zap config, level `0x23` = 35 at index 2 |
+| `1002` | `01 0C 64 16 16` | motor config, level `0x64` = 100 at index 2 |
+| `1003` | `01 19` | piezo config, level `0x19` = 25 at index 1 |
+| `1004` | `01 00 00 00 29` | |
+| `1005` | `05 01 00 29 06 08 26 08` | |
+| `1006` | `06 70 02 1E` | |
+| `1007` | `03 00 00 00` | |
+| `1008` | `00 02 00 00 00 00 00 00` | |
+
+**`1001` and `1002` are byte-identical except at index 2** — 35 against 100,
+i.e. a zap at 35% and a motor at 100%. That identifies the intensity byte.
+Index 1 holds `0x0C` on both, accepts `0x05` and `0x14`, and rejects `0x32`
+with a bare ATT error, so it is a bounded field of unknown meaning; index 3
+and 4 are `0x16` on both.
+
+**Writing a config does not fire.** Index 1 was set to `0x14` (20) during
+testing — had that been a pulse count, twenty pulses would have been felt.
+Nothing was. This matches the binary's `updateDeviceZap` / `performDeviceZap`
+split: the config service stores settings only.
+
+Elsewhere, decoded for orientation:
+
+- setup `0001` = `8A 0F 4E 00` → `0x0F8A` = 3978 mV, then `0x4E` = 78 %,
+  matching the standard battery characteristic `2A19` = `0x4E`
+- diagnostic `5001` = `49 44 02 00 02 00` → begins with ASCII `"ID"`
+- `2002` and `2009` (application) and `0007`/`0008` (setup) are write-only,
+  so they hold no value to inspect — the trigger command is most likely one
+  of these
+
 #### Observed write behaviour (Pavlok 3, fw 6.10.0)
 
 | Characteristic | 2-byte write | Result |

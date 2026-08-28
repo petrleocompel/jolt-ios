@@ -71,6 +71,7 @@
 		A9502C9B2BE1F8C56014FF7A /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B8896F658741B48ABE9882 /* AboutView.swift */; };
 		AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */; };
 		B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */; };
+		B98B18DD7650C7484A19F1A9 /* DeviceEventCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */; };
 		BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */; };
 		BC622AC928943A575F9D99FE /* BluetoothLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F953DC81C35A18E75FFD98F /* BluetoothLogView.swift */; };
 		C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */; };
@@ -189,6 +190,7 @@
 		C27CEABD71F97CB87FC062B7 /* DeviceFamilyMatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFamilyMatchingTests.swift; sourceTree = "<group>"; };
 		C318232E11E62CFE3DE6443D /* PokeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeViewModel.swift; sourceTree = "<group>"; };
 		C6A8B311C6A28084B089F241 /* ESFValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFValue.swift; sourceTree = "<group>"; };
+		C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEventCaptureView.swift; sourceTree = "<group>"; };
 		CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
 		CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeviceController.swift; sourceTree = "<group>"; };
 		CD9EF092B259B55847C7549D /* RemoteControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlView.swift; sourceTree = "<group>"; };
@@ -431,6 +433,7 @@
 				9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */,
 				21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */,
 				FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */,
+				C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */,
 				FA63F667AC24AA36DC49CF58 /* ProtocolLabView.swift */,
 				CD9EF092B259B55847C7549D /* RemoteControlView.swift */,
 				0CF5E0E0667396A7D5910DA2 /* StimulusCard.swift */,
@@ -675,6 +678,7 @@
 				8576F98F90F514A29E076544 /* CompositeDeviceRepository.swift in Sources */,
 				A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */,
 				D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */,
+				B98B18DD7650C7484A19F1A9 /* DeviceEventCaptureView.swift in Sources */,
 				F290A76E43B763F6743332DD /* DeviceFamily.swift in Sources */,
 				CA1C3F6B4A8D989A66F2D672 /* DeviceInformationReader.swift in Sources */,
 				324BC0A3BA0B51BEAA7D5601 /* DeviceInformationService.swift in Sources */,

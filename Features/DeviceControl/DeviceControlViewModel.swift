@@ -138,6 +138,15 @@ final class DeviceControlViewModel {
         try await repository.writeRaw(data, characteristicUUID: characteristicUUID, serviceUUID: serviceUUID)
     }
 
+    @discardableResult
+    func startListeningForDeviceEvents() async throws -> Int {
+        try await repository.startListeningForDeviceEvents()
+    }
+
+    func stopListeningForDeviceEvents() {
+        repository.stopListeningForDeviceEvents()
+    }
+
     private func note(_ message: String) {
         lastActionMessage = message
         lastActionResetTask?.cancel()

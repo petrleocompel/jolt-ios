@@ -17,6 +17,9 @@ struct DeviceDiagnosticsView: View {
             deviceSection
             gattSection
             stimulusMappingSection
+            NavigationLink("Listen for device events") {
+                DeviceEventCaptureView(viewModel: viewModel)
+            }
             NavigationLink("Protocol lab") {
                 ProtocolLabView(viewModel: viewModel, gatt: gatt)
             }

@@ -98,6 +98,9 @@ final class BluetoothCentralManager: NSObject {
     private var disconnectionContinuation: AsyncStream<(peripheralID: UUID, error: Error?)>.Continuation?
     private var restoredPeripheralsContinuation: AsyncStream<[CBPeripheral]>.Continuation?
     private var poweredOnWaiters: [CheckedContinuation<Void, Error>] = []
+    /// One per subscribed characteristic while `captureAllNotifications` is
+    /// active.
+    private var captureTasks: [Task<Void, Never>] = []
 
     override init() {
         super.init()
@@ -393,6 +396,52 @@ final class BluetoothCentralManager: NSObject {
             BLELog.debug("  \(entry.serviceUUID) / \(entry.uuid) [\(entry.properties.joined(separator: ","))]\(value)")
         }
         return dump
+    }
+
+    /// Subscribes to every notifying characteristic and logs whatever
+    /// arrives.
+    ///
+    /// This is the closest thing to an HCI capture that runs on the phone.
+    /// The parts of this protocol still missing are commands the app is
+    /// supposed to *send*, and the device announces a good deal of what it
+    /// does — so pressing the physical button, which fires a stimulus
+    /// through firmware we cannot read, makes the device describe that event
+    /// in its own encoding.
+    ///
+    /// Returns the number of characteristics successfully subscribed.
+    @discardableResult
+    func captureAllNotifications(on peripheral: CBPeripheral) async throws -> Int {
+        guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
+        stopNotificationCapture()
+        try await discoverServices(nil, on: peripheral)
+
+        var subscribed = 0
+        for service in peripheral.services ?? [] {
+            try? await discoverCharacteristics(nil, in: service, on: peripheral)
+            for characteristic in service.characteristics ?? [] {
+                guard characteristic.properties.contains(.notify)
+                    || characteristic.properties.contains(.indicate) else { continue }
+                guard let stream = try? await subscribe(characteristic.uuid, in: service.uuid, on: peripheral)
+                else { continue }
+                subscribed += 1
+                let label = "\(service.uuid.uuidString)/\(characteristic.uuid.uuidString)"
+                captureTasks.append(Task { @MainActor in
+                    for await data in stream {
+                        let hex = data.map { String(format: "%02X", $0) }.joined(separator: " ")
+                        BLELog.info("EVENT \(label): \(hex.isEmpty ? "(empty)" : hex)")
+                    }
+                })
+            }
+        }
+        BLELog.info("Listening on \(subscribed) notifying characteristic(s) — trigger something on the device now")
+        return subscribed
+    }
+
+    func stopNotificationCapture() {
+        guard !captureTasks.isEmpty else { return }
+        captureTasks.forEach { $0.cancel() }
+        captureTasks.removeAll()
+        BLELog.info("Stopped listening for device events")
     }
 
     /// Finds the first characteristic from `candidates` that the device

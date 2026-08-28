@@ -324,6 +324,16 @@ final class CompositeDeviceRepository: DeviceRepository {
         )
     }
 
+    @discardableResult
+    func startListeningForDeviceEvents() async throws -> Int {
+        let (peripheral, _) = try requireConnection()
+        return try await central.captureAllNotifications(on: peripheral)
+    }
+
+    func stopListeningForDeviceEvents() {
+        central.stopNotificationCapture()
+    }
+
     private func requireConnection() throws -> (CBPeripheral, DeviceFamily) {
         guard let peripheral = connectedPeripheral, let family = connectedFamily else {
             BLELog.error("Operation requires a connected device, but none is connected")

@@ -54,4 +54,11 @@ protocol DeviceRepository {
     /// Writes raw bytes to an arbitrary characteristic. Powers the Protocol
     /// lab. Not used by any normal app flow.
     func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws
+    /// Subscribes to every notifying characteristic and logs what arrives, so
+    /// an action performed on the device itself (pressing its button) can be
+    /// observed in the device's own encoding. Returns how many were
+    /// subscribed.
+    @discardableResult
+    func startListeningForDeviceEvents() async throws -> Int
+    func stopListeningForDeviceEvents()
 }
