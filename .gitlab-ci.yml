@@ -16,6 +16,8 @@ variables:
   # cold (~23s measured); fastlane defaults to 3s x 4 retries.
   FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
   FASTLANE_XCODEBUILD_SETTINGS_RETRIES: "5"
+  # Base64 .p8 arrives as the GitLab group variable APPSTORE_CONNECT_API_KEY
+  ASC_KEY_FILE: "$CI_PROJECT_DIR/fastlane/AuthKey_REDACTED.p8"
 
 default:
   tags:
@@ -36,7 +38,6 @@ ios_validate:
   artifacts:
     when: always
     paths:
-      - build/dev
       - fastlane
       - DerivedData/Logs/Test
     expire_in: 3 days
@@ -45,7 +46,12 @@ ios_validate:
 ios_internal_release:
   stage: distribute
   script:
+    - echo "$APPSTORE_CONNECT_API_KEY" | base64 -d > "$ASC_KEY_FILE"
+    - export APP_STORE_CONNECT_API_KEY_PATH="$ASC_KEY_FILE"
     - bundle exec fastlane internal
+  # after_script runs even when the lane fails, so the key never survives the job
+  after_script:
+    - rm -f "$ASC_KEY_FILE"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   artifacts:
@@ -60,7 +66,12 @@ ios_internal_release:
 ios_testflight_release:
   stage: distribute
   script:
+    - echo "$APPSTORE_CONNECT_API_KEY" | base64 -d > "$ASC_KEY_FILE"
+    - export APP_STORE_CONNECT_API_KEY_PATH="$ASC_KEY_FILE"
     - bundle exec fastlane testflight
+  # after_script runs even when the lane fails, so the key never survives the job
+  after_script:
+    - rm -f "$ASC_KEY_FILE"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   artifacts:
