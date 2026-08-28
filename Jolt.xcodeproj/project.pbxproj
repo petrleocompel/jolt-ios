@@ -533,7 +533,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					2546FC3379D8F6AC9675B44E = {
-						DevelopmentTeam = REDACTED;
+						DevelopmentTeam = YCFL9S5UA8;
 						ProvisioningStyle = Automatic;
 					};
 					AC2A9B67567D69D441D19263 = {
@@ -700,7 +700,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = REDACTED;
+				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Jolt;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
@@ -761,7 +761,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = REDACTED;
+				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Jolt;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
