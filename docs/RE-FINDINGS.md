@@ -83,9 +83,38 @@ Shock Clock Max (`SCMaxControlPointsService`), Bluetooth-SIG-style v1 UUIDs:
 - Service `66657000-39F4-11ED-92BD-832ABAC11AB4`
   - `66657001-…`
 
-Legacy Pavlok 2/3 proprietary (Bluetooth base UUID, 16-bit-style aliases):
-`0x0001`, `0x0008`, `0x1001`, `0x1002`, `0x1003`, `0x1005`, `0x1006`, `0x1008`,
-`0x2002`, `0x2009`, `0x200A`, `0x5001`, `0x5002`, `0x5003`, `0x6002`, `0x7001`
+Legacy Pavlok 2/3 proprietary — **confirmed against a real Pavlok 3**
+(fw 6.10.0, model `Pavlok-S`, advertised `Pavlok-3-E11D`).
+
+Services use a vendor base; characteristics inside them are plain 16-bit:
+
+| Service | Characteristics on device | Constant |
+|---|---|---|
+| `156E0000-A300-4FEA-897B-86F698D74461` | `0001`–`0008` | `kSetupServiceUuid` |
+| `156E1000-…` | `1001`–`1008` | `kConfigServiceUuid` |
+| `156E2000-…` | `2001`–`200A` | `kApplicationServiceUuid` |
+| `156E4000-…` | `4001`, `4002` | *not referenced by the app* |
+| `156E5000-…` | `5001`–`5003` | `kDiagnosticServiceUuid` |
+| `156E6000-…` | `6002` | `kNotificationServiceUuid` |
+| `156E7000-…` | `7001`, `7999` | `kFirmwareServiceUuid` |
+
+The six vendor service UUIDs *are* in `libapp.so`, written with a stray dash
+(`156E-1000-A300-4FEA-897B-86F698D74461`) — which is why a UUID-shaped regex
+misses them. Grep for `156E`, not for a UUID pattern.
+
+The sixteen 16-bit values in the binary are **characteristics**, not
+services: `0x0001`, `0x0008`, `0x1001`, `0x1002`, `0x1003`, `0x1005`,
+`0x1006`, `0x1008`, `0x2002`, `0x2009`, `0x200A`, `0x5001`, `0x5002`,
+`0x5003`, `0x6002`, `0x7001`. (`flutter_blue_plus` renders 16-bit UUIDs
+expanded against the Bluetooth base, which is why they appear as
+`00001001-0000-1000-8000-00805f9b34fb` in the string table.) An earlier pass
+read `0x1001` as the config *service* — it is a characteristic, and every
+write failed at service lookup as a result.
+
+Note `1004` and `1007` exist on the device but appear nowhere in the binary,
+so the three stimulus outputs are among `1001 1002 1003 1005 1006 1008`.
+Config-service properties as reported by the device: all `read|write`, except
+`1003` which is `read|write|notify`.
 
 #### Legacy constant names (`ble_uuids_constants.dart`)
 
@@ -104,14 +133,15 @@ recovered by grepping `re/libapp.strings.txt` for `init:k*Uuid`:
 | `kDeviceInformationServiceUuid` (`180A`) | `cccdUuid` (`2902`) |
 
 **The load-bearing conclusion: zap, vibe and beep are three separate
-characteristics, not one control point with a leading opcode byte.** An
-earlier pass modelled them as an opcode written to `0x1001` — which is
-doubly wrong, because `0x1001` is a *service*.
+characteristics in `156E1000-…`, not one control point with a leading opcode
+byte.**
 
-Name→value assignment is still an inference: the names are strings, the
-values they are initialised with are AOT machine code. `BLE/Legacy/LegacyGATT.swift`
-carries the current best assignment; Diagnostics → Protocol lab in the app
-makes it correctable against real hardware without a rebuild.
+Name→value assignment within the config service is still an inference: the
+names are strings, the values they are initialised with are AOT machine code.
+`BLE/Legacy/LegacyGATT.swift` carries the current best assignment
+(`1001`/`1002`/`1003`); Diagnostics → "Read all values" dumps every readable
+characteristic non-destructively, and Protocol lab sends arbitrary bytes, so
+it is correctable against real hardware without a rebuild.
 
 Stimulus payload fields come from the freezed `toString` fragments
 `ZapConfig(count: `, `MotorConfig(count: `, `PiezoConfig(count: ` and the

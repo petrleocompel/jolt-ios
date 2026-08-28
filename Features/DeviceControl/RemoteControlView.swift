@@ -66,11 +66,7 @@ struct RemoteControlView: View {
             .accessibilityIdentifier("remoteControlScreen")
             .safeAreaInset(edge: .bottom) { actionFeedback }
             .animation(.snappy, value: viewModel.lastActionMessage)
-            .alert("Something went wrong", isPresented: errorBinding) {
-                Button("OK") { viewModel.lastError = nil }
-            } message: {
-                Text(viewModel.lastError ?? "")
-            }
+            .animation(.snappy, value: viewModel.lastError)
         }
     }
 
@@ -89,33 +85,42 @@ struct RemoteControlView: View {
         .accessibilityIdentifier("disconnectedNotice")
     }
 
-    /// Inline, self-dismissing confirmation. Firing a stimulus is a repeated
-    /// action, so an alert per tap would be unusable — but with no feedback
-    /// at all a device that silently ignores a write is indistinguishable
-    /// from one that fired.
+    /// Inline confirmation and errors, in the same place.
+    ///
+    /// Both were alerts once. Firing a stimulus is a repeated action, so a
+    /// modal per tap is unusable — and an alert bound to this screen tries to
+    /// present even when Diagnostics is pushed on top of it, which UIKit
+    /// refuses ("whose view is not in the window hierarchy") and the user
+    /// then never sees the error at all. Inline has neither problem.
     @ViewBuilder
     private var actionFeedback: some View {
-        if let message = viewModel.lastActionMessage {
-            Text(message)
-                .font(.subheadline)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(.regularMaterial, in: Capsule())
-                .padding(.bottom, 8)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+        if let error = viewModel.lastError {
+            banner(error, systemImage: "exclamationmark.triangle.fill", tint: .red)
+                .onTapGesture { viewModel.lastError = nil }
+                .accessibilityIdentifier("errorFeedback")
+                .accessibilityHint("Tap to dismiss")
+        } else if let message = viewModel.lastActionMessage {
+            banner(message, systemImage: "checkmark.circle.fill", tint: .secondary)
                 .accessibilityIdentifier("actionFeedback")
-                // Announced rather than just drawn: the confirmation is the
-                // only signal that a write landed, and it disappears after
-                // three seconds.
-                .accessibilityAddTraits(.updatesFrequently)
         }
     }
 
-    private var errorBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.lastError != nil },
-            set: { if !$0 { viewModel.lastError = nil } }
-        )
+    private func banner(_ text: String, systemImage: String, tint: Color) -> some View {
+        Label {
+            Text(text).foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: systemImage).foregroundStyle(tint)
+        }
+        .font(.subheadline)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: Capsule())
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        // Announced rather than just drawn: this is the only signal that a
+        // write landed, and the success variant disappears after 3 seconds.
+        .accessibilityAddTraits(.updatesFrequently)
     }
 }
 

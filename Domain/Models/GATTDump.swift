@@ -11,6 +11,9 @@ struct GATTCharacteristicDump: Identifiable, Equatable, Codable {
     var serviceUUID: String
     var uuid: String
     var properties: [String]
+    /// Hex of the characteristic's current value, when it was read. `nil`
+    /// means "not read", which is not the same as "empty".
+    var value: String?
 
     var isWritable: Bool {
         properties.contains("write") || properties.contains("writeNoResp")
@@ -26,7 +29,8 @@ extension Array where Element == GATTCharacteristicDump {
             .map { service, characteristics in
                 let rows = characteristics
                     .sorted { $0.uuid < $1.uuid }
-                    .map { "  \($0.uuid)  [\($0.properties.joined(separator: ", "))]" }
+                    .map { "  \($0.uuid)  [\($0.properties.joined(separator: ", "))]"
+                        + ($0.value.map { value in "  = \(value)" } ?? "") }
                     .joined(separator: "\n")
                 return "Service \(service)\n\(rows)"
             }

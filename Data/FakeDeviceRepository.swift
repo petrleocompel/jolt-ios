@@ -71,14 +71,14 @@ final class FakeDeviceRepository: DeviceRepository {
     }
 
     /// A plausible-looking table so the diagnostics screenshot has content.
-    func dumpGATT() async throws -> [GATTCharacteristicDump] {
+    func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump] {
         [
             GATTCharacteristicDump(serviceUUID: "180A", uuid: "2A24", properties: ["read"]),
             GATTCharacteristicDump(serviceUUID: "180A", uuid: "2A26", properties: ["read"]),
             GATTCharacteristicDump(serviceUUID: "180F", uuid: "2A19", properties: ["read", "notify"]),
-            GATTCharacteristicDump(serviceUUID: "1001", uuid: "1002", properties: ["write"]),
-            GATTCharacteristicDump(serviceUUID: "1001", uuid: "1003", properties: ["write"]),
-            GATTCharacteristicDump(serviceUUID: "1001", uuid: "1005", properties: ["write"])
+            GATTCharacteristicDump(serviceUUID: "156E1000-A300-4FEA-897B-86F698D74461", uuid: "1001", properties: ["read", "write"]),
+            GATTCharacteristicDump(serviceUUID: "156E1000-A300-4FEA-897B-86F698D74461", uuid: "1002", properties: ["read", "write"]),
+            GATTCharacteristicDump(serviceUUID: "156E1000-A300-4FEA-897B-86F698D74461", uuid: "1003", properties: ["read", "write"])
         ]
     }
 

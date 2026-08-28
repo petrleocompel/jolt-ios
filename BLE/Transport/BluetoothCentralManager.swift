@@ -248,6 +248,17 @@ final class BluetoothCentralManager: NSObject {
         BLELog.info("Connecting to \(peripheral.identifier) (\(peripheral.name ?? "unnamed"))")
         try await withTimeout(timeout, description: "connect to \(peripheral.identifier)") {
             try await withCheckedThrowingContinuation { continuation in
+                // Only one connect can be pending per peripheral: the
+                // dictionary holds a single slot, and `didConnect` resumes
+                // exactly one waiter. Overwriting a live continuation strands
+                // whoever was waiting on it — cancelling the enclosing task
+                // does *not* resume a suspended continuation, so it leaks and
+                // its timeout fires later against an already-connected
+                // peripheral. Retire the previous one explicitly instead.
+                if let stranded = self.connectContinuations.removeValue(forKey: peripheral.identifier) {
+                    BLELog.debug("Superseding an in-flight connect to \(peripheral.identifier)")
+                    stranded.resume(throwing: CancellationError())
+                }
                 self.connectContinuations[peripheral.identifier] = continuation
                 self.central.connect(peripheral, options: nil)
             }
@@ -345,23 +356,41 @@ final class BluetoothCentralManager: NSObject {
     /// the diagnostics screen: with the Pavlok wire protocol only partly
     /// recovered, seeing the device's real GATT table is the fastest way to
     /// tell a wrong UUID from a wrong payload.
-    func dumpGATT(on peripheral: CBPeripheral) async throws -> [GATTCharacteristicDump] {
+    /// - Parameter readingValues: also reads every readable characteristic.
+    ///   Reads are non-destructive — no stimulus can fire from one — so this
+    ///   is the safe way to work out which config characteristic is which:
+    ///   the value a characteristic already holds usually gives it away.
+    func dumpGATT(on peripheral: CBPeripheral, readingValues: Bool = false) async throws -> [GATTCharacteristicDump] {
         guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
         try await discoverServices(nil, on: peripheral)
         var dump: [GATTCharacteristicDump] = []
         for service in peripheral.services ?? [] {
             try? await discoverCharacteristics(nil, in: service, on: peripheral)
             for characteristic in service.characteristics ?? [] {
+                var value: String?
+                if readingValues, characteristic.properties.contains(.read) {
+                    // A short timeout per characteristic: one unresponsive
+                    // handle shouldn't stall a 40-characteristic sweep.
+                    let data = try? await read(
+                        characteristic.uuid,
+                        from: service.uuid,
+                        on: peripheral,
+                        timeout: .seconds(3)
+                    )
+                    value = data.map { $0.map { String(format: "%02X", $0) }.joined(separator: " ") }
+                }
                 dump.append(GATTCharacteristicDump(
                     serviceUUID: service.uuid.uuidString,
                     uuid: characteristic.uuid.uuidString,
-                    properties: characteristic.properties.labels
+                    properties: characteristic.properties.labels,
+                    value: value
                 ))
             }
         }
         BLELog.info("GATT dump: \(dump.count) characteristics across \(peripheral.services?.count ?? 0) services")
         for entry in dump {
-            BLELog.debug("  \(entry.serviceUUID) / \(entry.uuid) [\(entry.properties.joined(separator: ","))]")
+            let value = entry.value.map { " = \($0)" } ?? ""
+            BLELog.debug("  \(entry.serviceUUID) / \(entry.uuid) [\(entry.properties.joined(separator: ","))]\(value)")
         }
         return dump
     }

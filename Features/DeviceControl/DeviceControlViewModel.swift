@@ -130,8 +130,8 @@ final class DeviceControlViewModel {
         }
     }
 
-    func dumpGATT() async throws -> [GATTCharacteristicDump] {
-        try await repository.dumpGATT()
+    func dumpGATT(readingValues: Bool = false) async throws -> [GATTCharacteristicDump] {
+        try await repository.dumpGATT(readingValues: readingValues)
     }
 
     func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {

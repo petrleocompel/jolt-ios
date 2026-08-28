@@ -46,7 +46,11 @@ protocol DeviceRepository {
     /// Diagnostics renders this; it's also the fastest way to tell a wrong
     /// UUID from a wrong payload while the wire format is still partly
     /// inferred.
-    func dumpGATT() async throws -> [GATTCharacteristicDump]
+    ///
+    /// - Parameter readingValues: additionally reads each readable
+    ///   characteristic. Reads cannot fire a stimulus, so this is the safe
+    ///   half of identifying the config characteristics.
+    func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump]
     /// Writes raw bytes to an arbitrary characteristic. Powers the Protocol
     /// lab. Not used by any normal app flow.
     func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws

@@ -26,6 +26,7 @@ final class CompositeDeviceRepository: DeviceRepository {
     private var connectedPeripheral: CBPeripheral?
     private var connectedFamily: DeviceFamily?
     private var didStart = false
+    private var isAutoReconnecting = false
 
     private(set) var stimulusSettings: StimulusSettings
 
@@ -192,7 +193,7 @@ final class CompositeDeviceRepository: DeviceRepository {
             // round-trip and it is the difference between "the zap did
             // nothing" and "the zap went to a characteristic this device
             // doesn't have".
-            _ = try? await dumpGATT()
+            _ = try? await dumpGATT(readingValues: false)
 
             // Then fill in model/firmware/battery and re-publish. Without
             // this the connected device's `info` stays at its empty default
@@ -308,9 +309,9 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
     }
 
-    func dumpGATT() async throws -> [GATTCharacteristicDump] {
+    func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump] {
         let (peripheral, _) = try requireConnection()
-        return try await central.dumpGATT(on: peripheral)
+        return try await central.dumpGATT(on: peripheral, readingValues: readingValues)
     }
 
     func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {
@@ -336,6 +337,16 @@ final class CompositeDeviceRepository: DeviceRepository {
 
 extension CompositeDeviceRepository {
     private func attemptAutoReconnect() async {
+        // `startIfNeeded()` starts one of these, and the `.poweredOn` state
+        // event that follows a moment later starts another. Both then raced
+        // into `central.connect` for the same peripheral, stranding a
+        // continuation each time ("leaked its continuation without resuming
+        // it" in the log) and leaving orphaned timeouts to fire minutes
+        // later against an already-connected device.
+        guard !isAutoReconnecting else { return }
+        isAutoReconnecting = true
+        defer { isAutoReconnecting = false }
+
         guard let record = store.load() else { return }
         // Wait rather than bail: on a cold launch this runs before
         // CoreBluetooth has settled, and giving up here is what left the app

@@ -2,77 +2,78 @@ import CoreBluetooth
 
 /// Pavlok 2 / Pavlok 3 proprietary GATT layout.
 ///
-/// ## What is confirmed
-/// The Android binary's `pavlok_flutter_ble/src/ble_manager/ble_uuids_constants.dart`
-/// declares these constants (names recovered verbatim from the Dart snapshot's
-/// string table — see `docs/RE-FINDINGS.md` §3):
+/// ## Confirmed against a real Pavlok 3 (fw 6.10.0, model `Pavlok-S`)
 ///
-///     kConfigServiceUuid          kZapCaracUuid
-///     kApplicationServiceUuid     kVibrationCaracUuid
-///     kSetupServiceUuid           kBeepCaracUuid
-///     kDiagnosticServiceUuid      kHandDetectCaracUuid
-///     kFirmwareServiceUuid        kTimeCaracUuid
-///     kNotificationServiceUuid    kApplicationControlCharcUuid
-///     kBatteryServiceUuid         kApplicationAlarmNotifyCharcUuid
-///     kDeviceInformationServiceUuid
-///                                 kApplicationAlarmLoadedCharacUuid
-///                                 kApplicationDownloadCharcUuid
-///                                 kSetupCharacUuid
-///                                 kDaqControlCharacUuid
-///                                 kDiagnosticCommandCharcUuid
-///                                 kFirmwareCharacUuid
-///                                 kBatteryDiagnosticCaracUuid
-///                                 kBatteryCracUuid / cccdUuid
+/// Services use a vendor base, `156E<n>000-A300-4FEA-897B-86F698D74461`;
+/// characteristics inside them are plain 16-bit values. Both halves are
+/// corroborated by the Android binary: `re/libapp.strings.txt` contains all
+/// six vendor service UUIDs (written with a stray dash, `156E-1000-A300-…`,
+/// which is why an earlier pass missed them) and the sixteen 16-bit
+/// characteristic UUIDs the app uses.
 ///
-/// The decisive fact for this file: **zap, vibration and beep are three
-/// separate characteristics, not one control point with an opcode byte.**
-/// The previous version of this file modelled them as a single write
-/// characteristic at `0x1001` with a leading opcode — that is wrong twice
-/// over, because `0x1001` is a *service*, and because no opcode is involved.
+///     156E0000  0001 0002 0003 0004 0005 0006 0007 0008   setup
+///     156E1000  1001 1002 1003 1004 1005 1006 1007 1008   config
+///     156E2000  2001 … 200A                               application
+///     156E4000  4001 4002                                 present, unused by the app
+///     156E5000  5001 5002 5003                            diagnostic
+///     156E6000  6002                                      notification
+///     156E7000  7001 7999                                 firmware / DFU
 ///
-/// The 16 proprietary UUIDs present in the binary are, in full:
-/// `0x0001 0x0008 0x1001 0x1002 0x1003 0x1005 0x1006 0x1008 0x2002 0x2009
-/// 0x200A 0x5001 0x5002 0x5003 0x6002 0x7001`.
+/// An earlier version of this file used `0x1001` as the *service*. That was
+/// wrong: `0x1001` is a characteristic, and the service is `156E1000-…`.
+/// Every write failed at service lookup, which is why no stimulus ever
+/// reached the device.
 ///
-/// ## What is still inferred
-/// Which of the five `0x10xx` characteristics is zap vs. vibration vs. beep.
-/// The string table proves the constants exist but not their values (those
-/// are AOT machine code). The assignment below follows the declaration order
-/// of the constants against the ascending UUIDs in the same block, which is
-/// the ordering the rest of the table follows — but it is an inference.
+/// ## Still inferred
+/// Which characteristic in the config service is zap vs. vibration vs. beep.
+/// The binary names them (`kZapCaracUuid`, `kVibrationCaracUuid`,
+/// `kBeepCaracUuid`, `kHandDetectCaracUuid`, `kTimeCaracUuid`) but the values
+/// those constants hold are AOT machine code. The app references six of the
+/// eight config characteristics — `1001 1002 1003 1005 1006 1008`, not
+/// `1004`/`1007` — so the three stimulus outputs are among those six.
 ///
-/// Rather than ship that inference as fact a second time, it is
-/// *overridable*: `LegacyProtocolStore` persists a user-chosen mapping, and
-/// Diagnostics → Protocol lab lists what the connected device actually
-/// exposes so the mapping can be corrected against real hardware in a few
-/// seconds. Verify with Beep first — a mis-assigned Zap is unpleasant.
+/// The assignment below is the ascending-order reading. Verify it rather
+/// than trusting it: Diagnostics → "Read all values" dumps every readable
+/// characteristic non-destructively, and Protocol lab sends arbitrary bytes.
+/// Test with Beep first — a mis-assigned Zap is a shock.
 enum LegacyGATT {
-    /// Built from the 16-bit short form, which is how a peripheral reports
-    /// Bluetooth-base UUIDs — so `uuidString` here lines up with what a GATT
-    /// dump shows and what the Protocol lab picker offers. Comparisons go
-    /// through `CBUUID.matches(_:)` regardless, so a device that reports the
-    /// long form still resolves (see `CBUUID+Canonical.swift`).
-    private static func uuid(_ shortForm: String) -> CBUUID {
-        CBUUID(string: shortForm)
+    /// Vendor service base. `n` is the leading nibble: `1` → `156E1000-…`.
+    private static func service(_ prefix: String) -> CBUUID {
+        CBUUID(string: "156E\(prefix)000-A300-4FEA-897B-86F698D74461")
     }
 
-    /// `kConfigServiceUuid` — holds the three stimulus characteristics plus
-    /// hand-detect and time.
-    static let service = uuid("1001")
+    /// `kSetupServiceUuid`.
+    static let setupService = service("0")
+    /// `kConfigServiceUuid` — holds the stimulus characteristics.
+    static let service = service("1")
+    /// `kApplicationServiceUuid` — alarms and app control.
+    static let applicationService = service("2")
+    /// Present on the device but never referenced by the Android app.
+    static let unusedSensorService = service("4")
+    /// `kDiagnosticServiceUuid`.
+    static let diagnosticService = service("5")
+    /// `kNotificationServiceUuid`.
+    static let notificationService = service("6")
+    /// `kFirmwareServiceUuid` — `7999` is the usual DFU entry point.
+    static let firmwareService = service("7")
+
+    // MARK: Config service characteristics (156E1000)
 
     /// `kZapCaracUuid` (inferred value).
-    static let zap = uuid("1002")
+    static let zap = CBUUID(string: "1001")
     /// `kVibrationCaracUuid` (inferred value).
-    static let vibration = uuid("1003")
-    /// `kBeepCaracUuid` (inferred value). `0x1004` is absent from the binary,
-    /// so the block is not contiguous.
-    static let beep = uuid("1005")
-    /// `kTimeCaracUuid` (inferred value).
-    static let time = uuid("1006")
-    /// `kHandDetectCaracUuid` (inferred value).
-    static let handDetect = uuid("1008")
+    static let vibration = CBUUID(string: "1002")
+    /// `kBeepCaracUuid` (inferred value).
+    static let beep = CBUUID(string: "1003")
 
-    /// Default characteristic per stimulus kind, before any user override.
+    /// The six config characteristics the Android app actually references.
+    /// `1004` and `1007` exist on the device but appear nowhere in the
+    /// binary, so the stimulus outputs are not among them.
+    static let configServiceCharacteristics: [CBUUID] = [
+        CBUUID(string: "1001"), CBUUID(string: "1002"), CBUUID(string: "1003"),
+        CBUUID(string: "1005"), CBUUID(string: "1006"), CBUUID(string: "1008")
+    ]
+
     static func defaultCharacteristic(for kind: StimulusKind) -> CBUUID {
         switch kind {
         case .zap: return zap
@@ -81,22 +82,21 @@ enum LegacyGATT {
         }
     }
 
-    /// Every characteristic in the config service, for the Protocol lab
-    /// picker and for "here is what we expected" log lines.
-    static let configServiceCharacteristics: [CBUUID] = [zap, vibration, beep, time, handDetect]
+    // MARK: Application service characteristics (156E2000)
 
-    /// `kApplicationServiceUuid` and its characteristics (inferred values —
-    /// alarms live here, not in the config service).
-    static let applicationService = uuid("2002")
-    static let applicationControl = uuid("2009")
-    static let applicationAlarmNotify = uuid("200A")
+    /// `kApplicationControlCharcUuid` (inferred value; `write|notify`).
+    static let applicationControl = CBUUID(string: "2002")
+    /// `kApplicationAlarmNotifyCharcUuid` (inferred value; `write|notify`).
+    static let applicationAlarmNotify = CBUUID(string: "2009")
+    /// `kApplicationAlarmLoadedCharacUuid` (inferred value; `read|notify`).
+    static let applicationAlarmLoaded = CBUUID(string: "200A")
 
-    /// `kSetupServiceUuid` / `kSetupCharacUuid` (inferred values).
-    static let setupService = uuid("0001")
-    static let setupCharacteristic = uuid("0008")
+    // MARK: Other services
 
-    /// `kDiagnosticServiceUuid` and friends (inferred values).
-    static let diagnosticService = uuid("5001")
-    static let diagnosticCommand = uuid("5002")
-    static let batteryDiagnostic = uuid("5003")
+    /// `kSetupCharacUuid` (inferred value).
+    static let setupCharacteristic = CBUUID(string: "0008")
+    /// `kDiagnosticCommandCharcUuid` (inferred value).
+    static let diagnosticCommand = CBUUID(string: "5001")
+    /// `kBatteryDiagnosticCaracUuid` (inferred value).
+    static let batteryDiagnostic = CBUUID(string: "5002")
 }

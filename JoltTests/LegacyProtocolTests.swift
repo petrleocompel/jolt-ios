@@ -18,6 +18,33 @@ final class LegacyProtocolStoreTests: XCTestCase {
         XCTAssertFalse(store.hasOverride(for: .zap))
     }
 
+    func testConfigServiceUsesTheVendorBaseNotTheBluetoothBase() {
+        // Confirmed against a Pavlok 3 (fw 6.10.0): the service is
+        // `156E1000-…`, and `1001` is a characteristic inside it. Treating
+        // `1001` as the service is what made every write fail at lookup.
+        XCTAssertEqual(LegacyGATT.service.uuidString, "156E1000-A300-4FEA-897B-86F698D74461")
+        XCTAssertEqual(LegacyGATT.applicationService.uuidString, "156E2000-A300-4FEA-897B-86F698D74461")
+        XCTAssertNotEqual(LegacyGATT.service, CBUUID(string: "1001"))
+    }
+
+    func testStimulusCharacteristicsAreOnesTheAndroidAppActuallyReferences() {
+        // 1004 and 1007 exist on the device but appear nowhere in the binary,
+        // so no stimulus output can be behind them.
+        for kind in StimulusKind.allCases {
+            XCTAssertTrue(
+                LegacyGATT.configServiceCharacteristics.contains(LegacyGATT.defaultCharacteristic(for: kind)),
+                "\(kind) maps outside the referenced config characteristics"
+            )
+        }
+        XCTAssertFalse(LegacyGATT.configServiceCharacteristics.contains(CBUUID(string: "1004")))
+        XCTAssertFalse(LegacyGATT.configServiceCharacteristics.contains(CBUUID(string: "1007")))
+    }
+
+    func testEachStimulusKindMapsToADistinctCharacteristic() {
+        let mapped = StimulusKind.allCases.map { LegacyGATT.defaultCharacteristic(for: $0).uuidString }
+        XCTAssertEqual(Set(mapped).count, StimulusKind.allCases.count)
+    }
+
     func testOverrideAppliesToOnlyTheKindItWasSetFor() {
         let store = LegacyProtocolStore(defaults: defaults)
         store.setCharacteristic(CBUUID(string: "1006"), for: .beep)
@@ -39,9 +66,9 @@ final class LegacyProtocolStoreTests: XCTestCase {
         // `CBUUID.uuidString` collapses Bluetooth-base UUIDs to their 16-bit
         // form, which is what the picker compares against.
         let store = LegacyProtocolStore(defaults: defaults)
-        XCTAssertEqual(store.characteristicUUIDString(for: .zap), "1002")
+        XCTAssertEqual(store.characteristicUUIDString(for: .zap), "1001")
 
-        store.setCharacteristicUUIDString("1005", for: .zap)
+        store.setCharacteristicUUIDString("1003", for: .zap)
         XCTAssertEqual(store.characteristic(for: .zap), LegacyGATT.beep)
     }
 }

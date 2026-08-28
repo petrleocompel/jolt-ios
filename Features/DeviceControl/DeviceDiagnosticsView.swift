@@ -6,7 +6,11 @@ struct DeviceDiagnosticsView: View {
     @State private var info: DeviceInfo?
     @State private var gatt: [GATTCharacteristicDump] = []
     @State private var isLoading = false
+    @State private var isReadingValues = false
     @State private var loadError: String?
+    /// Bumped by "Reset to defaults" to force the pickers to re-read the
+    /// store; they hold their selection in local state.
+    @State private var resetToken = UUID()
 
     var body: some View {
         List {
@@ -65,10 +69,31 @@ struct DeviceDiagnosticsView: View {
                             Text(characteristic.properties.joined(separator: ", "))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            if let value = characteristic.value {
+                                Text(value.isEmpty ? "(empty)" : value)
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.tint)
+                            }
                         }
                     }
                 }
             }
+
+            // Reads can't fire a stimulus, so this is safe to run on an
+            // unidentified characteristic — unlike a write. What a config
+            // characteristic already holds is usually enough to say which
+            // output it drives.
+            Button {
+                Task { await load(readingValues: true) }
+            } label: {
+                if isReadingValues {
+                    HStack { ProgressView(); Text("Reading…") }
+                } else {
+                    Label("Read all values", systemImage: "arrow.down.doc")
+                }
+            }
+            .disabled(isLoading)
+            .accessibilityIdentifier("readAllValuesButton")
         } header: {
             Text("GATT table")
         } footer: {
@@ -93,11 +118,18 @@ struct DeviceDiagnosticsView: View {
         Section {
             ForEach(StimulusKind.allCases) { kind in
                 StimulusCharacteristicPicker(kind: kind, options: writableCharacteristics)
+                    .id("\(kind.rawValue)-\(resetToken)")
             }
+            Button("Reset to defaults", role: .destructive) {
+                LegacyProtocolStore().reset()
+                resetToken = UUID()
+            }
+            .accessibilityIdentifier("resetStimulusMappingButton")
         } header: {
             Text("Stimulus characteristics")
         } footer: {
-            Text("Only change these if a stimulus does nothing or fires the wrong output. Test with Beep first.")
+            Text("Only change these if a stimulus does nothing or fires the wrong output. "
+                + "Read all values first — reads are safe, writes are not. Test with Beep.")
         }
     }
 
@@ -111,13 +143,17 @@ struct DeviceDiagnosticsView: View {
             .sorted { $0.service < $1.service }
     }
 
-    private func load() async {
+    private func load(readingValues: Bool = false) async {
         isLoading = true
+        isReadingValues = readingValues
         loadError = nil
-        defer { isLoading = false }
+        defer {
+            isLoading = false
+            isReadingValues = false
+        }
         do {
             info = try await viewModel.readDeviceInfo()
-            gatt = try await viewModel.dumpGATT()
+            gatt = try await viewModel.dumpGATT(readingValues: readingValues)
         } catch {
             loadError = error.localizedDescription
         }
