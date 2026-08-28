@@ -15,6 +15,9 @@ struct ProtocolLabView: View {
     let gatt: [GATTCharacteristicDump]
 
     @State private var selectedID: String = ""
+    /// Whether the hex field still holds a prefilled value, so typing isn't
+    /// overwritten when the selection is re-applied.
+    @State private var isHexUserEdited = false
     @State private var hexInput: String = "01 14"
     @State private var result: String?
     @State private var isSending = false
@@ -46,9 +49,21 @@ struct ProtocolLabView: View {
                         }
                     }
                     .accessibilityIdentifier("protocolLabTargetPicker")
+                    // Prefill with what the characteristic currently holds.
+                    // A wrong-length write is rejected outright, so starting
+                    // from the device's own value and changing one byte is
+                    // both the safest and the fastest way to find a layout.
+                    .onChange(of: selectedID) { _, _ in
+                        guard !isHexUserEdited, let value = selected?.value, !value.isEmpty else { return }
+                        hexInput = value
+                    }
                     if let selected {
                         LabeledContent("Properties", value: selected.properties.joined(separator: ", "))
                             .font(.footnote)
+                        if let value = selected.value {
+                            LabeledContent("Current value", value: value.isEmpty ? "(empty)" : value)
+                                .font(.footnote.monospaced())
+                        }
                     }
                 }
             }
@@ -59,8 +74,15 @@ struct ProtocolLabView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .accessibilityIdentifier("protocolLabHexField")
+                    .onChange(of: hexInput) { _, _ in isHexUserEdited = true }
                 if let parsedBytes {
-                    LabeledContent("Will send", value: "\(parsedBytes.count) byte\(parsedBytes.count == 1 ? "" : "s")")
+                    let expected = selected?.value.map { $0.split(separator: " ").count }
+                    let mismatch = expected.map { $0 != parsedBytes.count && $0 > 0 } ?? false
+                    LabeledContent(
+                        "Will send",
+                        value: "\(parsedBytes.count) byte\(parsedBytes.count == 1 ? "" : "s")"
+                            + (mismatch ? " — device holds \(expected ?? 0)" : "")
+                    )
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {

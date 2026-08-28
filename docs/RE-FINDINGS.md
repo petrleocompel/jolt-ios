@@ -116,6 +116,40 @@ so the three stimulus outputs are among `1001 1002 1003 1005 1006 1008`.
 Config-service properties as reported by the device: all `read|write`, except
 `1003` which is `read|write|notify`.
 
+#### Observed write behaviour (Pavlok 3, fw 6.10.0)
+
+| Characteristic | 2-byte write | Result |
+|---|---|---|
+| `1001` | `01 14` | rejected — invalid attribute value length |
+| `1002` | `01 3C` | rejected — invalid attribute value length |
+| `1003` | `01 0A` | acknowledged, nothing audible |
+
+`1001` and `1002` are therefore fixed-length and *not* two bytes. Every
+config characteristic is readable, so the length and current contents can be
+measured rather than guessed — `Diagnostics → Read all values` does this,
+and `LegacyDeviceController` reads before every write to size its payload.
+
+#### Fire vs. configure are different operations
+
+The binary names both, separately:
+
+- `performDeviceZap` / `PerformDeviceZapUsecase`, `performDeviceMotor`,
+  `performDevicePiezo`, `performBeep`, `performStimulusBundle` — **fire**
+- `updateDeviceZap` / `UpdateDeviceZapUsecase`, `updateMotor`, `updatePiezo`
+  — **configure**, backed by `deviceZapConfig` / `deviceMotorConfig` /
+  `devicePiezoConfig`
+
+`1003` accepting a write while producing no output is what *configuring*
+looks like. There is also `encodeTimerStimulusIntensityAndCount`, so
+intensity and count are **packed into a combined value** somewhere in this
+protocol rather than sent as two independent bytes — consistent with `1001`
+and `1002` rejecting a 2-byte write.
+
+Not found anywhere in the binary: `writeZap`, `writeStimulus`,
+`writeVibration`. The full `write*` vocabulary is alarms, current time,
+hand-detect config, ANCS config, and handshake/read commands — so firing does
+not go through the same "write X to device" helpers the other features use.
+
 #### Legacy constant names (`ble_uuids_constants.dart`)
 
 The Dart snapshot's string table carries the *names* of every UUID constant,
