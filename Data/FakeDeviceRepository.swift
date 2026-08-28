@@ -62,6 +62,28 @@ final class FakeDeviceRepository: DeviceRepository {
 
     func fire(_ stimulus: StimulusConfig) async throws {}
 
+    private(set) var stimulusSettings: StimulusSettings = .default
+
+    @discardableResult
+    func saveStimulusConfig(_ config: StimulusConfig) async -> StimulusSyncState {
+        stimulusSettings[config.kind] = config
+        return .syncedToDevice
+    }
+
+    /// A plausible-looking table so the diagnostics screenshot has content.
+    func dumpGATT() async throws -> [GATTCharacteristicDump] {
+        [
+            GATTCharacteristicDump(serviceUUID: "180A", uuid: "2A24", properties: ["read"]),
+            GATTCharacteristicDump(serviceUUID: "180A", uuid: "2A26", properties: ["read"]),
+            GATTCharacteristicDump(serviceUUID: "180F", uuid: "2A19", properties: ["read", "notify"]),
+            GATTCharacteristicDump(serviceUUID: "1001", uuid: "1002", properties: ["write"]),
+            GATTCharacteristicDump(serviceUUID: "1001", uuid: "1003", properties: ["write"]),
+            GATTCharacteristicDump(serviceUUID: "1001", uuid: "1005", properties: ["write"])
+        ]
+    }
+
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {}
+
     func readDeviceInfo() async throws -> DeviceInfo { fakeDevice.info }
 
     func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws {}

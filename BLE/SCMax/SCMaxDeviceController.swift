@@ -6,8 +6,14 @@ import Foundation
 /// (`fire(_:)`, alarms, triggers, hand-detect) throws `.notImplemented` until
 /// `ProtocolMap.swift` is filled in from a real capture.
 struct SCMaxDeviceController {
-    enum ControllerError: Error {
+    enum ControllerError: LocalizedError {
         case notImplemented(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .notImplemented(let detail): return detail
+            }
+        }
     }
 
     private let central: BluetoothCentralManager
@@ -26,6 +32,16 @@ struct SCMaxDeviceController {
         //   let message = ESFValue.map(["op": .int(...), "kind": ..., "intensity": ...])
         //   try await central.write(Data(ESFCodec.encode(message)), to: SCMaxGATT.controlPointWrite,
         //                            serviceUUID: SCMaxGATT.controlPointsService, on: peripheral)
+    }
+
+    /// Same blocker as `fire(_:on:)` — the ESF opcode for writing a
+    /// device-side stimulus default is not recovered. The phone-side value is
+    /// still saved by `CompositeDeviceRepository`, which reports
+    /// `.localOnly` when this throws.
+    func saveStimulusConfig(_ stimulus: StimulusConfig, on peripheral: CBPeripheral) async throws {
+        throw ControllerError.notImplemented(
+            "Shock Clock Max stimulus config opcode not recovered — see BLE/SCMax/ProtocolMap.swift"
+        )
     }
 
     func syncAlarm(_ alarm: Alarm, on peripheral: CBPeripheral) async throws {

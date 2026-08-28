@@ -22,8 +22,20 @@ final class DeviceControlViewModel {
     private(set) var discoveredDevices: [PavlokDevice] = []
     var lastError: String?
 
+    /// Per-kind stimulus defaults, mirrored from the repository so views can
+    /// bind to them directly.
+    private(set) var stimulusSettings: StimulusSettings
+
+    /// Short-lived confirmation of the last action, shown inline on the
+    /// remote rather than as an alert — firing a stimulus is something you
+    /// do repeatedly, and a modal per tap would be unusable.
+    private(set) var lastActionMessage: String?
+    @ObservationIgnored
+    nonisolated(unsafe) private var lastActionResetTask: Task<Void, Never>?
+
     init(repository: DeviceRepository) {
         self.repository = repository
+        self.stimulusSettings = repository.stimulusSettings
         observationTask = Task { [weak self] in
             guard let self else { return }
             for await state in repository.connectionState {
@@ -42,6 +54,7 @@ final class DeviceControlViewModel {
         observationTask?.cancel()
         deviceObservationTask?.cancel()
         scanTask?.cancel()
+        lastActionResetTask?.cancel()
     }
 
     func startScan(for families: Set<DeviceFamily> = Set(DeviceFamily.allCases)) {
@@ -75,7 +88,7 @@ final class DeviceControlViewModel {
             do {
                 try await repository.connect(to: device)
             } catch {
-                lastError = "\(error)"
+                lastError = error.localizedDescription
             }
         }
     }
@@ -93,9 +106,45 @@ final class DeviceControlViewModel {
             guard let self else { return }
             do {
                 try await repository.fire(stimulus)
+                note("\(stimulus.kind.displayName) sent at \(stimulus.intensity)%")
             } catch {
-                lastError = "\(error)"
+                lastError = error.localizedDescription
             }
+        }
+    }
+
+    /// Saves `config` as the default for its kind and pushes it to the
+    /// wearable when one is connected.
+    func saveStimulusConfig(_ config: StimulusConfig) {
+        stimulusSettings[config.kind] = config
+        Task { [weak self] in
+            guard let self else { return }
+            let result = await repository.saveStimulusConfig(config)
+            stimulusSettings = repository.stimulusSettings
+            switch result {
+            case .syncedToDevice:
+                note("\(config.kind.displayName) saved to device")
+            case .localOnly(let reason):
+                note("\(config.kind.displayName) saved on phone only\(reason.map { " — \($0)" } ?? "")")
+            }
+        }
+    }
+
+    func dumpGATT() async throws -> [GATTCharacteristicDump] {
+        try await repository.dumpGATT()
+    }
+
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {
+        try await repository.writeRaw(data, characteristicUUID: characteristicUUID, serviceUUID: serviceUUID)
+    }
+
+    private func note(_ message: String) {
+        lastActionMessage = message
+        lastActionResetTask?.cancel()
+        lastActionResetTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { self?.lastActionMessage = nil }
         }
     }
 

@@ -87,6 +87,37 @@ Legacy Pavlok 2/3 proprietary (Bluetooth base UUID, 16-bit-style aliases):
 `0x0001`, `0x0008`, `0x1001`, `0x1002`, `0x1003`, `0x1005`, `0x1006`, `0x1008`,
 `0x2002`, `0x2009`, `0x200A`, `0x5001`, `0x5002`, `0x5003`, `0x6002`, `0x7001`
 
+#### Legacy constant names (`ble_uuids_constants.dart`)
+
+The Dart snapshot's string table carries the *names* of every UUID constant,
+recovered by grepping `re/libapp.strings.txt` for `init:k*Uuid`:
+
+| Services | Characteristics |
+|---|---|
+| `kConfigServiceUuid` | `kZapCaracUuid`, `kVibrationCaracUuid`, `kBeepCaracUuid`, `kHandDetectCaracUuid`, `kTimeCaracUuid` |
+| `kApplicationServiceUuid` | `kApplicationControlCharcUuid`, `kApplicationAlarmNotifyCharcUuid`, `kApplicationAlarmLoadedCharacUuid`, `kApplicationDownloadCharcUuid` |
+| `kSetupServiceUuid` | `kSetupCharacUuid`, `kDaqControlCharacUuid` |
+| `kDiagnosticServiceUuid` | `kDiagnosticCommandCharcUuid` |
+| `kFirmwareServiceUuid` | `kFirmwareCharacUuid` |
+| `kNotificationServiceUuid` | — |
+| `kBatteryServiceUuid` (`180F`) | `kBatteryCracUuid` (`2A19`), `kBatteryDiagnosticCaracUuid` |
+| `kDeviceInformationServiceUuid` (`180A`) | `cccdUuid` (`2902`) |
+
+**The load-bearing conclusion: zap, vibe and beep are three separate
+characteristics, not one control point with a leading opcode byte.** An
+earlier pass modelled them as an opcode written to `0x1001` — which is
+doubly wrong, because `0x1001` is a *service*.
+
+Name→value assignment is still an inference: the names are strings, the
+values they are initialised with are AOT machine code. `BLE/Legacy/LegacyGATT.swift`
+carries the current best assignment; Diagnostics → Protocol lab in the app
+makes it correctable against real hardware without a rebuild.
+
+Stimulus payload fields come from the freezed `toString` fragments
+`ZapConfig(count: `, `MotorConfig(count: `, `PiezoConfig(count: ` and the
+shared separator `, level: ` — so each config is `(count, level)`. Byte order
+between the two is not settled.
+
 Advertised names: `Pavlok-1`, `pavlok-2`, `pavlok-3`, `Pavlok-RingL`,
 `Pavlok-Smart-Ring`.
 

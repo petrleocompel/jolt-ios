@@ -13,10 +13,12 @@ import Foundation
 @MainActor
 final class CompositeDeviceRepository: DeviceRepository {
     private let central = BluetoothCentralManager()
-    private lazy var legacy = LegacyDeviceController(central: central)
+    private lazy var legacy = LegacyDeviceController(central: central, protocolStore: protocolStore)
     private lazy var scMax = SCMaxDeviceController(central: central)
     private lazy var deviceInfoReader = DeviceInformationReader(central: central)
     private let store: PairedDeviceStore
+    private let settingsStore: StimulusSettingsStore
+    private let protocolStore: LegacyProtocolStore
 
     private var connectionStateContinuation: AsyncStream<DeviceConnectionState>.Continuation?
     private var connectedDeviceContinuation: AsyncStream<PavlokDevice?>.Continuation?
@@ -25,6 +27,8 @@ final class CompositeDeviceRepository: DeviceRepository {
     private var connectedFamily: DeviceFamily?
     private var didStart = false
 
+    private(set) var stimulusSettings: StimulusSettings
+
     // Only touched on the main actor; `nonisolated(unsafe)` so `deinit`
     // (always nonisolated) can cancel them.
     nonisolated(unsafe) private var stateTask: Task<Void, Never>?
@@ -32,8 +36,15 @@ final class CompositeDeviceRepository: DeviceRepository {
     nonisolated(unsafe) private var restoreTask: Task<Void, Never>?
     nonisolated(unsafe) private var reconnectTask: Task<Void, Never>?
 
-    init(store: PairedDeviceStore = PairedDeviceStore()) {
+    init(
+        store: PairedDeviceStore = PairedDeviceStore(),
+        settingsStore: StimulusSettingsStore = StimulusSettingsStore(),
+        protocolStore: LegacyProtocolStore = LegacyProtocolStore()
+    ) {
         self.store = store
+        self.settingsStore = settingsStore
+        self.protocolStore = protocolStore
+        self.stimulusSettings = settingsStore.load()
     }
 
     deinit {
@@ -85,15 +96,41 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
     }
 
+    // MARK: - Scanning
+
+    /// Yields matching devices as they turn up.
+    ///
+    /// Two things beyond a plain `scanForPeripherals` matter here, and both
+    /// were reasons a device that is *already paired to the phone* appeared
+    /// to be undiscoverable:
+    ///
+    /// 1. The scan waits for `.poweredOn`. Right after launch
+    ///    `CBCentralManager` is `.unknown` for a moment, and a scan started
+    ///    in that window returns nothing and never recovers.
+    /// 2. Peripherals iOS is already connected to, and previously-bonded
+    ///    ones, are seeded in. A connected device has stopped advertising,
+    ///    so it can never appear in `didDiscover` — scanning alone will
+    ///    never find the device you already paired.
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice> {
         connectionStateContinuation?.yield(.scanning)
-        let peripherals = central.startScan(serviceUUIDs: nil)
+        let seeds = [store.load()?.peripheralIdentifier].compactMap { $0 }
+        let discoveries = central.startScan(serviceUUIDs: nil, seedIdentifiers: seeds)
         return AsyncStream { continuation in
             let task = Task {
-                for await peripheral in peripherals {
-                    guard let name = peripheral.name,
-                          let family = Self.family(matching: name, in: families) else { continue }
-                    continuation.yield(PavlokDevice(peripheralIdentifier: peripheral.identifier, name: name, family: family))
+                var seen: Set<UUID> = []
+                for await discovery in discoveries {
+                    guard let name = discovery.displayName else { continue }
+                    guard let family = DeviceFamily.matching(name: name, in: families) else {
+                        BLELog.debug("Ignoring \(name) — no matching device family")
+                        continue
+                    }
+                    guard seen.insert(discovery.peripheral.identifier).inserted else { continue }
+                    BLELog.info("Matched \(name) as \(family.displayName)\(discovery.wasAlreadyConnected ? " (already connected to phone)" : "")")
+                    continuation.yield(PavlokDevice(
+                        peripheralIdentifier: discovery.peripheral.identifier,
+                        name: name,
+                        family: family
+                    ))
                 }
                 continuation.finish()
             }
@@ -106,38 +143,66 @@ final class CompositeDeviceRepository: DeviceRepository {
         connectionStateContinuation?.yield(.disconnected)
     }
 
+    // MARK: - Connection
+
     func connect(to device: PavlokDevice) async throws {
         reconnectTask?.cancel()
         connectionStateContinuation?.yield(.connecting)
-        // Re-discovery is required: CoreBluetooth doesn't let us reconnect to
-        // a CBPeripheral instance from a previous scan session by UUID alone
-        // without `retrievePeripherals(withIdentifiers:)`, which needs the
-        // central to already be powered on and have seen the identifier.
-        guard central.isPoweredOn else {
-            connectionStateContinuation?.yield(.failed("Bluetooth is off"))
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
-        }
-        let scan = central.startScan(serviceUUIDs: nil)
-        var matched: CBPeripheral?
-        for await peripheral in scan where peripheral.identifier == device.peripheralIdentifier {
-            matched = peripheral
-            break
-        }
         central.stopScan()
-        guard let peripheral = matched else {
+
+        // `retrievePeripherals(withIdentifiers:)` is the direct route and
+        // works for anything the phone has seen before — which includes
+        // everything we just handed to the UI from a scan. Re-scanning to
+        // find the same peripheral again (what this used to do) fails
+        // outright for a device that is already connected at the system
+        // level, because it never advertises.
+        guard let peripheral = central.retrieveKnownPeripheral(device.peripheralIdentifier) else {
+            BLELog.error("No peripheral for identifier \(device.peripheralIdentifier)")
             connectionStateContinuation?.yield(.failed("Device not found"))
             throw BluetoothCentralManager.BluetoothError.connectFailed(nil)
         }
+
         do {
             try await central.connect(peripheral)
-            connectedPeripheral = peripheral
-            connectedFamily = device.family
-            store.save(peripheralIdentifier: peripheral.identifier, name: device.name, family: device.family)
-            connectionStateContinuation?.yield(.connected)
-            connectedDeviceContinuation?.yield(device)
+            adopt(peripheral, family: device.family, name: device.name)
         } catch {
-            connectionStateContinuation?.yield(.failed("\(error)"))
+            BLELog.error("Connect failed: \(error.localizedDescription)")
+            connectionStateContinuation?.yield(.failed(error.localizedDescription))
             throw error
+        }
+    }
+
+    private func adopt(_ peripheral: CBPeripheral, family: DeviceFamily, name: String) {
+        connectedPeripheral = peripheral
+        connectedFamily = family
+        store.save(peripheralIdentifier: peripheral.identifier, name: name, family: family)
+        connectionStateContinuation?.yield(.connected)
+
+        var device = PavlokDevice(
+            peripheralIdentifier: peripheral.identifier,
+            name: name,
+            family: family,
+            lastConnectedAt: .now
+        )
+        connectedDeviceContinuation?.yield(device)
+
+        Task { [weak self] in
+            guard let self else { return }
+            // Dump the GATT table once per connection. It costs one discovery
+            // round-trip and it is the difference between "the zap did
+            // nothing" and "the zap went to a characteristic this device
+            // doesn't have".
+            _ = try? await dumpGATT()
+
+            // Then fill in model/firmware/battery and re-publish. Without
+            // this the connected device's `info` stays at its empty default
+            // for the whole session, so the battery indicator on the remote
+            // never appears no matter what the hardware reports.
+            guard let info = try? await deviceInfoReader.read(from: peripheral),
+                  connectedPeripheral?.identifier == peripheral.identifier else { return }
+            device.info = info
+            BLELog.info("Device info: model=\(info.modelNumber ?? "?") fw=\(info.firmwareRevision ?? "?") battery=\(info.batteryLevelPercent.map(String.init) ?? "?")")
+            connectedDeviceContinuation?.yield(device)
         }
     }
 
@@ -164,10 +229,10 @@ final class CompositeDeviceRepository: DeviceRepository {
         connectedDeviceContinuation?.yield(nil)
     }
 
+    // MARK: - Stimulus
+
     func fire(_ stimulus: StimulusConfig) async throws {
-        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
-        }
+        let (peripheral, family) = try requireConnection()
         switch family {
         case .pavlok2, .pavlok3:
             try await legacy.fire(stimulus, on: peripheral)
@@ -176,21 +241,46 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
     }
 
-    func readDeviceInfo() async throws -> DeviceInfo {
-        guard let peripheral = connectedPeripheral else {
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
+    @discardableResult
+    func saveStimulusConfig(_ config: StimulusConfig) async -> StimulusSyncState {
+        stimulusSettings[config.kind] = config
+        settingsStore.save(stimulusSettings)
+
+        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
+            return .localOnly(reason: "No device connected")
         }
+        do {
+            switch family {
+            case .pavlok2, .pavlok3:
+                try await legacy.saveStimulusConfig(config, on: peripheral)
+            case .shockClockMax:
+                try await scMax.saveStimulusConfig(config, on: peripheral)
+            }
+            return .syncedToDevice
+        } catch {
+            BLELog.error("Saving \(config.kind.rawValue) config to device failed: \(error.localizedDescription)")
+            return .localOnly(reason: error.localizedDescription)
+        }
+    }
+
+    // MARK: - Everything else
+
+    func readDeviceInfo() async throws -> DeviceInfo {
+        let (peripheral, _) = try requireConnection()
         return try await deviceInfoReader.read(from: peripheral)
     }
 
     func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws {
-        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
-        }
+        let (peripheral, family) = try requireConnection()
         switch family {
         case .pavlok2, .pavlok3:
             let payload = Data([press.wireValue, config.action.wireValue])
-            try await central.write(payload, to: LegacyGATT.buttonConfig, serviceUUID: LegacyGATT.service, on: peripheral)
+            try await central.write(
+                payload,
+                to: LegacyGATT.applicationControl,
+                serviceUUID: LegacyGATT.applicationService,
+                on: peripheral
+            )
         case .shockClockMax:
             throw SCMaxDeviceController.ControllerError.notImplemented(
                 "Button config opcode not recovered — see BLE/SCMax/ProtocolMap.swift"
@@ -199,9 +289,7 @@ final class CompositeDeviceRepository: DeviceRepository {
     }
 
     func syncDeviceAlarm(_ alarm: Alarm) async throws {
-        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
-        }
+        let (peripheral, family) = try requireConnection()
         switch family {
         case .pavlok2, .pavlok3:
             try await legacy.syncAlarm(alarm, on: peripheral)
@@ -211,9 +299,7 @@ final class CompositeDeviceRepository: DeviceRepository {
     }
 
     func deleteDeviceAlarm(_ id: Alarm.ID) async throws {
-        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
-        }
+        let (peripheral, family) = try requireConnection()
         switch family {
         case .pavlok2, .pavlok3:
             try await legacy.deleteAlarm(id, on: peripheral)
@@ -222,10 +308,27 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
     }
 
-    private static func family(matching name: String, in families: Set<DeviceFamily>) -> DeviceFamily? {
-        families.first { family in
-            family.advertisedNamePrefixes.contains { name.localizedCaseInsensitiveContains($0) }
+    func dumpGATT() async throws -> [GATTCharacteristicDump] {
+        let (peripheral, _) = try requireConnection()
+        return try await central.dumpGATT(on: peripheral)
+    }
+
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {
+        let (peripheral, _) = try requireConnection()
+        try await central.write(
+            data,
+            to: CBUUID(string: characteristicUUID),
+            serviceUUID: CBUUID(string: serviceUUID),
+            on: peripheral
+        )
+    }
+
+    private func requireConnection() throws -> (CBPeripheral, DeviceFamily) {
+        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
+            BLELog.error("Operation requires a connected device, but none is connected")
+            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
         }
+        return (peripheral, family)
     }
 }
 
@@ -234,8 +337,18 @@ final class CompositeDeviceRepository: DeviceRepository {
 extension CompositeDeviceRepository {
     private func attemptAutoReconnect() async {
         guard let record = store.load() else { return }
-        guard central.isPoweredOn else { return } // retried from handlePowerStateChange once it powers on
+        // Wait rather than bail: on a cold launch this runs before
+        // CoreBluetooth has settled, and giving up here is what left the app
+        // sitting on onboarding with a perfectly good paired device nearby.
+        do {
+            try await central.waitUntilPoweredOn()
+        } catch {
+            BLELog.error("Auto-reconnect aborted: \(error.localizedDescription)")
+            return
+        }
+        guard connectedPeripheral == nil else { return }
         guard let peripheral = central.retrieveKnownPeripheral(record.peripheralIdentifier) else {
+            BLELog.error("Paired device \(record.peripheralIdentifier) not known to CoreBluetooth")
             connectionStateContinuation?.yield(.failed("Paired device not found"))
             return
         }
@@ -250,14 +363,11 @@ extension CompositeDeviceRepository {
             do {
                 try await central.connect(peripheral)
                 guard !Task.isCancelled else { return }
-                connectedPeripheral = peripheral
-                connectedFamily = family
-                store.save(peripheralIdentifier: peripheral.identifier, name: name, family: family)
-                connectionStateContinuation?.yield(.connected)
-                connectedDeviceContinuation?.yield(PavlokDevice(peripheralIdentifier: peripheral.identifier, name: name, family: family))
+                adopt(peripheral, family: family, name: name)
             } catch {
                 guard !Task.isCancelled else { return }
-                connectionStateContinuation?.yield(.failed("\(error)"))
+                BLELog.error("Reconnect failed: \(error.localizedDescription)")
+                connectionStateContinuation?.yield(.failed(error.localizedDescription))
             }
         }
     }
@@ -305,11 +415,7 @@ extension CompositeDeviceRepository {
         guard let peripheral = peripherals.first,
               let record = store.load(),
               record.peripheralIdentifier == peripheral.identifier else { return }
-        connectedPeripheral = peripheral
-        connectedFamily = record.family
-        connectionStateContinuation?.yield(.connected)
-        let device = PavlokDevice(peripheralIdentifier: peripheral.identifier, name: record.name, family: record.family)
-        connectedDeviceContinuation?.yield(device)
+        adopt(peripheral, family: record.family, name: record.name)
     }
 }
 

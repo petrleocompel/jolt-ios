@@ -2,66 +2,205 @@ import SwiftUI
 
 struct RemoteControlView: View {
     let viewModel: DeviceControlViewModel
-    @State private var intensity: Double = 30
-    @State private var repetitions: Int = 1
+
+    private var isConnected: Bool { viewModel.connectedDevice != nil }
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    deviceStatusRow
+                    DeviceStatusCard(
+                        device: viewModel.connectedDevice,
+                        connectionState: viewModel.connectionState
+                    )
                 }
 
-                Section("Intensity") {
-                    let bounds = StimulusConfig.intensityRange
-                    Slider(value: $intensity, in: Double(bounds.lowerBound)...Double(bounds.upperBound))
-                        .accessibilityIdentifier("intensitySlider")
-                    Stepper("Repetitions: \(repetitions)", value: $repetitions, in: 1...5)
+                if !isConnected {
+                    Section {
+                        disconnectedNotice
+                    }
                 }
 
-                Section("Fire") {
+                // One card per stimulus, as list rows rather than a hand-rolled
+                // `ScrollView`: the rest of the app (Settings, Alarms, Button,
+                // Diagnostics) is inset-grouped `List`, and reproducing that
+                // chrome by hand drifts from it the moment iOS changes it.
+                // Clearing the row background and insets leaves the card free
+                // to draw itself.
+                Section("Send a stimulus") {
                     ForEach(StimulusKind.allCases) { kind in
-                        Button(kind.displayName) {
-                            viewModel.fire(StimulusConfig(kind: kind, intensity: Int(intensity), repetitions: repetitions))
-                        }
-                        .accessibilityIdentifier("fireButton_\(kind.rawValue)")
+                        StimulusCard(
+                            kind: kind,
+                            isEnabled: isConnected,
+                            config: viewModel.stimulusSettings[kind],
+                            onSend: { viewModel.fire($0) },
+                            onSave: { viewModel.saveStimulusConfig($0) }
+                        )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
                 }
 
                 Section {
-                    NavigationLink("Device info & diagnostics") {
+                    NavigationLink {
                         DeviceDiagnosticsView(viewModel: viewModel)
+                    } label: {
+                        Label("Device info & diagnostics", systemImage: "stethoscope")
                     }
-                    NavigationLink("Button configuration") {
+                    NavigationLink {
                         ButtonConfigView(viewModel: viewModel)
+                    } label: {
+                        Label("Button configuration", systemImage: "button.horizontal.top.press")
                     }
-                    Button("Disconnect", role: .destructive) {
+                    Button(role: .destructive) {
                         viewModel.disconnect()
+                    } label: {
+                        Label("Disconnect", systemImage: "xmark.circle")
                     }
+                    .disabled(!isConnected)
+                    .accessibilityIdentifier("disconnectButton")
                 }
             }
             .navigationTitle("Remote")
             .accessibilityIdentifier("remoteControlScreen")
+            .safeAreaInset(edge: .bottom) { actionFeedback }
+            .animation(.snappy, value: viewModel.lastActionMessage)
+            .alert("Something went wrong", isPresented: errorBinding) {
+                Button("OK") { viewModel.lastError = nil }
+            } message: {
+                Text(viewModel.lastError ?? "")
+            }
         }
     }
 
-    private var deviceStatusRow: some View {
-        HStack {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-            VStack(alignment: .leading) {
-                Text(viewModel.connectedDevice?.name ?? "Unknown device")
+    /// Why the send buttons are dead, stated where the buttons are. The
+    /// previous version showed a green "connected" tick unconditionally,
+    /// including when nothing was connected.
+    private var disconnectedNotice: some View {
+        Label {
+            Text("Connect your Pavlok to send a stimulus.")
+                .foregroundStyle(.primary)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        }
+        .font(.subheadline)
+        .accessibilityIdentifier("disconnectedNotice")
+    }
+
+    /// Inline, self-dismissing confirmation. Firing a stimulus is a repeated
+    /// action, so an alert per tap would be unusable — but with no feedback
+    /// at all a device that silently ignores a write is indistinguishable
+    /// from one that fired.
+    @ViewBuilder
+    private var actionFeedback: some View {
+        if let message = viewModel.lastActionMessage {
+            Text(message)
+                .font(.subheadline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(.regularMaterial, in: Capsule())
+                .padding(.bottom, 8)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .accessibilityIdentifier("actionFeedback")
+                // Announced rather than just drawn: the confirmation is the
+                // only signal that a write landed, and it disappears after
+                // three seconds.
+                .accessibilityAddTraits(.updatesFrequently)
+        }
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.lastError != nil },
+            set: { if !$0 { viewModel.lastError = nil } }
+        )
+    }
+}
+
+/// Device identity, connection state and battery in one row.
+private struct DeviceStatusCard: View {
+    let device: PavlokDevice?
+    let connectionState: DeviceConnectionState
+
+    var body: some View {
+        HStack(spacing: 12) {
+            statusIcon
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(device?.name ?? "No device")
                     .font(.headline)
-                Text(viewModel.connectedDevice?.family.displayName ?? "")
-                    .font(.caption)
+                Text(subtitle)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+
             Spacer()
-            if let battery = viewModel.connectedDevice?.info.batteryLevelPercent {
-                Label("\(battery)%", systemImage: "battery.100")
-                    .font(.caption)
+
+            if let battery = device?.info.batteryLevelPercent {
+                Label("\(battery)%", systemImage: batterySymbol(battery))
+                    .font(.subheadline)
+                    .foregroundStyle(battery <= 20 ? .red : .secondary)
+                    .monospacedDigit()
+                    .accessibilityLabel("Battery \(battery) percent")
             }
         }
+        .padding(.vertical, 4)
         .accessibilityIdentifier("deviceStatusRow")
+        .accessibilityElement(children: .combine)
+    }
+
+    /// A spinner while connecting or scanning — the subtitle alone reads as a
+    /// static label, so a stalled connect looks identical to a live one.
+    @ViewBuilder
+    private var statusIcon: some View {
+        switch connectionState {
+        case .connecting, .scanning:
+            ProgressView()
+        default:
+            Image(systemName: statusSymbol)
+                .font(.title2)
+                .foregroundStyle(statusTint)
+        }
+    }
+
+    private var subtitle: String {
+        switch connectionState {
+        case .connected: return device?.family.displayName ?? "Connected"
+        case .connecting: return "Connecting…"
+        case .scanning: return "Scanning…"
+        case .disconnected: return "Disconnected"
+        case .failed(let reason): return reason
+        }
+    }
+
+    private var statusSymbol: String {
+        switch connectionState {
+        case .connected: return "checkmark.circle.fill"
+        case .connecting, .scanning: return "antenna.radiowaves.left.and.right"
+        case .disconnected: return "circle.dashed"
+        case .failed: return "exclamationmark.circle.fill"
+        }
+    }
+
+    private var statusTint: Color {
+        switch connectionState {
+        case .connected: return .green
+        case .connecting, .scanning: return .accentColor
+        case .disconnected: return .secondary
+        case .failed: return .red
+        }
+    }
+
+    private func batterySymbol(_ percent: Int) -> String {
+        switch percent {
+        case ..<10: return "battery.0percent"
+        case ..<35: return "battery.25percent"
+        case ..<60: return "battery.50percent"
+        case ..<85: return "battery.75percent"
+        default: return "battery.100percent"
+        }
     }
 }

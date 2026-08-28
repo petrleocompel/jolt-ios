@@ -1,45 +1,79 @@
 import CoreBluetooth
 import Foundation
 
-/// Talks to Pavlok 2/3 over `LegacyGATT`. The wire format below (opcode byte
-/// + intensity + repetitions) is a best-effort reconstruction from the
-/// stimulus field names recovered in the Android binary (`zapIntensity`,
-/// `zapCount`, `motorEnabled`, `piezoEnabled`) — it has not been verified
-/// against a real device. If a zap/vibe/beep doesn't fire, capture a
-/// reference payload (see `SCMaxProtocolMap` capture procedure — same idea,
-/// simpler protocol) and fix the byte layout here; the call sites in
-/// `Data/CompositeDeviceRepository.swift` don't need to change.
+/// Talks to Pavlok 2/3 over `LegacyGATT`.
+///
+/// Each stimulus kind has its own characteristic (see `LegacyGATT` for the
+/// evidence), so a fire is a single write of the stimulus parameters — there
+/// is no opcode byte. The parameter order follows `ZapConfig(count:, level:)`
+/// / `MotorConfig(count:, level:)` / `PiezoConfig(count:, level:)`, whose
+/// field names and order are recovered from the freezed `toString`
+/// fragments in the Dart snapshot. The *byte* order between those two
+/// fields is still an inference; `Diagnostics → Protocol lab` can send
+/// arbitrary bytes to any characteristic to settle it against real hardware.
 struct LegacyDeviceController {
     private let central: BluetoothCentralManager
+    private let protocolStore: LegacyProtocolStore
 
-    init(central: BluetoothCentralManager) {
+    init(central: BluetoothCentralManager, protocolStore: LegacyProtocolStore = LegacyProtocolStore()) {
         self.central = central
+        self.protocolStore = protocolStore
     }
 
-    private enum Opcode: UInt8 {
-        case zap = 0x01
-        case vibe = 0x02
-        case beep = 0x03
+    /// `count` first, then `level`.
+    ///
+    /// That order is the one weak signal available: the freezed `toString`
+    /// fragments in the Dart snapshot read `ZapConfig(count: `, `, level: `,
+    /// so `count` is the first declared field of each config. Declaration
+    /// order is not proof of wire order — if a single zap arrives as a burst
+    /// of twenty, the two are swapped. `Diagnostics → Protocol lab` sends
+    /// arbitrary bytes to settle it against real hardware.
+    ///
+    /// Intensity goes out as a 0...100 percentage rather than a scaled
+    /// 0...255 byte: the app's own control is a percentage and the field is
+    /// named `zapIntensity`.
+    static func payload(for stimulus: StimulusConfig) -> Data {
+        Data([
+            UInt8(clamping: stimulus.repetitions),
+            UInt8(clamping: stimulus.intensity)
+        ])
     }
 
     func fire(_ stimulus: StimulusConfig, on peripheral: CBPeripheral) async throws {
-        let opcode: Opcode
-        switch stimulus.kind {
-        case .zap: opcode = .zap
-        case .vibe: opcode = .vibe
-        case .beep: opcode = .beep
-        }
-        let payload = Data([opcode.rawValue, UInt8(stimulus.intensity), UInt8(stimulus.repetitions)])
+        let characteristic = protocolStore.characteristic(for: stimulus.kind)
+        BLELog.info(
+            "Fire \(stimulus.kind.rawValue) intensity=\(stimulus.intensity) reps=\(stimulus.repetitions) → \(characteristic.uuidString)"
+        )
         try await central.write(
-            payload,
-            to: LegacyGATT.stimulusControlPoint,
+            Self.payload(for: stimulus),
+            to: characteristic,
             serviceUUID: LegacyGATT.service,
             on: peripheral
         )
     }
 
-    /// Slot index + hour/minute/day-bitmask layout is a guess, same caveat
-    /// as `fire(_:on:)` above — unverified against real hardware.
+    /// Writes `stimulus` as the device-side default for its kind, so the
+    /// physical button and on-device alarms use it. Same characteristic as
+    /// firing; the difference is only that the app also persists it locally.
+    ///
+    /// If a device turns out to need a distinct "configure" write this is the
+    /// one place to change — call sites in `CompositeDeviceRepository` don't
+    /// need to know.
+    func saveStimulusConfig(_ stimulus: StimulusConfig, on peripheral: CBPeripheral) async throws {
+        let characteristic = protocolStore.characteristic(for: stimulus.kind)
+        BLELog.info("Save \(stimulus.kind.rawValue) config to device → \(characteristic.uuidString)")
+        try await central.write(
+            Self.payload(for: stimulus),
+            to: characteristic,
+            serviceUUID: LegacyGATT.service,
+            on: peripheral
+        )
+    }
+
+    /// Alarm slot layout (hour, minute, day bitmask, enabled, id prefix) is
+    /// unverified against real hardware — the alarm characteristics live in
+    /// `kApplicationServiceUuid`, whose UUID is inferred the same way as the
+    /// stimulus ones.
     func syncAlarm(_ alarm: Alarm, on peripheral: CBPeripheral) async throws {
         var dayBitmask: UInt8 = 0
         for day in alarm.repeatDays {
@@ -53,8 +87,8 @@ struct LegacyDeviceController {
         ]) + Data(alarm.id.uuidBytes.prefix(4))
         try await central.write(
             payload,
-            to: LegacyGATT.alarmControlPoint,
-            serviceUUID: LegacyGATT.service,
+            to: LegacyGATT.applicationControl,
+            serviceUUID: LegacyGATT.applicationService,
             on: peripheral
         )
     }
@@ -63,8 +97,8 @@ struct LegacyDeviceController {
         let payload = Data([0xFF]) + Data(id.uuidBytes.prefix(4))
         try await central.write(
             payload,
-            to: LegacyGATT.alarmControlPoint,
-            serviceUUID: LegacyGATT.service,
+            to: LegacyGATT.applicationControl,
+            serviceUUID: LegacyGATT.applicationService,
             on: peripheral
         )
     }
