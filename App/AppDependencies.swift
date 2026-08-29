@@ -24,6 +24,15 @@ final class AppDependencies {
     let pokeRepository: PokeRepository
     let notificationDelegate: AppNotificationDelegate
     let modelContainer: ModelContainer
+    /// Which server the social features are talking to. Nil in snapshot mode
+    /// and whenever the mock backend is in use.
+    let serverConfiguration: ServerConfiguration?
+
+    /// Set by `ServerSettingsView` after a server change. The backend is
+    /// built once here against a fixed base URL, so the switch only takes
+    /// effect on the next launch — Settings says so rather than appearing to
+    /// do nothing.
+    var pendingServerRestartNotice = false
 
     init() {
         let container: ModelContainer
@@ -39,7 +48,22 @@ final class AppDependencies {
             ? FakeDeviceRepository()
             : CompositeDeviceRepository()
 
-        let social = MockSocialBackend(deviceRepository: deviceRepository)
+        // Snapshot runs must stay hermetic — the screenshot runner has no
+        // network and no server. Everything else talks to the configured
+        // Jolt server, which is ours by default and self-hosted if the user
+        // has pointed Settings elsewhere.
+        let social: AuthRepository & FriendsRepository & PokeRepository
+        if AppEnvironment.isSnapshotMode {
+            self.serverConfiguration = nil
+            social = MockSocialBackend(deviceRepository: deviceRepository)
+        } else {
+            let configuration = ServerSettingsStore().load()
+            self.serverConfiguration = configuration
+            social = HTTPSocialBackend(
+                configuration: configuration,
+                deviceRepository: deviceRepository
+            )
+        }
         self.authRepository = social
         self.friendsRepository = social
         self.pokeRepository = social

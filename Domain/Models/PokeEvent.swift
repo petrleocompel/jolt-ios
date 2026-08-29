@@ -6,6 +6,11 @@ enum PokeDirection: String, Codable {
 }
 
 enum PokeDeliveryStatus: String, Codable {
+    /// Accepted and pushed, but no device has acked yet. Every poke is
+    /// created with this status; every other value is terminal and is only
+    /// ever set by the recipient's ack. iOS gives no delivery guarantee for
+    /// the silent push, so a poke can legitimately stay `pending` forever.
+    case pending
     /// Reached the device and fired.
     case fired
     /// Push arrived (or was simulated) but the recipient's device wasn't

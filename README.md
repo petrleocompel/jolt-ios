@@ -4,6 +4,21 @@ Control Pavlok wearables and wake up to them — an independent iOS client.
 
 Peelco iOS app — XcodeGen + Fastlane.
 
+## Server
+
+Friends, permissions and pokes go through a [Jolt Server](https://github.com/petrleocompel/jolt-server).
+The app ships pointing at `https://jolt.example.com/api/v1`, but the URL is a
+setting — **Settings → Server** — so it can be aimed at a self-hosted instance
+instead. The server repo's `docs/SELFHOSTING.md` covers running one.
+
+Accounts are per-instance: switching servers signs you out, and friends and
+poke history stay behind on the old one. The bearer token is kept in the
+keychain, scoped to the server that issued it.
+
+`MockSocialBackend` still implements the same three repository protocols
+in-memory and is what snapshot/screenshot runs use, so the UI can be exercised
+without a server.
+
 ## Requirements
 
 - Xcode (iOS 17.0+)

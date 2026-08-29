@@ -37,6 +37,8 @@ struct PokeActivityView: View {
     @ViewBuilder
     private func statusIcon(for status: PokeDeliveryStatus) -> some View {
         switch status {
+        case .pending:
+            Image(systemName: "clock").foregroundStyle(.secondary)
         case .fired:
             Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
         case .deviceNotConnected:
