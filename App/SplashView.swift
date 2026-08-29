@@ -18,11 +18,9 @@ struct SplashView: View {
                 Text("Jolt Remote")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.white)
-                Text("For Pavlok wearables")
-                    .font(.caption)
-                    .textCase(.uppercase)
-                    .tracking(2)
-                    .foregroundStyle(.white.opacity(0.4))
+                Text("Your Pavlok, on your terms.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.5))
             }
         }
     }
