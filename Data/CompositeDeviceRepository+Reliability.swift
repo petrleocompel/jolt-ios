@@ -34,7 +34,7 @@ extension CompositeDeviceRepository {
         guard connectedPeripheral == nil else { return }
         guard let peripheral = central.retrieveKnownPeripheral(record.peripheralIdentifier) else {
             BLELog.error("Paired device \(record.peripheralIdentifier) not known to CoreBluetooth")
-            connectionStateContinuation?.yield(.failed("Paired device not found"))
+            connectionStateHub.yield(.failed("Paired device not found"))
             return
         }
         scheduleReconnect(to: peripheral, family: record.family, name: record.name)
@@ -44,7 +44,7 @@ extension CompositeDeviceRepository {
         reconnectTask?.cancel()
         reconnectTask = Task { [weak self] in
             guard let self else { return }
-            connectionStateContinuation?.yield(.connecting)
+            connectionStateHub.yield(.connecting)
             do {
                 try await central.connect(peripheral)
                 guard !Task.isCancelled else { return }
@@ -52,7 +52,7 @@ extension CompositeDeviceRepository {
             } catch {
                 guard !Task.isCancelled else { return }
                 BLELog.error("Reconnect failed: \(error.localizedDescription)")
-                connectionStateContinuation?.yield(.failed(error.localizedDescription))
+                connectionStateHub.yield(.failed(error.localizedDescription))
             }
         }
     }
@@ -66,12 +66,12 @@ extension CompositeDeviceRepository {
         case .poweredOff:
             reconnectTask?.cancel()
             connectedPeripheral = nil
-            connectionStateContinuation?.yield(.failed("Bluetooth is off"))
-            connectedDeviceContinuation?.yield(nil)
+            connectionStateHub.yield(.failed("Bluetooth is off"))
+            connectedDeviceHub.yield(nil)
         case .unauthorized:
-            connectionStateContinuation?.yield(.failed("Bluetooth permission denied"))
+            connectionStateHub.yield(.failed("Bluetooth permission denied"))
         case .unsupported:
-            connectionStateContinuation?.yield(.failed("Bluetooth not supported on this device"))
+            connectionStateHub.yield(.failed("Bluetooth not supported on this device"))
         case .resetting, .unknown:
             break
         @unknown default:
@@ -89,8 +89,8 @@ extension CompositeDeviceRepository {
         guard let peripheral = connectedPeripheral, let family = connectedFamily,
               peripheral.identifier == event.peripheralID else { return }
         connectedPeripheral = nil
-        connectionStateContinuation?.yield(.disconnected)
-        connectedDeviceContinuation?.yield(nil)
+        connectionStateHub.yield(.disconnected)
+        connectedDeviceHub.yield(nil)
 
         let name = store.load()?.name ?? family.displayName
         scheduleReconnect(to: peripheral, family: family, name: name)

@@ -79,22 +79,22 @@ final class PokeTriggerService {
     }
 
     func setEnabled(_ enabled: Bool) {
-        var t = trigger
-        t.isEnabled = enabled
-        update(t)
+        var updated = trigger
+        updated.isEnabled = enabled
+        update(updated)
     }
 
     func setTarget(friendID: Friend.ID, name: String) {
-        var t = trigger
-        t.targetFriendID = friendID
-        t.targetFriendName = name
-        update(t)
+        var updated = trigger
+        updated.targetFriendID = friendID
+        updated.targetFriendName = name
+        update(updated)
     }
 
     func setStimulus(_ stimulus: StimulusConfig) {
-        var t = trigger
-        t.stimulus = stimulus
-        update(t)
+        var updated = trigger
+        updated.stimulus = stimulus
+        update(updated)
     }
 
     /// Begin recording. The next event the device sends becomes
@@ -115,20 +115,20 @@ final class PokeTriggerService {
     /// Save the captured gesture into the trigger.
     func confirmLearn(matchMode: PokeTrigger.MatchMode = .exact) {
         guard let candidate = learnCandidate else { return }
-        var t = trigger
-        t.learnedCharacteristicUUID = candidate.characteristicUUID
-        t.learnedBytes = candidate.data
-        t.matchMode = matchMode
+        var updated = trigger
+        updated.learnedCharacteristicUUID = candidate.characteristicUUID
+        updated.learnedBytes = candidate.data
+        updated.matchMode = matchMode
         isLearning = false
         learnCandidate = nil
-        update(t)
+        update(updated)
     }
 
     func clearLearnedGesture() {
-        var t = trigger
-        t.learnedCharacteristicUUID = nil
-        t.learnedBytes = nil
-        update(t)
+        var updated = trigger
+        updated.learnedCharacteristicUUID = nil
+        updated.learnedBytes = nil
+        update(updated)
     }
 
     // MARK: Runtime

@@ -23,18 +23,18 @@ final class FakeDeviceRepository: DeviceRepository {
         lastConnectedAt: .now
     )
 
-    private var connectionStateContinuation: AsyncStream<DeviceConnectionState>.Continuation?
-    private var connectedDeviceContinuation: AsyncStream<PavlokDevice?>.Continuation?
+    // Multi-consumer (device UI + poke trigger), seeded "connected" so every
+    // subscriber — whichever starts first — sees the fake device.
+    private let connectionStateHub = StreamHub<DeviceConnectionState>()
+    private let connectedDeviceHub = StreamHub<PavlokDevice?>()
 
-    private(set) lazy var connectionState: AsyncStream<DeviceConnectionState> = AsyncStream { continuation in
-        self.connectionStateContinuation = continuation
-        continuation.yield(.connected)
+    init() {
+        connectionStateHub.yield(.connected)
+        connectedDeviceHub.yield(fakeDevice)
     }
 
-    private(set) lazy var connectedDevice: AsyncStream<PavlokDevice?> = AsyncStream { continuation in
-        self.connectedDeviceContinuation = continuation
-        continuation.yield(self.fakeDevice)
-    }
+    var connectionState: AsyncStream<DeviceConnectionState> { connectionStateHub.stream() }
+    var connectedDevice: AsyncStream<PavlokDevice?> { connectedDeviceHub.stream() }
 
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice> {
         AsyncStream { continuation in
@@ -46,18 +46,18 @@ final class FakeDeviceRepository: DeviceRepository {
     func stopScan() {}
 
     func connect(to device: PavlokDevice) async throws {
-        connectionStateContinuation?.yield(.connected)
-        connectedDeviceContinuation?.yield(fakeDevice)
+        connectionStateHub.yield(.connected)
+        connectedDeviceHub.yield(fakeDevice)
     }
 
     func disconnect() async {
-        connectionStateContinuation?.yield(.disconnected)
-        connectedDeviceContinuation?.yield(nil)
+        connectionStateHub.yield(.disconnected)
+        connectedDeviceHub.yield(nil)
     }
 
     func forgetPairedDevice() async {
-        connectionStateContinuation?.yield(.disconnected)
-        connectedDeviceContinuation?.yield(nil)
+        connectionStateHub.yield(.disconnected)
+        connectedDeviceHub.yield(nil)
     }
 
     func fire(_ stimulus: StimulusConfig) async throws {}

@@ -79,8 +79,8 @@ struct PokeTriggerSettingsView: View {
             Picker("Stimulus", selection: Binding(
                 get: { service.trigger.stimulus.kind },
                 set: { kind in
-                    let s = service.trigger.stimulus
-                    service.setStimulus(StimulusConfig(kind: kind, intensity: s.intensity, repetitions: s.repetitions))
+                    let current = service.trigger.stimulus
+                    service.setStimulus(StimulusConfig(kind: kind, intensity: current.intensity, repetitions: current.repetitions))
                 }
             )) {
                 ForEach(StimulusKind.allCases) { kind in
@@ -93,9 +93,9 @@ struct PokeTriggerSettingsView: View {
                     value: Binding(
                         get: { Double(service.trigger.stimulus.intensity) },
                         set: { value in
-                            let s = service.trigger.stimulus
+                            let current = service.trigger.stimulus
                             service.setStimulus(StimulusConfig(
-                                kind: s.kind, intensity: Int(value), repetitions: s.repetitions
+                                kind: current.kind, intensity: Int(value), repetitions: current.repetitions
                             ))
                         }
                     ),

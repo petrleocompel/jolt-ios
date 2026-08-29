@@ -27,7 +27,7 @@ final class ScreenshotsUITests: XCTestCase {
     @MainActor
     func test02Alarms() {
         let app = launchApp()
-        app.tabBars.buttons["Alarms"].tap()
+        app.selectTab("Alarms")
         XCTAssertTrue(app.descendants(matching: .any)["alarmsList"].waitForExistence(timeout: 5))
         snapshot("02-Alarms")
     }
@@ -35,7 +35,7 @@ final class ScreenshotsUITests: XCTestCase {
     @MainActor
     func test03AlarmEdit() {
         let app = launchApp()
-        app.tabBars.buttons["Alarms"].tap()
+        app.selectTab("Alarms")
         app.buttons["addAlarmButton"].tap()
         XCTAssertTrue(app.buttons["saveAlarmButton"].waitForExistence(timeout: 5))
         snapshot("03-AlarmEdit")
@@ -44,7 +44,7 @@ final class ScreenshotsUITests: XCTestCase {
     @MainActor
     func test04Settings() {
         let app = launchApp()
-        app.tabBars.buttons["Settings"].tap()
+        app.selectTab("Settings")
         snapshot("04-Settings")
     }
 }

@@ -19,7 +19,7 @@ final class FriendsFlowUITests: XCTestCase {
     @MainActor
     func testSignUpRevealsSeededFriendsList() {
         let app = launchApp()
-        app.tabBars.buttons["Friends"].tap()
+        app.selectTab("Friends")
 
         let emailField = app.textFields["emailField"]
         XCTAssertTrue(emailField.waitForExistence(timeout: 5))
@@ -56,7 +56,7 @@ final class FriendsFlowUITests: XCTestCase {
     @MainActor
     func testAcceptingRequestMovesFriendIntoFriendsList() {
         let app = launchApp()
-        app.tabBars.buttons["Friends"].tap()
+        app.selectTab("Friends")
         signUp(app)
 
         app.buttons["Accept"].tap()
@@ -69,7 +69,7 @@ final class FriendsFlowUITests: XCTestCase {
     @MainActor
     func testPokingFriendLogsActivity() {
         let app = launchApp()
-        app.tabBars.buttons["Friends"].tap()
+        app.selectTab("Friends")
         signUp(app)
 
         app.staticTexts["Alice"].tap()

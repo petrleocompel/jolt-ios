@@ -20,8 +20,10 @@ final class CompositeDeviceRepository: DeviceRepository {
     let settingsStore: StimulusSettingsStore
     let protocolStore: LegacyProtocolStore
 
-    var connectionStateContinuation: AsyncStream<DeviceConnectionState>.Continuation?
-    var connectedDeviceContinuation: AsyncStream<PavlokDevice?>.Continuation?
+    // Multi-consumer: the device UI *and* the poke trigger both observe these.
+    // A single AsyncStream would let one consumer starve the other.
+    let connectionStateHub = StreamHub<DeviceConnectionState>()
+    let connectedDeviceHub = StreamHub<PavlokDevice?>()
 
     var connectedPeripheral: CBPeripheral?
     var connectedFamily: DeviceFamily?
@@ -55,21 +57,20 @@ final class CompositeDeviceRepository: DeviceRepository {
         reconnectTask?.cancel()
     }
 
-    private(set) lazy var connectionState: AsyncStream<DeviceConnectionState> = AsyncStream { continuation in
-        self.connectionStateContinuation = continuation
-        self.startIfNeeded()
+    var connectionState: AsyncStream<DeviceConnectionState> {
+        startIfNeeded()
+        return connectionStateHub.stream()
     }
 
-    private(set) lazy var connectedDevice: AsyncStream<PavlokDevice?> = AsyncStream { continuation in
-        self.connectedDeviceContinuation = continuation
-        self.startIfNeeded()
+    var connectedDevice: AsyncStream<PavlokDevice?> {
+        startIfNeeded()
+        return connectedDeviceHub.stream()
     }
 
     /// Wires up event observation and kicks off an initial reconnect
     /// attempt. Deferred to first access of either stream (rather than
-    /// `init`) so `connectionStateContinuation`/`connectedDeviceContinuation`
-    /// are guaranteed to exist before anything tries to yield on them — see
-    /// header note on `AsyncStream` buffering vs. subscriber timing.
+    /// `init`) so nothing tries to reconnect before there's a subscriber; the
+    /// `StreamHub`s replay the latest state to anyone who subscribes later.
     private func startIfNeeded() {
         guard !didStart else { return }
         didStart = true
@@ -113,7 +114,7 @@ final class CompositeDeviceRepository: DeviceRepository {
     ///    so it can never appear in `didDiscover` — scanning alone will
     ///    never find the device you already paired.
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice> {
-        connectionStateContinuation?.yield(.scanning)
+        connectionStateHub.yield(.scanning)
         let seeds = [store.load()?.peripheralIdentifier].compactMap { $0 }
         let discoveries = central.startScan(serviceUUIDs: nil, seedIdentifiers: seeds)
         return AsyncStream { continuation in
@@ -142,14 +143,14 @@ final class CompositeDeviceRepository: DeviceRepository {
 
     func stopScan() {
         central.stopScan()
-        connectionStateContinuation?.yield(.disconnected)
+        connectionStateHub.yield(.disconnected)
     }
 
     // MARK: - Connection
 
     func connect(to device: PavlokDevice) async throws {
         reconnectTask?.cancel()
-        connectionStateContinuation?.yield(.connecting)
+        connectionStateHub.yield(.connecting)
         central.stopScan()
 
         // `retrievePeripherals(withIdentifiers:)` is the direct route and
@@ -160,7 +161,7 @@ final class CompositeDeviceRepository: DeviceRepository {
         // level, because it never advertises.
         guard let peripheral = central.retrieveKnownPeripheral(device.peripheralIdentifier) else {
             BLELog.error("No peripheral for identifier \(device.peripheralIdentifier)")
-            connectionStateContinuation?.yield(.failed("Device not found"))
+            connectionStateHub.yield(.failed("Device not found"))
             throw BluetoothCentralManager.BluetoothError.connectFailed(nil)
         }
 
@@ -169,7 +170,7 @@ final class CompositeDeviceRepository: DeviceRepository {
             adopt(peripheral, family: device.family, name: device.name)
         } catch {
             BLELog.error("Connect failed: \(error.localizedDescription)")
-            connectionStateContinuation?.yield(.failed(error.localizedDescription))
+            connectionStateHub.yield(.failed(error.localizedDescription))
             throw error
         }
     }
@@ -178,7 +179,7 @@ final class CompositeDeviceRepository: DeviceRepository {
         connectedPeripheral = peripheral
         connectedFamily = family
         store.save(peripheralIdentifier: peripheral.identifier, name: name, family: family)
-        connectionStateContinuation?.yield(.connected)
+        connectionStateHub.yield(.connected)
 
         var device = PavlokDevice(
             peripheralIdentifier: peripheral.identifier,
@@ -186,7 +187,7 @@ final class CompositeDeviceRepository: DeviceRepository {
             family: family,
             lastConnectedAt: .now
         )
-        connectedDeviceContinuation?.yield(device)
+        connectedDeviceHub.yield(device)
 
         Task { [weak self] in
             guard let self else { return }
@@ -205,7 +206,7 @@ final class CompositeDeviceRepository: DeviceRepository {
             device.info = info
             let battery = info.batteryLevelPercent.map(String.init) ?? "?"
             BLELog.info("Device info: model=\(info.modelNumber ?? "?") fw=\(info.firmwareRevision ?? "?") battery=\(battery)")
-            connectedDeviceContinuation?.yield(device)
+            connectedDeviceHub.yield(device)
         }
     }
 
@@ -216,8 +217,8 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
         connectedPeripheral = nil
         connectedFamily = nil
-        connectionStateContinuation?.yield(.disconnected)
-        connectedDeviceContinuation?.yield(nil)
+        connectionStateHub.yield(.disconnected)
+        connectedDeviceHub.yield(nil)
     }
 
     func forgetPairedDevice() async {
@@ -228,8 +229,8 @@ final class CompositeDeviceRepository: DeviceRepository {
         connectedPeripheral = nil
         connectedFamily = nil
         store.clear()
-        connectionStateContinuation?.yield(.disconnected)
-        connectedDeviceContinuation?.yield(nil)
+        connectionStateHub.yield(.disconnected)
+        connectedDeviceHub.yield(nil)
     }
 
     // MARK: - Stimulus
