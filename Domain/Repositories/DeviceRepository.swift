@@ -61,4 +61,12 @@ protocol DeviceRepository {
     @discardableResult
     func startListeningForDeviceEvents() async throws -> Int
     func stopListeningForDeviceEvents()
+
+    /// A structured feed of unsolicited notifications from the connected
+    /// device, for features (not diagnostics) that react to what the wearable
+    /// reports — currently the poke trigger. Subscribes on call and finishes
+    /// when the caller stops iterating. Distinct from
+    /// `startListeningForDeviceEvents`, which only logs for the diagnostics
+    /// screen.
+    func deviceEventStream() async throws -> AsyncStream<DeviceEvent>
 }

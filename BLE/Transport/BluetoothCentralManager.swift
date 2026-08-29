@@ -105,6 +105,11 @@ final class BluetoothCentralManager: NSObject {
     /// One per subscribed characteristic while `captureAllNotifications` is
     /// active.
     var captureTasks: [Task<Void, Never>] = []
+    /// One per subscribed characteristic while `streamAllNotifications` is
+    /// active — the structured feed the poke trigger consumes. Kept separate
+    /// from `captureTasks` so the diagnostics capture screen and the trigger
+    /// can run independently.
+    var eventStreamTasks: [Task<Void, Never>] = []
 
     override init() {
         super.init()

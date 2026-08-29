@@ -89,6 +89,61 @@ extension BluetoothCentralManager {
         BLELog.info("Stopped listening for device events")
     }
 
+    /// Like `captureAllNotifications`, but yields each notification as a
+    /// structured `DeviceEvent` instead of only logging it — the feed the
+    /// poke trigger (and its "learn a gesture" capture) consumes.
+    ///
+    /// Subscribes to every notifying characteristic because the exact one the
+    /// device uses for a button tap isn't pinned down yet (see `jolt-firmware`
+    /// `docs/04`); matching is done by the consumer against a learned example,
+    /// so an over-broad subscription here is harmless and future-proof.
+    ///
+    /// The stream finishes when `stopEventStream()` is called or the caller
+    /// stops iterating.
+    func streamAllNotifications(on peripheral: CBPeripheral) async throws -> AsyncStream<DeviceEvent> {
+        guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
+        stopEventStream()
+        try await discoverServices(nil, on: peripheral)
+
+        return AsyncStream { continuation in
+            continuation.onTermination = { [weak self] _ in
+                Task { @MainActor in self?.stopEventStream() }
+            }
+            Task { @MainActor in
+                var subscribed = 0
+                for service in peripheral.services ?? [] {
+                    try? await self.discoverCharacteristics(nil, in: service, on: peripheral)
+                    for characteristic in service.characteristics ?? [] {
+                        guard characteristic.properties.contains(.notify)
+                            || characteristic.properties.contains(.indicate) else { continue }
+                        guard let stream = try? await self.subscribe(
+                            characteristic.uuid, in: service.uuid, on: peripheral
+                        ) else { continue }
+                        subscribed += 1
+                        let serviceUUID = service.uuid.canonicalString
+                        let charUUID = characteristic.uuid.canonicalString
+                        self.eventStreamTasks.append(Task { @MainActor in
+                            for await data in stream {
+                                continuation.yield(DeviceEvent(
+                                    serviceUUID: serviceUUID,
+                                    characteristicUUID: charUUID,
+                                    data: data
+                                ))
+                            }
+                        })
+                    }
+                }
+                BLELog.info("Poke trigger listening on \(subscribed) notifying characteristic(s)")
+            }
+        }
+    }
+
+    func stopEventStream() {
+        guard !eventStreamTasks.isEmpty else { return }
+        eventStreamTasks.forEach { $0.cancel() }
+        eventStreamTasks.removeAll()
+    }
+
     /// Finds the first characteristic from `candidates` that the device
     /// actually exposes and that accepts writes. Lets a controller carry a
     /// list of plausible UUIDs and let the hardware pick, instead of failing

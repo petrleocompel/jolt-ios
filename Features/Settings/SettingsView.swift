@@ -19,6 +19,23 @@ struct SettingsView: View {
                     Text("While on, incoming pokes are logged in Friends activity but never fire on your device.")
                 }
                 Section {
+                    NavigationLink {
+                        PokeTriggerSettingsView(
+                            service: dependencies.pokeTriggerService,
+                            friendsRepository: dependencies.friendsRepository
+                        )
+                    } label: {
+                        LabeledContent(
+                            "Poke from your Pavlok",
+                            value: dependencies.pokeTriggerService.trigger.isArmed ? "On" : "Off"
+                        )
+                    }
+                    .accessibilityIdentifier("pokeTriggerSettingsLink")
+                } footer: {
+                    Text("Press a button on your Pavlok to send a friend a poke — no firmware change, "
+                        + "just your phone reacting to what the device already reports.")
+                }
+                Section {
                     LabeledContent("Connected", value: deviceControlViewModel.connectedDevice?.name ?? "None")
                     Button("Disconnect") {
                         deviceControlViewModel.disconnect()

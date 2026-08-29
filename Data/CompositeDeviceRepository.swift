@@ -354,6 +354,11 @@ extension CompositeDeviceRepository {
     func stopListeningForDeviceEvents() {
         central.stopNotificationCapture()
     }
+
+    func deviceEventStream() async throws -> AsyncStream<DeviceEvent> {
+        let (peripheral, _) = try requireConnection()
+        return try await central.streamAllNotifications(on: peripheral)
+    }
 }
 
 private extension ButtonPressType {

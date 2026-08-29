@@ -89,6 +89,10 @@ final class FakeDeviceRepository: DeviceRepository {
 
     func stopListeningForDeviceEvents() {}
 
+    func deviceEventStream() async throws -> AsyncStream<DeviceEvent> {
+        AsyncStream { $0.finish() }
+    }
+
     func readDeviceInfo() async throws -> DeviceInfo { fakeDevice.info }
 
     func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws {}

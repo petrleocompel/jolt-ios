@@ -22,6 +22,10 @@ final class AppDependencies {
     let authRepository: AuthRepository
     let friendsRepository: FriendsRepository
     let pokeRepository: PokeRepository
+    /// Approach A: turns a wearable button gesture into an outgoing friend
+    /// poke. Runs for the app's lifetime, subscribing only while a device is
+    /// connected and the trigger is enabled.
+    let pokeTriggerService: PokeTriggerService
     let notificationDelegate: AppNotificationDelegate
     let modelContainer: ModelContainer
     /// Which server the social features are talking to. Nil in snapshot mode
@@ -67,6 +71,15 @@ final class AppDependencies {
         self.authRepository = social
         self.friendsRepository = social
         self.pokeRepository = social
+
+        let triggerService = PokeTriggerService(
+            deviceRepository: deviceRepository,
+            pokeRepository: social
+        )
+        self.pokeTriggerService = triggerService
+        // Safe in snapshot mode: FakeDeviceRepository never connects, so the
+        // service simply idles.
+        triggerService.start()
 
         let delegate = AppNotificationDelegate(pokeRepository: social)
         self.notificationDelegate = delegate
