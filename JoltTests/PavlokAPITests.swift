@@ -53,6 +53,19 @@ final class PavlokAPITests: XCTestCase {
         XCTAssertNil(PavlokAPIClient.stimulusKind(named: "Something else"))
     }
 
+    // MARK: Stimulus payload
+
+    func testComposerStimulusClampsToSafeBounds() {
+        // The composer's stepper is bounded 1…5, but the model is the real
+        // guard: repetitions never drop below 1 and intensity stays in range.
+        let poke = StimulusConfig(kind: .zap, intensity: 250, repetitions: 0)
+        XCTAssertEqual(poke.intensity, 100)
+        XCTAssertEqual(poke.repetitions, 1)
+
+        let multi = StimulusConfig(kind: .vibe, intensity: 40, repetitions: 3)
+        XCTAssertEqual(multi.repetitions, 3)
+    }
+
     // MARK: Dates
 
     func testBothTimestampFormsParse() {

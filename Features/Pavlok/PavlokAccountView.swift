@@ -19,6 +19,14 @@ struct PavlokAccountView: View {
             } else {
                 signInSection
             }
+            if let sent = viewModel.lastSentMessage {
+                Section {
+                    Label(sent, systemImage: "checkmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.green)
+                        .accessibilityIdentifier("pavlokPokeSentBanner")
+                }
+            }
             if let error = viewModel.lastError {
                 Section {
                     Text(error).font(.footnote).foregroundStyle(.red)
@@ -29,6 +37,13 @@ struct PavlokAccountView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.restore() }
         .refreshable { await viewModel.refresh() }
+        // Let the "poke sent" confirmation show briefly, then fade it out.
+        .task(id: viewModel.lastSentMessage) {
+            guard viewModel.lastSentMessage != nil else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation { viewModel.clearSentMessage() }
+        }
         .sheet(item: $pokeTarget) { friend in
             PavlokPokeComposer(
                 friend: friend,
@@ -167,6 +182,11 @@ private struct PavlokPokeComposer: View {
     @Environment(\.dismiss) private var dismiss
     @State private var kind: StimulusKind = .vibe
     @State private var intensity: Double = 30
+    @State private var repetitions = 1
+
+    /// Pavlok's `count`; a handful is plenty and keeps a poke from becoming a
+    /// barrage.
+    private let repetitionRange = 1...5
 
     private var allowedKinds: [StimulusKind] {
         StimulusKind.allCases.filter { permission.allows($0) }
@@ -194,10 +214,12 @@ private struct PavlokPokeComposer: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    Stepper("Repeat: \(repetitions)×", value: $repetitions, in: repetitionRange)
+                        .accessibilityIdentifier("pavlokRepetitionStepper")
                 }
                 Section {
                     Button("Send poke") {
-                        onSend(StimulusConfig(kind: kind, intensity: Int(intensity), repetitions: 1))
+                        onSend(StimulusConfig(kind: kind, intensity: Int(intensity), repetitions: repetitions))
                         dismiss()
                     }
                     .accessibilityIdentifier("pavlokSendPokeButton")

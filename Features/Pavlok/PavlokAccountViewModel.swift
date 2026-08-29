@@ -126,6 +126,7 @@ final class PavlokAccountViewModel {
         )
         isSending = true
         lastError = nil
+        lastSentMessage = nil
         defer { isSending = false }
         do {
             try await client.sendPoke(to: friend.id, stimulus: clamped)
@@ -136,6 +137,10 @@ final class PavlokAccountViewModel {
             lastError = error.localizedDescription
         }
     }
+
+    /// Dismisses the transient "poke sent" confirmation. The View calls this
+    /// on a short delay so the banner doesn't linger.
+    func clearSentMessage() { lastSentMessage = nil }
 
     private func handle(_ error: PavlokAPIClient.APIError) {
         lastError = error.localizedDescription
