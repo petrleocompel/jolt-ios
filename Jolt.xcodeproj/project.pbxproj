@@ -879,6 +879,7 @@
 		06EA08E480EAB09C05459D1F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Resources/Jolt.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -938,6 +939,7 @@
 		3F2DE7E815C2CA4467D81438 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Resources/Jolt.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";

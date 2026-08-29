@@ -42,6 +42,15 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0.0
+      # aps-environment is $(APS_ENVIRONMENT) in Jolt.entitlements, resolved
+      # per configuration: a debug build talks to APNs sandbox, a Release
+      # build (Archive → TestFlight/App Store) to production. This must match
+      # the server's APNS_ENV.
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
     scheme:
       testTargets:
         - JoltUITests
