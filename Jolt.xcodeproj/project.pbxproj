@@ -32,6 +32,7 @@
 		388B114FD98AEF3635AF0A0F /* PokeActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FADBA37929D5C30DEFCE74B3 /* PokeActivityView.swift */; };
 		3C01F079734972A68CC8A62B /* MockSocialBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96552544D49CCD4D3F287C29 /* MockSocialBackend.swift */; };
 		422BD76A2ACC9BE204805192 /* LEB128.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640EE3B1818CA1E92C4120AE /* LEB128.swift */; };
+		4487B09DA4532A10E354C647 /* BluetoothCentralManager+Descriptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A00328D11BACA1C6A5CCFEC /* BluetoothCentralManager+Descriptions.swift */; };
 		45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */; };
 		47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E384B1B21237F275A6BFD96D /* SettingsView.swift */; };
 		4D175A78EEFABD16FEF00C79 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98791DA8F2EF88057FB41B93 /* AddFriendView.swift */; };
@@ -70,13 +71,17 @@
 		8E8D9925E5BCADB692E3422D /* StimulusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF5E0E0667396A7D5910DA2 /* StimulusCard.swift */; };
 		9086786CD110801CC188BE3A /* ESFTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2188183D844D85E718C1FF /* ESFTag.swift */; };
 		95D85FD27D05E8321068585F /* AppNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC2545F27AFC5797E640ADA /* AppNotificationDelegate.swift */; };
+		98AB92482B7F00441483EA08 /* BluetoothCentralManager+GATT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E1D8EC13A8ED08C29DCF8D /* BluetoothCentralManager+GATT.swift */; };
+		9AF998457E5AC24F79D99472 /* CompositeDeviceRepository+Reliability.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */; };
 		9BD33171E530E1939245CB7B /* PhoneAlarmScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */; };
+		9D312D1860C739E07BCB38C7 /* BluetoothCentralManager+Scanning.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0640031935727DE4DCBABAA /* BluetoothCentralManager+Scanning.swift */; };
 		A0804437F1B22C18B3FDB601 /* ButtonConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A28EB2EAA454759713C1E5FB /* ButtonConfig.swift */; };
 		A0FAB2921372229A88EB3819 /* PokeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 980B0D46360561F1A59CC41D /* PokeSettings.swift */; };
 		A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */; };
 		A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9EF092B259B55847C7549D /* RemoteControlView.swift */; };
 		A9502C9B2BE1F8C56014FF7A /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B8896F658741B48ABE9882 /* AboutView.swift */; };
 		AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */; };
+		AD9CA846C73D8B3C3A01C8A9 /* BluetoothCentralManager+Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */; };
 		B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */; };
 		B98B18DD7650C7484A19F1A9 /* DeviceEventCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */; };
 		BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */; };
@@ -138,6 +143,7 @@
 		19DCDC72F43CB8947131C023 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmEntity.swift; sourceTree = "<group>"; };
 		21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlViewModel.swift; sourceTree = "<group>"; };
+		24E1D8EC13A8ED08C29DCF8D /* BluetoothCentralManager+GATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+GATT.swift"; sourceTree = "<group>"; };
 		25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissChallenge.swift; sourceTree = "<group>"; };
 		301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettingsTests.swift; sourceTree = "<group>"; };
 		3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeDeviceRepository.swift; sourceTree = "<group>"; };
@@ -169,6 +175,7 @@
 		63BD287A032DA0DD301D8E48 /* FriendDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendDetailView.swift; sourceTree = "<group>"; };
 		63FFFC00BC44B2384A5DAC21 /* MockSocialBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSocialBackendTests.swift; sourceTree = "<group>"; };
 		640EE3B1818CA1E92C4120AE /* LEB128.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEB128.swift; sourceTree = "<group>"; };
+		6A00328D11BACA1C6A5CCFEC /* BluetoothCentralManager+Descriptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Descriptions.swift"; sourceTree = "<group>"; };
 		6CABBB0E4D950B756C439136 /* StimulusSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettings.swift; sourceTree = "<group>"; };
 		73676EE1B7477970179576C5 /* Stimulus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stimulus.swift; sourceTree = "<group>"; };
 		73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodec.swift; sourceTree = "<group>"; };
@@ -207,6 +214,7 @@
 		C6A8B311C6A28084B089F241 /* ESFValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFValue.swift; sourceTree = "<group>"; };
 		C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEventCaptureView.swift; sourceTree = "<group>"; };
 		CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
+		CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CompositeDeviceRepository+Reliability.swift"; sourceTree = "<group>"; };
 		CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeviceController.swift; sourceTree = "<group>"; };
 		CD9EF092B259B55847C7549D /* RemoteControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlView.swift; sourceTree = "<group>"; };
 		D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusConfigTests.swift; sourceTree = "<group>"; };
@@ -217,12 +225,14 @@
 		DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxDeviceController.swift; sourceTree = "<group>"; };
 		DDAFA901701E16049F0913C7 /* FriendsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsRepository.swift; sourceTree = "<group>"; };
 		DED8E3672CD1D399D5DD3B7C /* LegacyProtocolStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyProtocolStore.swift; sourceTree = "<group>"; };
+		E0640031935727DE4DCBABAA /* BluetoothCentralManager+Scanning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Scanning.swift"; sourceTree = "<group>"; };
 		E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAlarmScheduler.swift; sourceTree = "<group>"; };
 		E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeChallengeView.swift; sourceTree = "<group>"; };
 		E384B1B21237F275A6BFD96D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E8471D33515278BAA59DB0C0 /* FriendsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsRootView.swift; sourceTree = "<group>"; };
 		E857EC1C8D109393A3DCD76B /* StimulusSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettingsStore.swift; sourceTree = "<group>"; };
 		EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigurationTests.swift; sourceTree = "<group>"; };
+		EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Delegates.swift"; sourceTree = "<group>"; };
 		ED177E123C49A2F9DEA54E05 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		F3357B2E1D4E2799275C2B9A /* PokePushPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokePushPayloadTests.swift; sourceTree = "<group>"; };
 		F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoltAPIClient.swift; sourceTree = "<group>"; };
@@ -251,6 +261,10 @@
 			isa = PBXGroup;
 			children = (
 				BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */,
+				EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */,
+				6A00328D11BACA1C6A5CCFEC /* BluetoothCentralManager+Descriptions.swift */,
+				24E1D8EC13A8ED08C29DCF8D /* BluetoothCentralManager+GATT.swift */,
+				E0640031935727DE4DCBABAA /* BluetoothCentralManager+Scanning.swift */,
 			);
 			path = Transport;
 			sourceTree = "<group>";
@@ -303,6 +317,7 @@
 				1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */,
 				4D8AFF78623AD0961505FBB5 /* AuthTokenStore.swift */,
 				48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */,
+				CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */,
 				3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */,
 				C3B35D9983EA32CBC9307B82 /* HTTPSocialBackend.swift */,
 				F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */,
@@ -700,11 +715,16 @@
 				74B33394C05F39C37A7BC20B /* AuthView.swift in Sources */,
 				137FDC16BA7C62A58E07D3D1 /* AuthViewModel.swift in Sources */,
 				2FBB001B1B07DBC53ED1E37B /* BLELog.swift in Sources */,
+				AD9CA846C73D8B3C3A01C8A9 /* BluetoothCentralManager+Delegates.swift in Sources */,
+				4487B09DA4532A10E354C647 /* BluetoothCentralManager+Descriptions.swift in Sources */,
+				98AB92482B7F00441483EA08 /* BluetoothCentralManager+GATT.swift in Sources */,
+				9D312D1860C739E07BCB38C7 /* BluetoothCentralManager+Scanning.swift in Sources */,
 				BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */,
 				BC622AC928943A575F9D99FE /* BluetoothLogView.swift in Sources */,
 				A0804437F1B22C18B3FDB601 /* ButtonConfig.swift in Sources */,
 				C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */,
 				0ACB79F06C389DCEFFD749BA /* CBUUID+Canonical.swift in Sources */,
+				9AF998457E5AC24F79D99472 /* CompositeDeviceRepository+Reliability.swift in Sources */,
 				8576F98F90F514A29E076544 /* CompositeDeviceRepository.swift in Sources */,
 				A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */,
 				D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */,

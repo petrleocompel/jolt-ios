@@ -93,7 +93,8 @@ struct ProtocolLabView: View {
             } header: {
                 Text("Payload")
             } footer: {
-                Text("Hex, whitespace optional. The current guess for a stimulus is repetitions then intensity — 01 14 is one pulse at 20%.")
+                Text("Hex, whitespace optional. The current guess for a stimulus is repetitions "
+                    + "then intensity — 01 14 is one pulse at 20%.")
             }
 
             Section {

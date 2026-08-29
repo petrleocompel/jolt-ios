@@ -25,6 +25,10 @@ struct DiscoveredPeripheral {
 /// `BLE/` and `Data/` talks to hardware through this class rather than
 /// touching CoreBluetooth directly, so the delegate-callback style stays in
 /// one place and the rest of the codebase can use `async`/`await`.
+/// Members below are `internal` rather than `private` only because this type
+/// is split across `BluetoothCentralManager+{GATT,Delegates,Descriptions}.swift`
+/// and `private` in Swift is file-scoped. Nothing outside `BLE/Transport/`
+/// should touch them.
 @MainActor
 final class BluetoothCentralManager: NSObject {
     enum BluetoothError: LocalizedError {
@@ -72,10 +76,10 @@ final class BluetoothCentralManager: NSObject {
         StandardGATT.batteryService
     ]
 
-    private var central: CBCentralManager!
+    var central: CBCentralManager!
 
-    private var scanContinuation: AsyncStream<DiscoveredPeripheral>.Continuation?
-    private var connectContinuations: [UUID: CheckedContinuation<Void, Error>] = [:]
+    var scanContinuation: AsyncStream<DiscoveredPeripheral>.Continuation?
+    var connectContinuations: [UUID: CheckedContinuation<Void, Error>] = [:]
 
     /// Keyed by peripheral identifier, then by the characteristic's
     /// *canonical* UUID string. The key used when starting an operation
@@ -84,23 +88,23 @@ final class BluetoothCentralManager: NSObject {
     /// form. Canonicalising both ends means the two agree regardless of
     /// which form each was written in — an unresolvable key here would park
     /// a write forever with no error. See `CBUUID+Canonical.swift`.
-    private var notifyContinuations: [UUID: [String: AsyncStream<Data>.Continuation]] = [:]
-    private var readContinuations: [UUID: [String: CheckedContinuation<Data, Error>]] = [:]
-    private var writeContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
+    var notifyContinuations: [UUID: [String: AsyncStream<Data>.Continuation]] = [:]
+    var readContinuations: [UUID: [String: CheckedContinuation<Data, Error>]] = [:]
+    var writeContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
 
     /// Keyed by peripheral, so two peripherals discovering at once can't
     /// steal each other's completion (the previous single-slot version
     /// dropped one of them and hung forever).
-    private var discoverServicesContinuations: [UUID: CheckedContinuation<Void, Error>] = [:]
-    private var discoverCharacteristicsContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
+    var discoverServicesContinuations: [UUID: CheckedContinuation<Void, Error>] = [:]
+    var discoverCharacteristicsContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
 
-    private var stateContinuation: AsyncStream<CBManagerState>.Continuation?
-    private var disconnectionContinuation: AsyncStream<(peripheralID: UUID, error: Error?)>.Continuation?
-    private var restoredPeripheralsContinuation: AsyncStream<[CBPeripheral]>.Continuation?
-    private var poweredOnWaiters: [CheckedContinuation<Void, Error>] = []
+    var stateContinuation: AsyncStream<CBManagerState>.Continuation?
+    var disconnectionContinuation: AsyncStream<(peripheralID: UUID, error: Error?)>.Continuation?
+    var restoredPeripheralsContinuation: AsyncStream<[CBPeripheral]>.Continuation?
+    var poweredOnWaiters: [CheckedContinuation<Void, Error>] = []
     /// One per subscribed characteristic while `captureAllNotifications` is
     /// active.
-    private var captureTasks: [Task<Void, Never>] = []
+    var captureTasks: [Task<Void, Never>] = []
 
     override init() {
         super.init()
@@ -164,85 +168,16 @@ final class BluetoothCentralManager: NSObject {
         }
     }
 
-    private func failPoweredOnWaiters() {
+    func failPoweredOnWaiters() {
         let waiters = poweredOnWaiters
         poweredOnWaiters.removeAll()
         for waiter in waiters { waiter.resume(throwing: BluetoothError.poweredOnTimeout) }
     }
 
-    private func resumePoweredOnWaiters() {
+    func resumePoweredOnWaiters() {
         let waiters = poweredOnWaiters
         poweredOnWaiters.removeAll()
         for waiter in waiters { waiter.resume() }
-    }
-
-    /// Looks up an already-known (previously connected or bonded)
-    /// peripheral by identifier without scanning — the right way to
-    /// reconnect to a device you've paired before.
-    func retrieveKnownPeripheral(_ identifier: UUID) -> CBPeripheral? {
-        central.retrievePeripherals(withIdentifiers: [identifier]).first
-    }
-
-    /// Peripherals iOS is *already* connected to. These never appear in a
-    /// scan — CoreBluetooth only reports advertisements, and a connected
-    /// device has stopped advertising — so they have to be pulled in
-    /// separately or a device paired at the system level looks missing.
-    func retrieveSystemConnectedPeripherals() -> [CBPeripheral] {
-        central.retrieveConnectedPeripherals(withServices: Self.knownServiceUUIDs)
-    }
-
-    /// Starts a scan and yields everything found. `seedIdentifiers` are
-    /// previously-paired peripherals to surface immediately without waiting
-    /// for an advertisement.
-    func startScan(serviceUUIDs: [CBUUID]?, seedIdentifiers: [UUID] = []) -> AsyncStream<DiscoveredPeripheral> {
-        AsyncStream { continuation in
-            self.scanContinuation = continuation
-            continuation.onTermination = { [weak self] _ in
-                Task { @MainActor in self?.stopScan() }
-            }
-
-            Task { @MainActor in
-                do {
-                    try await self.waitUntilPoweredOn()
-                } catch {
-                    BLELog.error("Scan aborted: \(error.localizedDescription)")
-                    continuation.finish()
-                    return
-                }
-
-                // Seed before advertisements so an already-connected or
-                // previously-bonded device shows up on the first frame.
-                for peripheral in self.central.retrievePeripherals(withIdentifiers: seedIdentifiers) {
-                    BLELog.info("Seeded known peripheral \(peripheral.identifier) name=\(peripheral.name ?? "nil")")
-                    continuation.yield(DiscoveredPeripheral(
-                        peripheral: peripheral, advertisedName: nil, rssi: nil, wasAlreadyConnected: false
-                    ))
-                }
-                for peripheral in self.retrieveSystemConnectedPeripherals() {
-                    BLELog.info("Seeded system-connected peripheral \(peripheral.identifier) name=\(peripheral.name ?? "nil")")
-                    continuation.yield(DiscoveredPeripheral(
-                        peripheral: peripheral, advertisedName: nil, rssi: nil, wasAlreadyConnected: true
-                    ))
-                }
-
-                BLELog.info("Scanning for services=\(serviceUUIDs?.map(\.uuidString).joined(separator: ",") ?? "any")")
-                // `allowDuplicates: false` — we de-duplicate by identifier
-                // upstream anyway, and duplicates burn battery.
-                self.central.scanForPeripherals(
-                    withServices: serviceUUIDs,
-                    options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
-                )
-            }
-        }
-    }
-
-    func stopScan() {
-        if central.isScanning {
-            central.stopScan()
-            BLELog.info("Scan stopped")
-        }
-        scanContinuation?.finish()
-        scanContinuation = nil
     }
 
     func connect(_ peripheral: CBPeripheral, timeout: Duration = .seconds(15)) async throws {
@@ -319,7 +254,8 @@ final class BluetoothCentralManager: NSObject {
             BLELog.info("Write (no response) \(hex) → \(characteristicUUID.uuidString)")
             peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
         } else {
-            BLELog.error("Characteristic \(characteristicUUID.uuidString) is not writable (properties: \(characteristic.properties.labels.joined(separator: ",")))")
+            let properties = characteristic.properties.labels.joined(separator: ",")
+            BLELog.error("Characteristic \(characteristicUUID.uuidString) is not writable (properties: \(properties))")
             throw BluetoothError.characteristicNotWritable(characteristicUUID)
         }
     }
@@ -363,109 +299,8 @@ final class BluetoothCentralManager: NSObject {
     ///   Reads are non-destructive — no stimulus can fire from one — so this
     ///   is the safe way to work out which config characteristic is which:
     ///   the value a characteristic already holds usually gives it away.
-    func dumpGATT(on peripheral: CBPeripheral, readingValues: Bool = false) async throws -> [GATTCharacteristicDump] {
-        guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
-        try await discoverServices(nil, on: peripheral)
-        var dump: [GATTCharacteristicDump] = []
-        for service in peripheral.services ?? [] {
-            try? await discoverCharacteristics(nil, in: service, on: peripheral)
-            for characteristic in service.characteristics ?? [] {
-                var value: String?
-                if readingValues, characteristic.properties.contains(.read) {
-                    // A short timeout per characteristic: one unresponsive
-                    // handle shouldn't stall a 40-characteristic sweep.
-                    let data = try? await read(
-                        characteristic.uuid,
-                        from: service.uuid,
-                        on: peripheral,
-                        timeout: .seconds(3)
-                    )
-                    value = data.map { $0.map { String(format: "%02X", $0) }.joined(separator: " ") }
-                }
-                dump.append(GATTCharacteristicDump(
-                    serviceUUID: service.uuid.uuidString,
-                    uuid: characteristic.uuid.uuidString,
-                    properties: characteristic.properties.labels,
-                    value: value
-                ))
-            }
-        }
-        BLELog.info("GATT dump: \(dump.count) characteristics across \(peripheral.services?.count ?? 0) services")
-        for entry in dump {
-            let value = entry.value.map { " = \($0)" } ?? ""
-            BLELog.debug("  \(entry.serviceUUID) / \(entry.uuid) [\(entry.properties.joined(separator: ","))]\(value)")
-        }
-        return dump
-    }
 
-    /// Subscribes to every notifying characteristic and logs whatever
-    /// arrives.
-    ///
-    /// This is the closest thing to an HCI capture that runs on the phone.
-    /// The parts of this protocol still missing are commands the app is
-    /// supposed to *send*, and the device announces a good deal of what it
-    /// does — so pressing the physical button, which fires a stimulus
-    /// through firmware we cannot read, makes the device describe that event
-    /// in its own encoding.
-    ///
-    /// Returns the number of characteristics successfully subscribed.
-    @discardableResult
-    func captureAllNotifications(on peripheral: CBPeripheral) async throws -> Int {
-        guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
-        stopNotificationCapture()
-        try await discoverServices(nil, on: peripheral)
-
-        var subscribed = 0
-        for service in peripheral.services ?? [] {
-            try? await discoverCharacteristics(nil, in: service, on: peripheral)
-            for characteristic in service.characteristics ?? [] {
-                guard characteristic.properties.contains(.notify)
-                    || characteristic.properties.contains(.indicate) else { continue }
-                guard let stream = try? await subscribe(characteristic.uuid, in: service.uuid, on: peripheral)
-                else { continue }
-                subscribed += 1
-                let label = "\(service.uuid.uuidString)/\(characteristic.uuid.uuidString)"
-                captureTasks.append(Task { @MainActor in
-                    for await data in stream {
-                        let hex = data.map { String(format: "%02X", $0) }.joined(separator: " ")
-                        BLELog.info("EVENT \(label): \(hex.isEmpty ? "(empty)" : hex)")
-                    }
-                })
-            }
-        }
-        BLELog.info("Listening on \(subscribed) notifying characteristic(s) — trigger something on the device now")
-        return subscribed
-    }
-
-    func stopNotificationCapture() {
-        guard !captureTasks.isEmpty else { return }
-        captureTasks.forEach { $0.cancel() }
-        captureTasks.removeAll()
-        BLELog.info("Stopped listening for device events")
-    }
-
-    /// Finds the first characteristic from `candidates` that the device
-    /// actually exposes and that accepts writes. Lets a controller carry a
-    /// list of plausible UUIDs and let the hardware pick, instead of failing
-    /// outright when one guess is wrong.
-    func firstWritableCharacteristic(
-        among candidates: [CBUUID],
-        in serviceUUID: CBUUID,
-        on peripheral: CBPeripheral
-    ) async -> CBUUID? {
-        try? await discoverServices([serviceUUID], on: peripheral)
-        guard let service = peripheral.services?.first(where: { $0.uuid.matches(serviceUUID) }) else { return nil }
-        try? await discoverCharacteristics(nil, in: service, on: peripheral)
-        for candidate in candidates {
-            if let match = service.characteristics?.first(where: { $0.uuid.matches(candidate) }),
-               match.properties.contains(.write) || match.properties.contains(.writeWithoutResponse) {
-                return candidate
-            }
-        }
-        return nil
-    }
-
-    private func resolveCharacteristic(
+    func resolveCharacteristic(
         _ characteristicUUID: CBUUID,
         in serviceUUID: CBUUID,
         on peripheral: CBPeripheral
@@ -477,7 +312,8 @@ final class BluetoothCentralManager: NSObject {
 
         try await discoverServices([serviceUUID], on: peripheral)
         guard let service = peripheral.services?.first(where: { $0.uuid.matches(serviceUUID) }) else {
-            BLELog.error("Service \(serviceUUID.uuidString) not found. Present: \(peripheral.services?.map(\.uuid.uuidString).joined(separator: ",") ?? "none")")
+            let present = peripheral.services?.map(\.uuid.uuidString).joined(separator: ",") ?? "none"
+            BLELog.error("Service \(serviceUUID.uuidString) not found. Present: \(present)")
             throw BluetoothError.serviceNotFound(serviceUUID)
         }
         // Discover *all* characteristics rather than only the one asked for:
@@ -485,13 +321,14 @@ final class BluetoothCentralManager: NSObject {
         // device" log line useful when a UUID guess turns out wrong.
         try await discoverCharacteristics(nil, in: service, on: peripheral)
         guard let characteristic = service.characteristics?.first(where: { $0.uuid.matches(characteristicUUID) }) else {
-            BLELog.error("Characteristic \(characteristicUUID.uuidString) not found in \(serviceUUID.uuidString). Present: \(service.characteristics?.map(\.uuid.uuidString).joined(separator: ",") ?? "none")")
+            let present = service.characteristics?.map(\.uuid.uuidString).joined(separator: ",") ?? "none"
+            BLELog.error("Characteristic \(characteristicUUID.uuidString) not found in \(serviceUUID.uuidString). Present: \(present)")
             throw BluetoothError.characteristicNotFound(characteristicUUID)
         }
         return characteristic
     }
 
-    private func discoverServices(_ uuids: [CBUUID]?, on peripheral: CBPeripheral, timeout: Duration = .seconds(10)) async throws {
+    func discoverServices(_ uuids: [CBUUID]?, on peripheral: CBPeripheral, timeout: Duration = .seconds(10)) async throws {
         try await withTimeout(timeout, description: "discover services") {
             try await withCheckedThrowingContinuation { continuation in
                 self.discoverServicesContinuations[peripheral.identifier] = continuation
@@ -503,7 +340,7 @@ final class BluetoothCentralManager: NSObject {
         }
     }
 
-    private func discoverCharacteristics(
+    func discoverCharacteristics(
         _ uuids: [CBUUID]?,
         in service: CBService,
         on peripheral: CBPeripheral,
@@ -519,12 +356,17 @@ final class BluetoothCentralManager: NSObject {
                 .resume(throwing: BluetoothError.timedOut("discover characteristics"))
         }
     }
+}
 
+// MARK: - Timeouts
+//
+// In an extension only to keep the type's body a readable length.
+extension BluetoothCentralManager {
     /// Races `operation` against a timer. `onTimeout` is responsible for
     /// resuming whichever continuation `operation` is parked on — without it
     /// a lost CoreBluetooth callback leaks the task forever, which is
     /// exactly how a tap on "Zap" can produce no result and no error.
-    private func withTimeout(
+    func withTimeout(
         _ duration: Duration,
         description: String,
         operation: @escaping () async throws -> Void,
@@ -540,7 +382,7 @@ final class BluetoothCentralManager: NSObject {
         try await operation()
     }
 
-    private func withTimeout<T>(
+    func withTimeout<T>(
         _ duration: Duration,
         description: String,
         operation: @escaping () async throws -> T,
@@ -554,179 +396,5 @@ final class BluetoothCentralManager: NSObject {
         }
         defer { timeoutTask.cancel() }
         return try await operation()
-    }
-}
-
-extension BluetoothCentralManager: CBCentralManagerDelegate {
-    nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        Task { @MainActor in
-            BLELog.info("Bluetooth state: \(central.state.label)")
-            stateContinuation?.yield(central.state)
-            if central.state == .poweredOn {
-                resumePoweredOnWaiters()
-            } else if central.state == .unsupported || central.state == .unauthorized {
-                failPoweredOnWaiters()
-            }
-        }
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any]) {
-        let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey] as? [CBPeripheral] ?? []
-        Task { @MainActor in
-            BLELog.info("Restoring \(peripherals.count) peripheral(s) from background relaunch")
-            for peripheral in peripherals { peripheral.delegate = self }
-            restoredPeripheralsContinuation?.yield(peripherals)
-        }
-    }
-
-    nonisolated func centralManager(
-        _ central: CBCentralManager,
-        didDiscover peripheral: CBPeripheral,
-        advertisementData: [String: Any],
-        rssi RSSI: NSNumber
-    ) {
-        let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
-        Task { @MainActor in
-            BLELog.debug("Discovered \(peripheral.identifier) name=\(peripheral.name ?? advertisedName ?? "nil") rssi=\(RSSI)")
-            scanContinuation?.yield(DiscoveredPeripheral(
-                peripheral: peripheral,
-                advertisedName: advertisedName,
-                rssi: RSSI.intValue,
-                wasAlreadyConnected: false
-            ))
-        }
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        Task { @MainActor in
-            connectContinuations.removeValue(forKey: peripheral.identifier)?.resume()
-        }
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        Task { @MainActor in
-            BLELog.error("Failed to connect \(peripheral.identifier): \(error?.localizedDescription ?? "unknown")")
-            connectContinuations.removeValue(forKey: peripheral.identifier)?
-                .resume(throwing: BluetoothError.connectFailed(error))
-        }
-    }
-
-    nonisolated func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        Task { @MainActor in
-            BLELog.info("Disconnected \(peripheral.identifier): \(error?.localizedDescription ?? "clean")")
-            notifyContinuations.removeValue(forKey: peripheral.identifier)?.values.forEach { $0.finish() }
-            // Anything still parked on this peripheral will never be
-            // answered now — fail it rather than leak the task.
-            failPendingOperations(for: peripheral.identifier)
-            disconnectionContinuation?.yield((peripheralID: peripheral.identifier, error: error))
-        }
-    }
-
-    private func failPendingOperations(for peripheralID: UUID) {
-        readContinuations.removeValue(forKey: peripheralID)?.values
-            .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
-        writeContinuations.removeValue(forKey: peripheralID)?.values
-            .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
-        discoverServicesContinuations.removeValue(forKey: peripheralID)?
-            .resume(throwing: BluetoothError.bluetoothUnavailable)
-        discoverCharacteristicsContinuations.removeValue(forKey: peripheralID)?.values
-            .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
-    }
-}
-
-extension BluetoothCentralManager: CBPeripheralDelegate {
-    nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        Task { @MainActor in
-            guard let continuation = discoverServicesContinuations.removeValue(forKey: peripheral.identifier) else { return }
-            if let error {
-                continuation.resume(throwing: BluetoothError.readFailed(error))
-            } else {
-                BLELog.debug("Services on \(peripheral.identifier): \(peripheral.services?.map(\.uuid.uuidString).joined(separator: ",") ?? "none")")
-                continuation.resume()
-            }
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        Task { @MainActor in
-            guard let continuation = discoverCharacteristicsContinuations[peripheral.identifier]?
-                .removeValue(forKey: service.uuid.canonicalString) else { return }
-            if let error {
-                continuation.resume(throwing: BluetoothError.readFailed(error))
-            } else {
-                BLELog.debug("Characteristics in \(service.uuid.uuidString): \(service.characteristics?.map { "\($0.uuid.uuidString)[\($0.properties.labels.joined(separator: "|"))]" }.joined(separator: ",") ?? "none")")
-                continuation.resume()
-            }
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        Task { @MainActor in
-            let data = characteristic.value ?? Data()
-            if let continuation = readContinuations[peripheral.identifier]?.removeValue(forKey: characteristic.uuid.canonicalString) {
-                if let error {
-                    continuation.resume(throwing: BluetoothError.readFailed(error))
-                } else {
-                    continuation.resume(returning: data)
-                }
-                return
-            }
-            BLELog.debug("Notify \(characteristic.uuid.uuidString): \(data.map { String(format: "%02X", $0) }.joined(separator: " "))")
-            notifyContinuations[peripheral.identifier]?[characteristic.uuid.canonicalString]?.yield(data)
-        }
-    }
-
-    nonisolated func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        Task { @MainActor in
-            guard let continuation = writeContinuations[peripheral.identifier]?.removeValue(forKey: characteristic.uuid.canonicalString) else { return }
-            if let error {
-                continuation.resume(throwing: BluetoothError.writeFailed(error))
-            } else {
-                continuation.resume()
-            }
-        }
-    }
-}
-
-// MARK: - Log-friendly descriptions
-
-extension CBManagerState {
-    var label: String {
-        switch self {
-        case .unknown: return "unknown"
-        case .resetting: return "resetting"
-        case .unsupported: return "unsupported"
-        case .unauthorized: return "unauthorized"
-        case .poweredOff: return "poweredOff"
-        case .poweredOn: return "poweredOn"
-        @unknown default: return "unrecognised(\(rawValue))"
-        }
-    }
-}
-
-extension CBPeripheralState {
-    var label: String {
-        switch self {
-        case .disconnected: return "disconnected"
-        case .connecting: return "connecting"
-        case .connected: return "connected"
-        case .disconnecting: return "disconnecting"
-        @unknown default: return "unrecognised(\(rawValue))"
-        }
-    }
-}
-
-extension CBCharacteristicProperties {
-    var labels: [String] {
-        var labels: [String] = []
-        if contains(.broadcast) { labels.append("broadcast") }
-        if contains(.read) { labels.append("read") }
-        if contains(.writeWithoutResponse) { labels.append("writeNoResp") }
-        if contains(.write) { labels.append("write") }
-        if contains(.notify) { labels.append("notify") }
-        if contains(.indicate) { labels.append("indicate") }
-        if contains(.authenticatedSignedWrites) { labels.append("signedWrite") }
-        if contains(.extendedProperties) { labels.append("extended") }
-        return labels
     }
 }

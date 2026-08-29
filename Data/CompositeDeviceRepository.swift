@@ -12,21 +12,21 @@ import Foundation
 /// handed back after a background relaunch (`CBCentralManagerOptionRestoreIdentifierKey`).
 @MainActor
 final class CompositeDeviceRepository: DeviceRepository {
-    private let central = BluetoothCentralManager()
-    private lazy var legacy = LegacyDeviceController(central: central, protocolStore: protocolStore)
-    private lazy var scMax = SCMaxDeviceController(central: central)
-    private lazy var deviceInfoReader = DeviceInformationReader(central: central)
-    private let store: PairedDeviceStore
-    private let settingsStore: StimulusSettingsStore
-    private let protocolStore: LegacyProtocolStore
+    let central = BluetoothCentralManager()
+    lazy var legacy = LegacyDeviceController(central: central, protocolStore: protocolStore)
+    lazy var scMax = SCMaxDeviceController(central: central)
+    lazy var deviceInfoReader = DeviceInformationReader(central: central)
+    let store: PairedDeviceStore
+    let settingsStore: StimulusSettingsStore
+    let protocolStore: LegacyProtocolStore
 
-    private var connectionStateContinuation: AsyncStream<DeviceConnectionState>.Continuation?
-    private var connectedDeviceContinuation: AsyncStream<PavlokDevice?>.Continuation?
+    var connectionStateContinuation: AsyncStream<DeviceConnectionState>.Continuation?
+    var connectedDeviceContinuation: AsyncStream<PavlokDevice?>.Continuation?
 
-    private var connectedPeripheral: CBPeripheral?
-    private var connectedFamily: DeviceFamily?
-    private var didStart = false
-    private var isAutoReconnecting = false
+    var connectedPeripheral: CBPeripheral?
+    var connectedFamily: DeviceFamily?
+    var didStart = false
+    var isAutoReconnecting = false
 
     private(set) var stimulusSettings: StimulusSettings
 
@@ -35,7 +35,7 @@ final class CompositeDeviceRepository: DeviceRepository {
     nonisolated(unsafe) private var stateTask: Task<Void, Never>?
     nonisolated(unsafe) private var disconnectionTask: Task<Void, Never>?
     nonisolated(unsafe) private var restoreTask: Task<Void, Never>?
-    nonisolated(unsafe) private var reconnectTask: Task<Void, Never>?
+    nonisolated(unsafe) var reconnectTask: Task<Void, Never>?
 
     init(
         store: PairedDeviceStore = PairedDeviceStore(),
@@ -126,7 +126,8 @@ final class CompositeDeviceRepository: DeviceRepository {
                         continue
                     }
                     guard seen.insert(discovery.peripheral.identifier).inserted else { continue }
-                    BLELog.info("Matched \(name) as \(family.displayName)\(discovery.wasAlreadyConnected ? " (already connected to phone)" : "")")
+                    let alreadyConnected = discovery.wasAlreadyConnected ? " (already connected to phone)" : ""
+                    BLELog.info("Matched \(name) as \(family.displayName)\(alreadyConnected)")
                     continuation.yield(PavlokDevice(
                         peripheralIdentifier: discovery.peripheral.identifier,
                         name: name,
@@ -173,7 +174,7 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
     }
 
-    private func adopt(_ peripheral: CBPeripheral, family: DeviceFamily, name: String) {
+    func adopt(_ peripheral: CBPeripheral, family: DeviceFamily, name: String) {
         connectedPeripheral = peripheral
         connectedFamily = family
         store.save(peripheralIdentifier: peripheral.identifier, name: name, family: family)
@@ -202,7 +203,8 @@ final class CompositeDeviceRepository: DeviceRepository {
             guard let info = try? await deviceInfoReader.read(from: peripheral),
                   connectedPeripheral?.identifier == peripheral.identifier else { return }
             device.info = info
-            BLELog.info("Device info: model=\(info.modelNumber ?? "?") fw=\(info.firmwareRevision ?? "?") battery=\(info.batteryLevelPercent.map(String.init) ?? "?")")
+            let battery = info.batteryLevelPercent.map(String.init) ?? "?"
+            BLELog.info("Device info: model=\(info.modelNumber ?? "?") fw=\(info.firmwareRevision ?? "?") battery=\(battery)")
             connectedDeviceContinuation?.yield(device)
         }
     }
@@ -314,6 +316,20 @@ final class CompositeDeviceRepository: DeviceRepository {
         }
     }
 
+    func requireConnection() throws -> (CBPeripheral, DeviceFamily) {
+        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
+            BLELog.error("Operation requires a connected device, but none is connected")
+            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
+        }
+        return (peripheral, family)
+    }
+}
+
+// MARK: - Protocol diagnostics
+//
+// Split into an extension purely to keep the main type's body readable; these
+// exist for the Diagnostics screen and no normal flow touches them.
+extension CompositeDeviceRepository {
     func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump] {
         let (peripheral, _) = try requireConnection()
         return try await central.dumpGATT(on: peripheral, readingValues: readingValues)
@@ -337,111 +353,6 @@ final class CompositeDeviceRepository: DeviceRepository {
 
     func stopListeningForDeviceEvents() {
         central.stopNotificationCapture()
-    }
-
-    private func requireConnection() throws -> (CBPeripheral, DeviceFamily) {
-        guard let peripheral = connectedPeripheral, let family = connectedFamily else {
-            BLELog.error("Operation requires a connected device, but none is connected")
-            throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
-        }
-        return (peripheral, family)
-    }
-}
-
-// MARK: - Reliability: reconnect, power state, background restoration
-
-extension CompositeDeviceRepository {
-    private func attemptAutoReconnect() async {
-        // `startIfNeeded()` starts one of these, and the `.poweredOn` state
-        // event that follows a moment later starts another. Both then raced
-        // into `central.connect` for the same peripheral, stranding a
-        // continuation each time ("leaked its continuation without resuming
-        // it" in the log) and leaving orphaned timeouts to fire minutes
-        // later against an already-connected device.
-        guard !isAutoReconnecting else { return }
-        isAutoReconnecting = true
-        defer { isAutoReconnecting = false }
-
-        guard let record = store.load() else { return }
-        // Wait rather than bail: on a cold launch this runs before
-        // CoreBluetooth has settled, and giving up here is what left the app
-        // sitting on onboarding with a perfectly good paired device nearby.
-        do {
-            try await central.waitUntilPoweredOn()
-        } catch {
-            BLELog.error("Auto-reconnect aborted: \(error.localizedDescription)")
-            return
-        }
-        guard connectedPeripheral == nil else { return }
-        guard let peripheral = central.retrieveKnownPeripheral(record.peripheralIdentifier) else {
-            BLELog.error("Paired device \(record.peripheralIdentifier) not known to CoreBluetooth")
-            connectionStateContinuation?.yield(.failed("Paired device not found"))
-            return
-        }
-        scheduleReconnect(to: peripheral, family: record.family, name: record.name)
-    }
-
-    private func scheduleReconnect(to peripheral: CBPeripheral, family: DeviceFamily, name: String) {
-        reconnectTask?.cancel()
-        reconnectTask = Task { [weak self] in
-            guard let self else { return }
-            connectionStateContinuation?.yield(.connecting)
-            do {
-                try await central.connect(peripheral)
-                guard !Task.isCancelled else { return }
-                adopt(peripheral, family: family, name: name)
-            } catch {
-                guard !Task.isCancelled else { return }
-                BLELog.error("Reconnect failed: \(error.localizedDescription)")
-                connectionStateContinuation?.yield(.failed(error.localizedDescription))
-            }
-        }
-    }
-
-    private func handlePowerStateChange(_ state: CBManagerState) {
-        switch state {
-        case .poweredOn:
-            if connectedPeripheral == nil {
-                Task { await attemptAutoReconnect() }
-            }
-        case .poweredOff:
-            reconnectTask?.cancel()
-            connectedPeripheral = nil
-            connectionStateContinuation?.yield(.failed("Bluetooth is off"))
-            connectedDeviceContinuation?.yield(nil)
-        case .unauthorized:
-            connectionStateContinuation?.yield(.failed("Bluetooth permission denied"))
-        case .unsupported:
-            connectionStateContinuation?.yield(.failed("Bluetooth not supported on this device"))
-        case .resetting, .unknown:
-            break
-        @unknown default:
-            break
-        }
-    }
-
-    /// An unexpected drop (out of range, device powered off, crashed).
-    /// Manual `disconnect()`/`forgetPairedDevice()` already nil out
-    /// `connectedPeripheral` before CoreBluetooth's callback arrives, so by
-    /// the time this runs for one of those the identifier check below no
-    /// longer matches and nothing happens — no separate "was this manual"
-    /// flag needed.
-    private func handleUnexpectedDisconnection(_ event: (peripheralID: UUID, error: Error?)) {
-        guard let peripheral = connectedPeripheral, let family = connectedFamily,
-              peripheral.identifier == event.peripheralID else { return }
-        connectedPeripheral = nil
-        connectionStateContinuation?.yield(.disconnected)
-        connectedDeviceContinuation?.yield(nil)
-
-        let name = store.load()?.name ?? family.displayName
-        scheduleReconnect(to: peripheral, family: family, name: name)
-    }
-
-    private func adoptRestoredPeripherals(_ peripherals: [CBPeripheral]) {
-        guard let peripheral = peripherals.first,
-              let record = store.load(),
-              record.peripheralIdentifier == peripheral.identifier else { return }
-        adopt(peripheral, family: record.family, name: record.name)
     }
 }
 

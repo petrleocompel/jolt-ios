@@ -163,9 +163,9 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     private func restoreSession() async {
         guard tokenStore.token(for: configuration) != nil else { return }
         do {
-            let me: MeResponse = try await client.send("GET", "me")
-            user = me.asUser
-            inviteCode = me.inviteCode
+            let profile: MeResponse = try await client.send("GET", "me")
+            user = profile.asUser
+            inviteCode = profile.inviteCode
             userContinuation?.yield(user)
             await refreshAll()
         } catch JoltAPIClient.APIError.unauthorized {
@@ -300,9 +300,12 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             stimulus: stimulus
         ))
     }
+}
 
-    // MARK: - Refresh
-
+/// Re-fetching. The contract has no websocket, so the app's view of the
+/// friend graph is whatever the last fetch returned; every mutation refreshes
+/// what it could have changed.
+extension HTTPSocialBackend {
     private func refreshAll() async {
         await refreshFriends()
         await refreshRequests()

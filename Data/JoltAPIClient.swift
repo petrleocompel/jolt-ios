@@ -70,8 +70,7 @@ actor JoltAPIClient {
         _ method: String,
         _ path: String,
         body: (some Encodable)? = Optional<Never>.none,
-        query: [String: String] = [:],
-        as: Response.Type = Response.self
+        query: [String: String] = [:]
     ) async throws -> Response {
         let data = try await perform(method, path, body: body, query: query)
         guard !data.isEmpty else {
