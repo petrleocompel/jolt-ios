@@ -4,6 +4,10 @@ struct SettingsView: View {
     let deviceControlViewModel: DeviceControlViewModel
     @AppStorage(PokeSettings.doNotDisturbKey) private var pokesDoNotDisturb = false
     @Environment(AppDependencies.self) private var dependencies
+    /// Owned here rather than in `AppDependencies`: the Pavlok account is an
+    /// optional side-channel that only this screen and its children use, and
+    /// nothing else in the app should depend on it existing.
+    @State private var pavlokViewModel = PavlokAccountViewModel()
 
     /// Host only — the full base URL with `/api/v1` is too long for a row.
     private var serverSummary: String {
@@ -48,6 +52,23 @@ struct SettingsView: View {
                 } footer: {
                     Text("Disconnect keeps this device paired — the app reconnects to it automatically next time. "
                         + "Forget removes the pairing entirely.")
+                }
+                Section {
+                    NavigationLink {
+                        PavlokAccountView(viewModel: pavlokViewModel)
+                    } label: {
+                        LabeledContent(
+                            "Pavlok account",
+                            value: pavlokViewModel.account?.displayName ?? "Not signed in"
+                        )
+                    }
+                    .accessibilityIdentifier("pavlokAccountLink")
+                } header: {
+                    Text("Pavlok")
+                } footer: {
+                    Text("Optional. Sign in with a Pavlok account to poke your Pavlok friends "
+                        + "from Jolt. Incoming Pavlok pokes can't be shown here — Pavlok "
+                        + "delivers those only to their own app.")
                 }
                 Section {
                     NavigationLink {
