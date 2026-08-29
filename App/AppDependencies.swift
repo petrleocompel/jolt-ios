@@ -41,7 +41,17 @@ final class AppDependencies {
     init() {
         let container: ModelContainer
         do {
-            container = try ModelContainer(for: AlarmEntity.self)
+            if AppEnvironment.isSnapshotMode {
+                // Hermetic, non-accumulating store seeded with demo alarms so
+                // the Alarms screenshot isn't an empty state.
+                container = try ModelContainer(
+                    for: AlarmEntity.self,
+                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+                )
+                Self.seedSnapshotAlarms(into: container)
+            } else {
+                container = try ModelContainer(for: AlarmEntity.self)
+            }
         } catch {
             fatalError("Failed to create SwiftData ModelContainer: \(error)")
         }
@@ -86,5 +96,30 @@ final class AppDependencies {
         UNUserNotificationCenter.current().delegate = delegate
 
         Self.shared = self
+    }
+
+    /// Two believable device alarms for the App Store / marketing screenshot,
+    /// inserted straight into the in-memory snapshot store. Never runs outside
+    /// snapshot mode.
+    private static func seedSnapshotAlarms(into container: ModelContainer) {
+        let weekdays: Set<Weekday> = [.monday, .tuesday, .wednesday, .thursday, .friday]
+        let demo: [Alarm] = [
+            Alarm(
+                location: .device, hour: 7, minute: 0, repeatDays: weekdays,
+                label: "Wake up", stimulus: StimulusConfig(kind: .zap, intensity: 40),
+                dismissChallenge: .qrCodeScan
+            ),
+            Alarm(
+                location: .device, hour: 14, minute: 30, repeatDays: weekdays,
+                label: "Stand up", stimulus: StimulusConfig(kind: .vibe, intensity: 60)
+            )
+        ]
+        let context = container.mainContext
+        for alarm in demo {
+            if let entity = alarm.makeEntity() {
+                context.insert(entity)
+            }
+        }
+        try? context.save()
     }
 }
