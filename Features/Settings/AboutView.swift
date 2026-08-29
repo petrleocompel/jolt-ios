@@ -14,6 +14,7 @@ struct AboutView: View {
             }
             Section {
                 LabeledContent("Version", value: version)
+                Link("Website", destination: URL(string: "https://petrleocompel.github.io/jolt-ios/")!)
                 Link("Privacy policy", destination: URL(string: "https://petrleocompel.github.io/jolt-ios/privacy/")!)
                 Link("Support", destination: URL(string: "https://petrleocompel.github.io/jolt-ios/support/")!)
             }
