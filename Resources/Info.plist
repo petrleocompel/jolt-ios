@@ -16,8 +16,23 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Jolt</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Export compliance, declared here so App Store Connect stops asking on
+	     every TestFlight build. False is accurate: the app ships no encryption
+	     of its own. It uses HTTPS via URLSession and the keychain via the
+	     Security framework, both of which are encryption provided by the
+	     operating system and exempt under Apple's rules.
+
+	     Must be a real boolean. A <string>NO</string> here is truthy to App
+	     Store Connect and it will keep prompting.
+
+	     If Apple ever does require documentation, they issue a code that goes
+	     alongside this as ITSEncryptionExportComplianceCode. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
