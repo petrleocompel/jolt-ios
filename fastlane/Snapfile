@@ -17,7 +17,7 @@ devices([
 ])
 
 languages([
-  "en-GB"
+  "en-US"
 ])
 
 scheme("Jolt")
