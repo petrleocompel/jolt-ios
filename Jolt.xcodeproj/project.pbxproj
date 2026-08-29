@@ -626,7 +626,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					AC2A9B67567D69D441D19263 = {
-						DevelopmentTeam = REDACTED;
+						DevelopmentTeam = YCFL9S5UA8;
 						ProvisioningStyle = Automatic;
 						TestTargetID = 2546FC3379D8F6AC9675B44E;
 					};
@@ -955,7 +955,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = REDACTED;
+				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -975,7 +975,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = REDACTED;
+				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

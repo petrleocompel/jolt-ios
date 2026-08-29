@@ -40,7 +40,7 @@ bundle install
 | Field | Value |
 |-------|-------|
 | Bundle ID | `cz.peelco.jolt` |
-| Team | `REDACTED` |
+| Team | `YCFL9S5UA8` |
 | Scheme | `Jolt` |
 
 ## Fastlane

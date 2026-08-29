@@ -16,7 +16,12 @@ require "shellwords"
 # fastlane/AuthKey_<KEY_ID>.p8. See another app for the same wiring.
 ASC_DEFAULT_KEY_ID = "REDACTED"
 ASC_DEFAULT_ISSUER_ID = "REDACTED"
-TEAM_ID = "REDACTED"
+# Must match `fastlane/Appfile`'s `team_id`, and the DEVELOPMENT_TEAM in
+# project.yml. When they disagree, the archive builds under one team and
+# `exportArchive` looks for profiles under the other, which fails with
+# "No Account for Team" and "No profiles for <bundle id> were found" — the
+# archive step itself succeeds, so the mismatch only shows up at export.
+TEAM_ID = ENV.fetch("APPLE_TEAM_ID", "YCFL9S5UA8")
 
 def asc_key_id
   ENV["APP_STORE_CONNECT_KEY_ID"] || ENV["APPSTORE_CONNECT_API_KEY_ID"] || ASC_DEFAULT_KEY_ID

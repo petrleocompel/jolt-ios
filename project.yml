@@ -54,7 +54,7 @@ targets:
     settings:
       base:
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: "REDACTED"
+        DEVELOPMENT_TEAM: "YCFL9S5UA8"
         PRODUCT_BUNDLE_IDENTIFIER: "cz.peelco.jolt.uitests"
         TEST_TARGET_NAME: "Jolt"
         GENERATE_INFOPLIST_FILE: YES
