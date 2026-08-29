@@ -114,6 +114,7 @@
 		DC4C367A6EF5EBAC59CDB1EB /* PavlokAccountViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0C711ACE52370651DCD9C7 /* PavlokAccountViewModel.swift */; };
 		DCDC3F5E6C3BD3C9DEC99C44 /* FriendsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8BB6D098B53F00B1F19518 /* FriendsListView.swift */; };
 		E465DF506896C81016586C83 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3728532FBB4B6DFA4BB80060 /* QRScannerView.swift */; };
+		E479AE3BB629C829A2A8B781 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEC536ADB82917F4A57AF77 /* SplashView.swift */; };
 		E51216EC1387F8A478306FF9 /* Alarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE988AF1F2845FA5280393 /* Alarm.swift */; };
 		ECEBD8CE2FB5208A43336B4D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED177E123C49A2F9DEA54E05 /* RootView.swift */; };
 		ED86F44FF8BBA8DCB9AEDB48 /* FriendsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8471D33515278BAA59DB0C0 /* FriendsRootView.swift */; };
@@ -201,6 +202,7 @@
 		73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodec.swift; sourceTree = "<group>"; };
 		76CFA2F23E100D332D35DEB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInformationReader.swift; sourceTree = "<group>"; };
+		7AEC536ADB82917F4A57AF77 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		7D0E5B645869BFF4C8E1FCEE /* PokeTriggerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerSettingsView.swift; sourceTree = "<group>"; };
 		7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoltApp.swift; sourceTree = "<group>"; };
 		7E17268D8924C74C31F94055 /* AlarmRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmRepository.swift; sourceTree = "<group>"; };
@@ -545,6 +547,7 @@
 				7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */,
 				7EA214CCFE3144D41176FED5 /* JoltAppDelegate.swift */,
 				ED177E123C49A2F9DEA54E05 /* RootView.swift */,
+				7AEC536ADB82917F4A57AF77 /* SplashView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -849,6 +852,7 @@
 				0499A958BFF9FE7D0661D936 /* ServerSettingsStore.swift in Sources */,
 				535EBA6E39EE0CD08FCE8971 /* ServerSettingsView.swift in Sources */,
 				47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */,
+				E479AE3BB629C829A2A8B781 /* SplashView.swift in Sources */,
 				F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */,
 				8E8D9925E5BCADB692E3422D /* StimulusCard.swift in Sources */,
 				5B35D4FB573976A76ACA63C8 /* StimulusPermission.swift in Sources */,
