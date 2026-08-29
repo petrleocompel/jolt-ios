@@ -6,6 +6,7 @@ stages:
   - validate
   - build
   - distribute
+  - publish
 
 variables:
   LC_ALL: "en_US.UTF-8"
@@ -82,3 +83,43 @@ ios_testflight_release:
     expire_in: 14 days
 # END MODULE: testflight
 
+# MODULE: store assets
+# Captures screenshots on the simulator, flattens their alpha channel (App
+# Store Connect rejects PNGs with transparency), then uploads screenshots and
+# the text metadata under fastlane/metadata.
+#
+# Manual and last on purpose: it mutates the App Store listing, takes several
+# minutes of simulator time, and is almost never wanted on an ordinary push.
+# Sitting in the final stage means it only becomes available once validate,
+# build and distribute have passed, so a listing is never updated for a build
+# that failed.
+#
+# Needs ImageMagick on the runner (`brew install imagemagick`) — the flatten
+# step fails with a clear message if it is missing. Simulator names come from
+# fastlane/Snapfile and can be overridden here without touching it.
+ios_store_assets:
+  stage: publish
+  variables:
+    IPHONE_65_NAME: "iPhone 17 Pro Max"
+    IPAD_13_NAME: "iPad Pro 13-inch (M5)"
+  script:
+    - echo "$APPSTORE_CONNECT_API_KEY" | base64 -d > "$ASC_KEY_FILE"
+    - export APP_STORE_CONNECT_API_KEY_PATH="$ASC_KEY_FILE"
+    - bundle exec fastlane store_assets
+  # after_script runs even when the lane fails, so the key never survives the job
+  after_script:
+    - rm -f "$ASC_KEY_FILE"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      # Not allow_failure: if someone deliberately pressed publish and it
+      # failed, the pipeline should say so rather than stay green.
+      allow_failure: false
+  artifacts:
+    when: always
+    paths:
+      - fastlane/screenshots
+      - fastlane/metadata
+      - fastlane
+    expire_in: 14 days
+# END MODULE: store assets

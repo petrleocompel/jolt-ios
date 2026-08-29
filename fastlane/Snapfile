@@ -3,7 +3,12 @@
 # Snapfile — App Store screenshots (6.5" iPhone + 13" iPad when universal)
 # Override: IPHONE_65_NAME="…" IPAD_13_NAME="…" bundle exec fastlane screenshots
 
-iphone_65_name = ENV.fetch("IPHONE_65_NAME", "iPhone 14 Plus")
+# Defaults must be simulators that actually exist on the build machine —
+# `capture_screenshots` fails outright on an unknown device name. "iPhone 14
+# Plus" was not installed on the macOS runner; iPhone 17 Pro Max is the
+# largest available and covers App Store Connect's 6.9" iPhone slot.
+# Override per-run: IPHONE_65_NAME="…" IPAD_13_NAME="…"
+iphone_65_name = ENV.fetch("IPHONE_65_NAME", "iPhone 17 Pro Max")
 ipad_13_name   = ENV.fetch("IPAD_13_NAME", "iPad Pro 13-inch (M5)")
 
 devices([

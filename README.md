@@ -55,6 +55,14 @@ bundle exec fastlane screenshots      # capture + flatten (if enabled)
 bundle exec fastlane store_assets     # screenshots + metadata upload (if enabled)
 ```
 
+On CI, `store_assets` is wired as the manual `ios_store_assets` job in the
+`publish` stage — it only unlocks once validate/build/distribute pass, and
+never runs on its own. It needs ImageMagick on the runner and simulators
+matching `fastlane/Snapfile` (overridable via `IPHONE_65_NAME` / `IPAD_13_NAME`).
+
+```bash
+```
+
 Set `FASTLANE_RUN_XCODEGEN=1` to regenerate the project before build/screenshot lanes.
 
 ### App Store Connect API key
