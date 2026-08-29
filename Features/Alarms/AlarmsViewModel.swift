@@ -22,7 +22,7 @@ final class AlarmsViewModel {
             alarms = try await alarmRepository.fetchAll()
                 .sorted { ($0.hour, $0.minute) < ($1.hour, $1.minute) }
         } catch {
-            lastError = "\(error)"
+            lastError = error.localizedDescription
         }
     }
 
@@ -38,7 +38,7 @@ final class AlarmsViewModel {
             }
             await load()
         } catch {
-            lastError = "\(error)"
+            lastError = error.localizedDescription
         }
     }
 
@@ -53,7 +53,7 @@ final class AlarmsViewModel {
             }
             await load()
         } catch {
-            lastError = "\(error)"
+            lastError = error.localizedDescription
         }
     }
 

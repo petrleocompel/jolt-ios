@@ -63,11 +63,7 @@ struct OnboardingView: View {
             }
             .padding(.horizontal)
             .navigationTitle("Pair device")
-            .alert("Connection failed", isPresented: errorBinding) {
-                Button("OK") { viewModel.lastError = nil }
-            } message: {
-                Text(viewModel.lastError ?? "")
-            }
+            .errorBanner(viewModel.lastError) { viewModel.lastError = nil }
         }
     }
 
@@ -87,9 +83,5 @@ struct OnboardingView: View {
             }
         }
         .accessibilityIdentifier("deviceFamilyPicker")
-    }
-
-    private var errorBinding: Binding<Bool> {
-        Binding(get: { viewModel.lastError != nil }, set: { if !$0 { viewModel.lastError = nil } })
     }
 }

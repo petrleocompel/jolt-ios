@@ -26,6 +26,7 @@
 		308801E2765557C880FD2CDB /* AlarmsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */; };
 		30D060EECC3A623134FC02FE /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32159D4F64FD75C1B07F26C /* Friend.swift */; };
 		324BC0A3BA0B51BEAA7D5601 /* DeviceInformationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39907CAE49AD52A1983BA283 /* DeviceInformationService.swift */; };
+		34359AD510570C687E8C7DE9 /* InlineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF7569653C9B4BE647886FF /* InlineBanner.swift */; };
 		388B114FD98AEF3635AF0A0F /* PokeActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FADBA37929D5C30DEFCE74B3 /* PokeActivityView.swift */; };
 		3C01F079734972A68CC8A62B /* MockSocialBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96552544D49CCD4D3F287C29 /* MockSocialBackend.swift */; };
 		422BD76A2ACC9BE204805192 /* LEB128.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640EE3B1818CA1E92C4120AE /* LEB128.swift */; };
@@ -122,6 +123,7 @@
 /* Begin PBXFileReference section */
 		005F907E84DDB3B357B7C0D9 /* Jolt.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Jolt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CF5E0E0667396A7D5910DA2 /* StimulusCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusCard.swift; sourceTree = "<group>"; };
+		0EF7569653C9B4BE647886FF /* InlineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineBanner.swift; sourceTree = "<group>"; };
 		1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathPuzzleChallengeView.swift; sourceTree = "<group>"; };
 		154DB290EEF9F8DC1D4B01B7 /* PokePushPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokePushPayload.swift; sourceTree = "<group>"; };
 		19DCDC72F43CB8947131C023 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
@@ -271,6 +273,7 @@
 		55226295C2061C3CB6C6FEE7 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				0EF7569653C9B4BE647886FF /* InlineBanner.swift */,
 				63647B93B0F11DBAC3B97FC0 /* QRCodeView.swift */,
 				3728532FBB4B6DFA4BB80060 /* QRScannerView.swift */,
 			);
@@ -695,6 +698,7 @@
 				ED86F44FF8BBA8DCB9AEDB48 /* FriendsRootView.swift in Sources */,
 				FEAD4FC7C821408535A62250 /* FriendsViewModel.swift in Sources */,
 				2B8C77D5B7218CBAAF731099 /* GATTDump.swift in Sources */,
+				34359AD510570C687E8C7DE9 /* InlineBanner.swift in Sources */,
 				68E6E86FF009CA9EF78ABE8F /* JoltApp.swift in Sources */,
 				74AC23F1B869E527FC61EEF5 /* JoltAppDelegate.swift in Sources */,
 				526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */,

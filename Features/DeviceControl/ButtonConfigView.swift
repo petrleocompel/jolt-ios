@@ -24,11 +24,7 @@ struct ButtonConfigView: View {
             }
         }
         .navigationTitle("Button")
-        .alert("Couldn't save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
-            Button("OK") { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
+        .errorBanner(errorMessage) { errorMessage = nil }
     }
 
     private func bindingFor(_ press: ButtonPressType) -> Binding<ButtonAction> {
@@ -46,7 +42,7 @@ struct ButtonConfigView: View {
             do {
                 try await viewModel.setButtonConfig(ButtonConfig(pressType: press, action: action, stimulus: nil), press: press)
             } catch {
-                errorMessage = "\(error)"
+                errorMessage = error.localizedDescription
             }
         }
     }

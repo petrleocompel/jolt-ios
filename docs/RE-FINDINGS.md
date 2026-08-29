@@ -133,6 +133,52 @@ Live device readback confirms every field:
 device as `0x01`, with neither `0x80` nor `0x40` set — the device was told to
 neither fire nor store, so it acknowledged the write and ignored it.
 
+### Operation → characteristic map (from `ble_manager.dart`)
+
+Every legacy operation, with the characteristic it actually writes:
+
+| Operation | Service | Characteristic |
+|---|---|---|
+| `performZap` / `updateZap` | config `156E1000` | `1003` |
+| `performMotor` / `updateMotor` | config | `1001` |
+| `performPiezo` / `updatePiezo` | config | `1002` |
+| `writeCurrentTimeToDevice` | config | `1005` time |
+| `readHandDetectData` / `writeHandDetectData` | config | `1006` hand-detect |
+| `writeAlarmBytesToDevice` | application `156E5000` | `5002` download |
+| `writeReadAlarmCommand`, `turnOffDeviceAlarm`, `snoozeDeviceAlarm` | application | `5001` control |
+| `listenToAlarmNotifier`, `getAlarmState` | application | `5003` alarm notify |
+| `setButtonAction`, `getDeviceButtonActions`, `saveTimerToDevice` | **setup `156E7000`** | `7001` |
+| `writeReadUserLogCommand`, `writeReadDiagnosticLogCommand` | notification `156E2000` | — |
+
+Two of these contradict earlier guesses: button config lives in the *setup*
+service, not the application one, and alarm slot bytes go to the download
+characteristic (`5002`) while alarm *commands* go to the control point
+(`5001`).
+
+Payloads for alarms and button config are still unrecovered — `setButtonAction`
+builds a variable-length list whose shape depends on the action type.
+
+### Shock Clock Max
+
+The Shock Clock Max code in the Android app is a much larger protocol than the
+legacy one (~20k lines), and there is no SCMax hardware to verify against.
+
+ESF is MessagePack-shaped. The decoder in `esf_parser.dart` dispatches on tag
+ranges `0x7f/0x80`, `0x9f/0xa0`, `0xbf/0xc0`, `0xdf/0xe0`, `0xef/0xf0`,
+`0xf7/0xf8`, `0xfc`, `0xfd`, `0xfe`, and the type parsers give:
+
+| Type | Tag |
+|---|---|
+| positive fixint | `0x00`–`0x7f` inline |
+| int (wider) | `0x80`, `0x90` prefixes |
+| fixstr | `0xa0` \| len, len < `0x20` |
+| array | `0xf4` |
+| null | `0xfe` |
+
+Timeout labels visible in `scmax_device_manager.dart` name the message set:
+"Battery Report Timeout", "Time Report Timeout", "Hand Detect Dump Timeout",
+"User Logs Timeout".
+
 Advertised names: `Pavlok-1`, `pavlok-2`, `pavlok-3`, `Pavlok-RingL`,
 `Pavlok-Smart-Ring`.
 

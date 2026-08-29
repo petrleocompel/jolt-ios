@@ -115,10 +115,13 @@ struct LegacyDeviceController {
         try await write(stimulus, command: .store, on: peripheral)
     }
 
-    /// Alarm slot layout is still unverified — the alarm characteristics are
-    /// `kApplicationAlarmNotifyCharcUuid` (`5003`) and
-    /// `kApplicationControlCharcUuid` (`5001`) in the application service.
-    /// Their UUIDs are now confirmed; the payloads are not.
+    /// Alarm slot *bytes* go to `kApplicationDownloadCharcUuid` (`5002`),
+    /// per `BleManager::writeAlarmBytesToDevice`. Commands about an alarm
+    /// (read, snooze, turn off) go to `kApplicationControlCharcUuid`
+    /// (`5001`) instead, and the device reports alarm state by notifying
+    /// `kApplicationAlarmNotifyCharcUuid` (`5003`).
+    ///
+    /// The target is now confirmed; the payload below is still a guess.
     func syncAlarm(_ alarm: Alarm, on peripheral: CBPeripheral) async throws {
         var dayBitmask: UInt8 = 0
         for day in alarm.repeatDays {
@@ -132,12 +135,14 @@ struct LegacyDeviceController {
         ]) + Data(alarm.id.uuidBytes.prefix(4))
         try await central.write(
             payload,
-            to: LegacyGATT.applicationControl,
+            to: LegacyGATT.applicationDownload,
             serviceUUID: LegacyGATT.applicationService,
             on: peripheral
         )
     }
 
+    /// Deleting is a command rather than a slot write, so it goes to the
+    /// control point. Payload unverified.
     func deleteAlarm(_ id: Alarm.ID, on peripheral: CBPeripheral) async throws {
         let payload = Data([0xFF]) + Data(id.uuidBytes.prefix(4))
         try await central.write(

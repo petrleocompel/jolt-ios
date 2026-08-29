@@ -10,12 +10,31 @@ struct AlarmsListView: View {
             Group {
                 if let viewModel {
                     List {
+                        if viewModel.alarms.isEmpty {
+                            // The app already uses `ContentUnavailableView`
+                            // for empty poke activity; an empty alarm list
+                            // was a blank screen with only a "+" in the bar.
+                            ContentUnavailableView(
+                                "No alarms",
+                                systemImage: "alarm",
+                                description: Text("Tap + to add one. Device alarms fire even when your phone is off.")
+                            )
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                        }
                         ForEach(viewModel.alarms) { alarm in
-                            AlarmRow(alarm: alarm) {
-                                Task { await viewModel.toggle(alarm) }
+                            // A `Button` rather than `.onTapGesture`: a bare
+                            // tap gesture carries no button trait, so
+                            // VoiceOver announced the row as static text with
+                            // no way to open it.
+                            Button {
+                                editingAlarm = alarm
+                            } label: {
+                                AlarmRow(alarm: alarm) {
+                                    Task { await viewModel.toggle(alarm) }
+                                }
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture { editingAlarm = alarm }
+                            .buttonStyle(.plain)
                         }
                         .onDelete { indexSet in
                             Task {
@@ -26,6 +45,7 @@ struct AlarmsListView: View {
                         }
                     }
                     .accessibilityIdentifier("alarmsList")
+                    .errorBanner(viewModel.lastError) { viewModel.lastError = nil }
                 } else {
                     ProgressView()
                 }
@@ -66,7 +86,7 @@ private struct AlarmRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(String(format: "%02d:%02d", alarm.hour, alarm.minute))
                     .font(.title2.monospacedDigit())
                 Text(alarm.label.isEmpty ? alarm.location.displayName : alarm.label)
@@ -76,6 +96,10 @@ private struct AlarmRow: View {
             Spacer()
             Toggle("", isOn: Binding(get: { alarm.isEnabled }, set: { _ in onToggle() }))
                 .labelsHidden()
+                // `labelsHidden()` hides the label visually *and* from
+                // VoiceOver, leaving the switch unnamed.
+                .accessibilityLabel("\(alarm.label.isEmpty ? alarm.location.displayName : alarm.label) enabled")
+                .accessibilityIdentifier("alarmToggle_\(alarm.id.uuidString)")
         }
     }
 }

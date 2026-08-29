@@ -275,11 +275,16 @@ final class CompositeDeviceRepository: DeviceRepository {
         let (peripheral, family) = try requireConnection()
         switch family {
         case .pavlok2, .pavlok3:
+            // `BleManager::setButtonAction` writes to the *setup* service,
+            // not the application one. The payload it builds is variable
+            // length and depends on the action, so the two bytes below are
+            // still a guess — but they are at least aimed at the right
+            // characteristic now.
             let payload = Data([press.wireValue, config.action.wireValue])
             try await central.write(
                 payload,
-                to: LegacyGATT.applicationControl,
-                serviceUUID: LegacyGATT.applicationService,
+                to: LegacyGATT.setupCharacteristic,
+                serviceUUID: LegacyGATT.setupService,
                 on: peripheral
             )
         case .shockClockMax:

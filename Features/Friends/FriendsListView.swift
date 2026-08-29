@@ -53,6 +53,7 @@ struct FriendsListView: View {
                         }
                     }
                     .accessibilityIdentifier("friendsList")
+                    .errorBanner(friendsViewModel.lastError) { friendsViewModel.lastError = nil }
                     .navigationTitle("Friends")
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
