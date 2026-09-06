@@ -10,9 +10,11 @@ import Foundation
 @MainActor
 final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository {
     private let configuration: ServerConfiguration
-    private let client: JoltAPIClient
+    /// Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` is the same
+    /// type in another file, and Swift's `private` is file-scoped.
+    let client: JoltAPIClient
     private let tokenStore: AuthTokenStore
-    private let deviceRepository: DeviceRepository
+    let deviceRepository: DeviceRepository
 
     private var user: User?
     private var inviteCode = ""
@@ -264,7 +266,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     @discardableResult
     func handleIncomingPoke(_ payload: PokePushPayload) async -> PokeDeliveryStatus {
-        let status = await deliver(payload)
+        let status = await fireLocally(payload.stimulus)
         // Tell the server what actually happened. Idempotent server-side, so
         // an alert push and a silent push for the same poke are both safe to
         // ack.
@@ -276,15 +278,17 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         return status
     }
 
-    /// Fires the stimulus locally, applying the same do-not-disturb rule the
+    /// Fires a stimulus locally, applying the same do-not-disturb rule the
     /// mock uses. The server has already checked permissions; this is the
-    /// recipient-side half.
-    private func deliver(_ payload: PokePushPayload) async -> PokeDeliveryStatus {
+    /// recipient-side half. Shared with test pushes, so "do not disturb"
+    /// means the same thing whether the stimulus came from a friend or from
+    /// your own diagnostic.
+    func fireLocally(_ stimulus: StimulusConfig) async -> PokeDeliveryStatus {
         if UserDefaults.standard.bool(forKey: PokeSettings.doNotDisturbKey) {
             return .muted
         }
         do {
-            try await deviceRepository.fire(payload.stimulus)
+            try await deviceRepository.fire(stimulus)
             return .fired
         } catch {
             return .deviceNotConnected

@@ -22,6 +22,8 @@ final class AppDependencies {
     let authRepository: AuthRepository
     let friendsRepository: FriendsRepository
     let pokeRepository: PokeRepository
+    /// Settings → Notifications: "did the push actually get here?".
+    let pushDiagnostics: PushDiagnosticsRepository
     /// Approach A: turns a wearable button gesture into an outgoing friend
     /// poke. Runs for the app's lifetime, subscribing only while a device is
     /// connected and the trigger is enabled.
@@ -31,6 +33,11 @@ final class AppDependencies {
     /// Which server the social features are talking to. Nil in snapshot mode
     /// and whenever the mock backend is in use.
     let serverConfiguration: ServerConfiguration?
+
+    /// This device's APNs token, as handed to `JoltAppDelegate` on launch.
+    /// Nil until Apple answers, or forever if the user declined notifications
+    /// — which is itself worth showing on the notification test screen.
+    var apnsToken: String?
 
     /// Set by `ServerSettingsView` after a server change. The backend is
     /// built once here against a fixed base URL, so the switch only takes
@@ -66,7 +73,7 @@ final class AppDependencies {
         // network and no server. Everything else talks to the configured
         // Jolt server, which is ours by default and self-hosted if the user
         // has pointed Settings elsewhere.
-        let social: AuthRepository & FriendsRepository & PokeRepository
+        let social: AuthRepository & FriendsRepository & PokeRepository & PushDiagnosticsRepository
         if AppEnvironment.isSnapshotMode {
             self.serverConfiguration = nil
             social = MockSocialBackend(deviceRepository: deviceRepository)
@@ -81,6 +88,7 @@ final class AppDependencies {
         self.authRepository = social
         self.friendsRepository = social
         self.pokeRepository = social
+        self.pushDiagnostics = social
 
         let triggerService = PokeTriggerService(
             deviceRepository: deviceRepository,
@@ -91,7 +99,7 @@ final class AppDependencies {
         // service simply idles.
         triggerService.start()
 
-        let delegate = AppNotificationDelegate(pokeRepository: social)
+        let delegate = AppNotificationDelegate(pokeRepository: social, pushDiagnostics: social)
         self.notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
 

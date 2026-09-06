@@ -24,6 +24,19 @@ struct SettingsView: View {
                 }
                 Section {
                     NavigationLink {
+                        NotificationTestView(
+                            viewModel: NotificationTestViewModel(repository: dependencies.pushDiagnostics)
+                        )
+                    } label: {
+                        Text("Notifications")
+                    }
+                    .accessibilityIdentifier("notificationTestLink")
+                } footer: {
+                    Text("Check that a poke sent from the server actually reaches this phone — "
+                        + "without needing a friend to send one.")
+                }
+                Section {
+                    NavigationLink {
                         PokeTriggerSettingsView(
                             service: dependencies.pokeTriggerService,
                             friendsRepository: dependencies.friendsRepository

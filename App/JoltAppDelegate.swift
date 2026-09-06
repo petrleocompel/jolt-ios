@@ -17,6 +17,7 @@ final class JoltAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
         Task { @MainActor in
+            AppDependencies.shared?.apnsToken = token
             await AppDependencies.shared?.authRepository.registerPushToken(token)
         }
     }
@@ -38,6 +39,17 @@ final class JoltAppDelegate: NSObject, UIApplicationDelegate {
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
+        // A diagnostic push takes the same silent path a poke does — that is
+        // the point of it, since this is the half of delivery that tends to
+        // break quietly.
+        if let test = TestPushPayload(userInfo: userInfo) {
+            Task { @MainActor in
+                await AppDependencies.shared?.pushDiagnostics
+                    .handleIncomingTestPush(test, path: .background)
+                completionHandler(.newData)
+            }
+            return
+        }
         guard let payload = PokePushPayload(userInfo: userInfo) else {
             completionHandler(.noData)
             return

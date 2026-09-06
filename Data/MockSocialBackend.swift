@@ -24,7 +24,9 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         }
     }
 
-    private let deviceRepository: DeviceRepository
+    /// Not `private`: `MockSocialBackend+PushDiagnostics.swift` is the same
+    /// type in another file, and Swift's `private` is file-scoped.
+    let deviceRepository: DeviceRepository
 
     private var user: User?
     private var friendsList: [Friend] = []

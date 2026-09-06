@@ -13,9 +13,11 @@ import UserNotifications
 final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     private(set) var activeAlarmID: UUID?
     private let pokeRepository: PokeRepository
+    private let pushDiagnostics: PushDiagnosticsRepository
 
-    init(pokeRepository: PokeRepository) {
+    init(pokeRepository: PokeRepository, pushDiagnostics: PushDiagnosticsRepository) {
         self.pokeRepository = pokeRepository
+        self.pushDiagnostics = pushDiagnostics
     }
 
     func clearActiveAlarm() {
@@ -28,7 +30,7 @@ final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate 
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         Task { @MainActor in
-            await handle(notification.request.content.userInfo)
+            await handle(notification.request.content.userInfo, path: .foreground)
         }
         completionHandler([.banner, .sound])
     }
@@ -39,14 +41,20 @@ final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate 
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         Task { @MainActor in
-            await handle(response.notification.request.content.userInfo)
+            await handle(response.notification.request.content.userInfo, path: .alert)
         }
         completionHandler()
     }
 
-    private func handle(_ userInfo: [AnyHashable: Any]) async {
+    /// `path` distinguishes a notification the user tapped from one shown
+    /// while the app was already open — a test push reports which one saw it.
+    private func handle(_ userInfo: [AnyHashable: Any], path: TestPushPath) async {
         if let raw = userInfo["alarmID"] as? String, let id = UUID(uuidString: raw) {
             activeAlarmID = id
+            return
+        }
+        if let payload = TestPushPayload(userInfo: userInfo) {
+            await pushDiagnostics.handleIncomingTestPush(payload, path: path)
             return
         }
         if let payload = PokePushPayload(userInfo: userInfo) {

@@ -15,7 +15,14 @@ Accounts are per-instance: switching servers signs you out, and friends and
 poke history stay behind on the old one. The bearer token is kept in the
 keychain, scoped to the server that issued it.
 
-`MockSocialBackend` still implements the same three repository protocols
+**Settings → Notifications** sends a test push through that server to this
+phone — the same alert + silent pair a poke uses, but carrying no poke, so it
+works with no friends, no permissions and (unless you ask it to fire) no
+wearable connected. The phone acks it back, so "Arrived in 1.2s" means it
+genuinely got there rather than that Apple accepted it. The same test lives on
+the server's web dashboard under Devices.
+
+`MockSocialBackend` still implements the same repository protocols
 in-memory and is what snapshot/screenshot runs use, so the UI can be exercised
 without a server.
 
