@@ -35,11 +35,14 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     private var activityLog: [PokeEvent] = []
     private var didSeed = false
 
-    private var userContinuation: AsyncStream<User?>.Continuation?
-    private var friendsContinuation: AsyncStream<[Friend]>.Continuation?
-    private var incomingContinuation: AsyncStream<[FriendRequest]>.Continuation?
-    private var outgoingContinuation: AsyncStream<[FriendRequest]>.Continuation?
-    private var activityContinuation: AsyncStream<[PokeEvent]>.Continuation?
+    // See `HTTPSocialBackend`'s matching comment: a raw `AsyncStream` only
+    // supports one live consumer, and Friends, Settings' poke triggers, and
+    // the quick-poke picker all subscribe to `friends` independently.
+    private let userHub = StreamHub<User?>()
+    private let friendsHub = StreamHub<[Friend]>()
+    private let incomingHub = StreamHub<[FriendRequest]>()
+    private let outgoingHub = StreamHub<[FriendRequest]>()
+    private let activityHub = StreamHub<[PokeEvent]>()
 
     /// Static per app-install for the mock; a real backend issues one per
     /// account at signup.
@@ -50,30 +53,11 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         self.deviceRepository = deviceRepository
     }
 
-    private(set) lazy var currentUser: AsyncStream<User?> = AsyncStream { continuation in
-        self.userContinuation = continuation
-        continuation.yield(self.user)
-    }
-
-    private(set) lazy var friends: AsyncStream<[Friend]> = AsyncStream { continuation in
-        self.friendsContinuation = continuation
-        continuation.yield(self.friendsList)
-    }
-
-    private(set) lazy var incomingRequests: AsyncStream<[FriendRequest]> = AsyncStream { continuation in
-        self.incomingContinuation = continuation
-        continuation.yield(self.incoming)
-    }
-
-    private(set) lazy var outgoingRequests: AsyncStream<[FriendRequest]> = AsyncStream { continuation in
-        self.outgoingContinuation = continuation
-        continuation.yield(self.outgoing)
-    }
-
-    private(set) lazy var activity: AsyncStream<[PokeEvent]> = AsyncStream { continuation in
-        self.activityContinuation = continuation
-        continuation.yield(self.activityLog)
-    }
+    var currentUser: AsyncStream<User?> { userHub.stream() }
+    var friends: AsyncStream<[Friend]> { friendsHub.stream() }
+    var incomingRequests: AsyncStream<[FriendRequest]> { incomingHub.stream() }
+    var outgoingRequests: AsyncStream<[FriendRequest]> { outgoingHub.stream() }
+    var activity: AsyncStream<[PokeEvent]> { activityHub.stream() }
 
     // MARK: - Auth
 
@@ -83,7 +67,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         let newUser = User(id: UUID(), handle: normalizedHandle, displayName: displayName, email: email)
         user = newUser
         seedDemoDataIfNeeded()
-        userContinuation?.yield(newUser)
+        userHub.yield(newUser)
     }
 
     func logIn(email: String, password: String) async throws {
@@ -92,12 +76,12 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         let newUser = User(id: UUID(), handle: "you", displayName: "You", email: email)
         user = newUser
         seedDemoDataIfNeeded()
-        userContinuation?.yield(newUser)
+        userHub.yield(newUser)
     }
 
     func logOut() async {
         user = nil
-        userContinuation?.yield(nil)
+        userHub.yield(nil)
     }
 
     func registerPushToken(_ token: String) async {
@@ -117,7 +101,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             id: UUID(), handle: normalized, displayName: normalized.capitalized, direction: .outgoing, createdAt: .now
         )
         outgoing.append(request)
-        outgoingContinuation?.yield(outgoing)
+        outgoingHub.yield(outgoing)
     }
 
     func sendRequest(inviteCode: String) async throws {
@@ -126,7 +110,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         guard !trimmed.isEmpty else { throw MockBackendError.handleNotFound }
         let handle = "guest-\(trimmed.suffix(4).lowercased())"
         outgoing.append(FriendRequest(id: UUID(), handle: handle, displayName: handle.capitalized, direction: .outgoing, createdAt: .now))
-        outgoingContinuation?.yield(outgoing)
+        outgoingHub.yield(outgoing)
     }
 
     func acceptRequest(_ id: FriendRequest.ID) async throws {
@@ -141,27 +125,27 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             permissionsIGranted: .none
         )
         friendsList.append(friend)
-        incomingContinuation?.yield(incoming)
-        friendsContinuation?.yield(friendsList)
+        incomingHub.yield(incoming)
+        friendsHub.yield(friendsList)
     }
 
     func rejectRequest(_ id: FriendRequest.ID) async throws {
         try await Task.sleep(for: .milliseconds(200))
         incoming.removeAll { $0.id == id }
-        incomingContinuation?.yield(incoming)
+        incomingHub.yield(incoming)
     }
 
     func removeFriend(_ id: Friend.ID) async throws {
         try await Task.sleep(for: .milliseconds(200))
         friendsList.removeAll { $0.id == id }
-        friendsContinuation?.yield(friendsList)
+        friendsHub.yield(friendsList)
     }
 
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws {
         try await Task.sleep(for: .milliseconds(200))
         guard let index = friendsList.firstIndex(where: { $0.id == friendID }) else { return }
         friendsList[index].permissionsIGranted[kind] = permission
-        friendsContinuation?.yield(friendsList)
+        friendsHub.yield(friendsList)
     }
 
     // MARK: - Pokes
@@ -181,7 +165,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             createdAt: .now
         )
         activityLog.insert(event, at: 0)
-        activityContinuation?.yield(activityLog)
+        activityHub.yield(activityLog)
         guard isAllowed else { throw MockBackendError.notAllowed }
     }
 
@@ -214,7 +198,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             createdAt: .now
         )
         activityLog.insert(event, at: 0)
-        activityContinuation?.yield(activityLog)
+        activityHub.yield(activityLog)
         return status
     }
 
@@ -238,10 +222,10 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         outgoing = Self.seedOutgoingRequests()
         activityLog = Self.seedActivity()
 
-        friendsContinuation?.yield(friendsList)
-        incomingContinuation?.yield(incoming)
-        outgoingContinuation?.yield(outgoing)
-        activityContinuation?.yield(activityLog)
+        friendsHub.yield(friendsList)
+        incomingHub.yield(incoming)
+        outgoingHub.yield(outgoing)
+        activityHub.yield(activityLog)
     }
 }
 

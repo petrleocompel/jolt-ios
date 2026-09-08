@@ -26,11 +26,19 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// `registerPushToken` has an account to attach it to would 401.
     private var pendingPushToken: String?
 
-    private var userContinuation: AsyncStream<User?>.Continuation?
-    private var friendsContinuation: AsyncStream<[Friend]>.Continuation?
-    private var incomingContinuation: AsyncStream<[FriendRequest]>.Continuation?
-    private var outgoingContinuation: AsyncStream<[FriendRequest]>.Continuation?
-    private var activityContinuation: AsyncStream<[PokeEvent]>.Continuation?
+    // `StreamHub`, not a raw `AsyncStream` continuation: Friends, Settings'
+    // poke triggers, and the quick-poke picker all subscribe to `friends`
+    // independently. A raw `AsyncStream` only supports one live consumer —
+    // a second `for await` steals yields from the first, so whichever
+    // screen lost the race never saw an update (friend list stuck, a
+    // permission toggle not reflecting, "Poke from your Pavlok" showing a
+    // stale/empty friend picker). See `StreamHub`'s doc comment for the
+    // same bug already hit once with `connectedDevice`.
+    private let userHub = StreamHub<User?>()
+    private let friendsHub = StreamHub<[Friend]>()
+    private let incomingHub = StreamHub<[FriendRequest]>()
+    private let outgoingHub = StreamHub<[FriendRequest]>()
+    private let activityHub = StreamHub<[PokeEvent]>()
 
     var myHandle: String { user?.handle ?? "" }
     var myInviteCode: String { inviteCode }
@@ -49,35 +57,19 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             token: tokenStore.token(for: configuration),
             session: session
         )
-    }
-
-    private(set) lazy var currentUser: AsyncStream<User?> = AsyncStream { continuation in
-        self.userContinuation = continuation
-        continuation.yield(self.user)
         // A token from a previous launch means we're probably still signed
-        // in; confirm with the server rather than assuming either way.
+        // in; confirm with the server rather than assuming either way. Run
+        // once here rather than on first `currentUser` subscription — with
+        // `StreamHub`, every subscriber gets its own fresh stream, so tying
+        // it to subscription would re-run it once per subscriber.
         Task { await self.restoreSession() }
     }
 
-    private(set) lazy var friends: AsyncStream<[Friend]> = AsyncStream { continuation in
-        self.friendsContinuation = continuation
-        continuation.yield(self.friendsList)
-    }
-
-    private(set) lazy var incomingRequests: AsyncStream<[FriendRequest]> = AsyncStream { continuation in
-        self.incomingContinuation = continuation
-        continuation.yield(self.incoming)
-    }
-
-    private(set) lazy var outgoingRequests: AsyncStream<[FriendRequest]> = AsyncStream { continuation in
-        self.outgoingContinuation = continuation
-        continuation.yield(self.outgoing)
-    }
-
-    private(set) lazy var activity: AsyncStream<[PokeEvent]> = AsyncStream { continuation in
-        self.activityContinuation = continuation
-        continuation.yield(self.activityLog)
-    }
+    var currentUser: AsyncStream<User?> { userHub.stream() }
+    var friends: AsyncStream<[Friend]> { friendsHub.stream() }
+    var incomingRequests: AsyncStream<[FriendRequest]> { incomingHub.stream() }
+    var outgoingRequests: AsyncStream<[FriendRequest]> { outgoingHub.stream() }
+    var activity: AsyncStream<[PokeEvent]> { activityHub.stream() }
 
     // MARK: - Auth
 
@@ -134,7 +126,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         await client.setToken(response.token)
         user = response.user.asUser
         inviteCode = response.user.inviteCode
-        userContinuation?.yield(user)
+        userHub.yield(user)
         if let pendingPushToken {
             self.pendingPushToken = nil
             await registerPushToken(pendingPushToken)
@@ -155,11 +147,11 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         incoming = []
         outgoing = []
         activityLog = []
-        userContinuation?.yield(nil)
-        friendsContinuation?.yield([])
-        incomingContinuation?.yield([])
-        outgoingContinuation?.yield([])
-        activityContinuation?.yield([])
+        userHub.yield(nil)
+        friendsHub.yield([])
+        incomingHub.yield([])
+        outgoingHub.yield([])
+        activityHub.yield([])
     }
 
     private func restoreSession() async {
@@ -168,7 +160,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             let profile: MeResponse = try await client.send("GET", "me")
             user = profile.asUser
             inviteCode = profile.inviteCode
-            userContinuation?.yield(user)
+            userHub.yield(user)
             await refreshAll()
         } catch JoltAPIClient.APIError.unauthorized {
             // Token was rejected — expired, revoked, or from a server we no
@@ -319,20 +311,20 @@ extension HTTPSocialBackend {
     private func refreshFriends() async {
         guard let list: [Friend] = try? await client.send("GET", "friends") else { return }
         friendsList = list
-        friendsContinuation?.yield(list)
+        friendsHub.yield(list)
     }
 
     private func refreshRequests() async {
         guard let response: RequestsResponse = try? await client.send("GET", "friends/requests") else { return }
         incoming = response.incoming
         outgoing = response.outgoing
-        incomingContinuation?.yield(incoming)
-        outgoingContinuation?.yield(outgoing)
+        incomingHub.yield(incoming)
+        outgoingHub.yield(outgoing)
     }
 
     private func refreshActivity() async {
         guard let events: [PokeEvent] = try? await client.send("GET", "pokes") else { return }
         activityLog = events
-        activityContinuation?.yield(events)
+        activityHub.yield(events)
     }
 }
