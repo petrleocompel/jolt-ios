@@ -73,7 +73,20 @@ final class FriendsViewModel {
         Task { try? await repository.removeFriend(friend.id) }
     }
 
+    /// Updates `friends` locally before the network call returns, not just
+    /// after. `PermissionEditView`'s "Allow" toggle and its two steppers
+    /// each capture a `StimulusPermission` snapshot at render time and send
+    /// a full overwrite of it — flip "Allow" on and immediately bump the
+    /// intensity stepper (a natural sequence) and, without this, the second
+    /// write could fire before the first one's server round trip refreshed
+    /// `friends`, so it would still be holding the pre-toggle snapshot and
+    /// silently revert `isAllowed` back to false. Applying the change here
+    /// first means every subsequent render — and thus every subsequent
+    /// binding closure — reads the latest known state immediately.
     func updatePermission(for friend: Friend, kind: StimulusKind, permission: StimulusPermission) {
+        if let index = friends.firstIndex(where: { $0.id == friend.id }) {
+            friends[index].permissionsIGranted[kind] = permission
+        }
         Task { try? await repository.updatePermission(for: friend.id, kind: kind, permission: permission) }
     }
 }

@@ -85,6 +85,63 @@ final class FriendsFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Alice'")).firstMatch.waitForExistence(timeout: 5))
     }
 
+    /// Regression test for a bug where `friends` (and the sibling request/
+    /// activity streams) were single-consumer `AsyncStream`s: once a second
+    /// screen subscribed concurrently, it stole updates from the first,
+    /// so whichever one lost the race stopped reflecting changes — reported
+    /// as "Friends page doesn't refresh" and "the permission switch doesn't
+    /// work". Visiting the poke-trigger friend picker (a second subscriber)
+    /// before toggling a permission on the Friends tab (the first
+    /// subscriber) reproduces the exact interleaving that broke.
+    @MainActor
+    func testPermissionToggleUpdatesAfterAnotherScreenSubscribesToFriends() {
+        let app = launchApp()
+        app.selectTab("Friends")
+        signUp(app)
+
+        app.selectTab("Settings")
+        app.buttons["pokeTriggerSettingsLink"].tap()
+        let enableToggle = app.switches["pokeTriggerEnableToggle"]
+        XCTAssertTrue(enableToggle.waitForExistence(timeout: 8))
+        enableToggle.switches.firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["pokeTriggerFriendPicker"].waitForExistence(timeout: 8))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        app.selectTab("Friends")
+        app.staticTexts["Alice"].tap()
+        app.staticTexts["Permissions you've granted Alice"].tap()
+
+        // Seed data: Alice's granted Zap permission starts disabled, so this
+        // is the first "Allow" toggle in the form (StimulusKind.allCases
+        // order is zap, vibe, beep).
+        let zapAllowToggle = app.switches.element(boundBy: 0)
+        XCTAssertTrue(zapAllowToggle.waitForExistence(timeout: 8))
+        XCTAssertEqual(zapAllowToggle.value as? String, "0")
+
+        zapAllowToggle.switches.firstMatch.tap()
+
+        let becameOn = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: zapAllowToggle)
+        wait(for: [becameOn], timeout: 8)
+
+        // The max-intensity stepper only appears once `isAllowed` is true —
+        // a second signal, beyond the switch's own value, that the toggle's
+        // write actually round-tripped back through the friends stream.
+        let maxIntensityLabel = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Max intensity'")).firstMatch
+        XCTAssertTrue(maxIntensityLabel.waitForExistence(timeout: 5))
+
+        // Number fields (`maxIntensity`/`cooldownSeconds`) go through the
+        // exact same `updatePermission` → `refreshFriends` round trip as the
+        // "Allow" switch, so they were equally exposed to the stream race —
+        // bump the max-intensity stepper and confirm its label updates too.
+        let beforeStepperLabel = maxIntensityLabel.label
+        app.buttons["Increment"].firstMatch.tap()
+        let stepperUpdated = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label != %@", beforeStepperLabel),
+            object: maxIntensityLabel
+        )
+        wait(for: [stepperUpdated], timeout: 8)
+    }
+
     @MainActor
     private func signUp(_ app: XCUIApplication) {
         let emailField = app.textFields["emailField"]
