@@ -53,6 +53,22 @@ struct SettingsView: View {
                         + "just your phone reacting to what the device already reports.")
                 }
                 Section {
+                    NavigationLink {
+                        QuickPokeSettingsView(
+                            service: dependencies.quickPokeService,
+                            friendsRepository: dependencies.friendsRepository
+                        )
+                    } label: {
+                        LabeledContent(
+                            "Quick poke",
+                            value: dependencies.quickPokeService.settings.isConfigured ? "On" : "Off"
+                        )
+                    }
+                    .accessibilityIdentifier("quickPokeSettingsLink")
+                } footer: {
+                    Text("Adds a one-tap poke button for a friend you choose to the Remote tab.")
+                }
+                Section {
                     LabeledContent("Connected", value: deviceControlViewModel.connectedDevice?.name ?? "None")
                     Button("Disconnect") {
                         deviceControlViewModel.disconnect()

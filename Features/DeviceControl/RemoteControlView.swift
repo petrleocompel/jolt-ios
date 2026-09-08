@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RemoteControlView: View {
     let viewModel: DeviceControlViewModel
+    @Environment(AppDependencies.self) private var dependencies
 
     private var isConnected: Bool { viewModel.connectedDevice != nil }
 
@@ -18,6 +19,12 @@ struct RemoteControlView: View {
                 if !isConnected {
                     Section {
                         disconnectedNotice
+                    }
+                }
+
+                if dependencies.quickPokeService.settings.isConfigured {
+                    Section("Quick poke") {
+                        quickPokeRow
                     }
                 }
 
@@ -83,6 +90,33 @@ struct RemoteControlView: View {
         }
         .font(.subheadline)
         .accessibilityIdentifier("disconnectedNotice")
+    }
+
+    /// Configured in Settings → Quick poke. Sending a poke goes through the
+    /// friend server, not the Pavlok BLE link, so unlike stimulus cards this
+    /// stays enabled while disconnected.
+    private var quickPokeRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Button {
+                dependencies.quickPokeService.sendQuickPoke()
+            } label: {
+                Label(
+                    "Poke \(dependencies.quickPokeService.settings.targetFriendName ?? "friend")",
+                    systemImage: "hand.point.up.left.fill"
+                )
+            }
+            .accessibilityIdentifier("quickPokeButton")
+
+            if let error = dependencies.quickPokeService.lastError {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            } else if let last = dependencies.quickPokeService.lastPokeSentAt {
+                Text("Sent \(last.formatted(.relative(presentation: .named)))")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     /// Confirmation and errors share one slot: an error supersedes the

@@ -28,6 +28,9 @@ final class AppDependencies {
     /// poke. Runs for the app's lifetime, subscribing only while a device is
     /// connected and the trigger is enabled.
     let pokeTriggerService: PokeTriggerService
+    /// Settings → Quick Poke: a one-tap poke button on the Remote tab for a
+    /// friend chosen ahead of time.
+    let quickPokeService: QuickPokeService
     let notificationDelegate: AppNotificationDelegate
     let modelContainer: ModelContainer
     /// Which server the social features are talking to. Nil in snapshot mode
@@ -98,6 +101,8 @@ final class AppDependencies {
         // Safe in snapshot mode: FakeDeviceRepository never connects, so the
         // service simply idles.
         triggerService.start()
+
+        self.quickPokeService = QuickPokeService(pokeRepository: social)
 
         let delegate = AppNotificationDelegate(pokeRepository: social, pushDiagnostics: social)
         self.notificationDelegate = delegate
