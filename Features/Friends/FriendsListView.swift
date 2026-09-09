@@ -65,12 +65,12 @@ struct FriendsListView: View {
                             .accessibilityIdentifier("addFriendButton")
                         }
                         ToolbarItem(placement: .cancellationAction) {
-                            Menu {
-                                Text("@\(friendsViewModel.myHandle)")
-                                Button("Log out", role: .destructive) { authViewModel.logOut() }
+                            NavigationLink {
+                                ProfileView(authViewModel: authViewModel, friendsViewModel: friendsViewModel)
                             } label: {
                                 Image(systemName: "person.crop.circle")
                             }
+                            .accessibilityIdentifier("profileLink")
                         }
                     }
                     .sheet(isPresented: $isAddingFriend) {
