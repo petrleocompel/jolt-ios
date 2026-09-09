@@ -123,23 +123,25 @@ final class FriendsFlowUITests: XCTestCase {
         let becameOn = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "1"), object: zapAllowToggle)
         wait(for: [becameOn], timeout: 8)
 
-        // The max-intensity stepper only appears once `isAllowed` is true —
-        // a second signal, beyond the switch's own value, that the toggle's
+        // The intensity slider only appears once `isAllowed` is true — a
+        // second signal, beyond the switch's own value, that the toggle's
         // write actually round-tripped back through the friends stream.
-        let maxIntensityLabel = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Max intensity'")).firstMatch
-        XCTAssertTrue(maxIntensityLabel.waitForExistence(timeout: 5))
+        let intensitySlider = app.sliders["zapIntensitySlider"]
+        XCTAssertTrue(intensitySlider.waitForExistence(timeout: 5))
+        let intensityValue = app.buttons["zapIntensityValueButton"]
+        XCTAssertTrue(intensityValue.waitForExistence(timeout: 5))
 
-        // Number fields (`maxIntensity`/`cooldownSeconds`) go through the
-        // exact same `updatePermission` → `refreshFriends` round trip as the
-        // "Allow" switch, so they were equally exposed to the stream race —
-        // bump the max-intensity stepper and confirm its label updates too.
-        let beforeStepperLabel = maxIntensityLabel.label
-        app.buttons["Increment"].firstMatch.tap()
-        let stepperUpdated = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "label != %@", beforeStepperLabel),
-            object: maxIntensityLabel
+        // The slider goes through the exact same `updatePermission` →
+        // `refreshFriends` round trip as the "Allow" switch, so it was
+        // equally exposed to the stream race — drag it and confirm the
+        // displayed value updates too.
+        let beforeValue = intensityValue.label
+        intensitySlider.adjust(toNormalizedSliderPosition: 0.8)
+        let valueUpdated = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label != %@", beforeValue),
+            object: intensityValue
         )
-        wait(for: [stepperUpdated], timeout: 8)
+        wait(for: [valueUpdated], timeout: 8)
     }
 
     @MainActor
