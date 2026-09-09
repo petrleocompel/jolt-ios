@@ -84,9 +84,21 @@ final class FriendsViewModel {
     /// first means every subsequent render — and thus every subsequent
     /// binding closure — reads the latest known state immediately.
     func updatePermission(for friend: Friend, kind: StimulusKind, permission: StimulusPermission) {
+        let previous = friend.permissionsIGranted[kind]
         if let index = friends.firstIndex(where: { $0.id == friend.id }) {
             friends[index].permissionsIGranted[kind] = permission
         }
-        Task { try? await repository.updatePermission(for: friend.id, kind: kind, permission: permission) }
+        Task {
+            do {
+                try await repository.updatePermission(for: friend.id, kind: kind, permission: permission)
+            } catch {
+                // The save failed server-side — don't leave the toggle showing
+                // a state that was never actually persisted.
+                if let index = friends.firstIndex(where: { $0.id == friend.id }) {
+                    friends[index].permissionsIGranted[kind] = previous
+                }
+                lastError = error.localizedDescription
+            }
+        }
     }
 }

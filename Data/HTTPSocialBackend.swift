@@ -1,5 +1,14 @@
 import Foundation
 
+/// Jolt Server user IDs are lowercase (`crypto.randomUUID()` server-side) and
+/// compared case-sensitively — but Foundation's `UUID.uuidString` (and its
+/// default `Codable` conformance) always emits uppercase. Route paths and
+/// request bodies must go through this, not `.uuidString`, or lookups on the
+/// server silently miss (see the friend-permission/poke case-mismatch fix).
+extension UUID {
+    var apiString: String { uuidString.lowercased() }
+}
+
 /// Talks to a real Jolt Server. Drop-in replacement for `MockSocialBackend`:
 /// same three protocols, same `handleIncomingPoke(_:)` entry point for push
 /// delivery, so nothing above this layer changes.
@@ -214,24 +223,24 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func acceptRequest(_ id: FriendRequest.ID) async throws {
-        let _: Friend = try await client.send("POST", "friends/requests/\(id.uuidString)/accept")
+        let _: Friend = try await client.send("POST", "friends/requests/\(id.apiString)/accept")
         await refreshFriends()
         await refreshRequests()
     }
 
     func rejectRequest(_ id: FriendRequest.ID) async throws {
-        try await client.sendIgnoringResponse("POST", "friends/requests/\(id.uuidString)/reject")
+        try await client.sendIgnoringResponse("POST", "friends/requests/\(id.apiString)/reject")
         await refreshRequests()
     }
 
     func removeFriend(_ id: Friend.ID) async throws {
-        try await client.sendIgnoringResponse("DELETE", "friends/\(id.uuidString)")
+        try await client.sendIgnoringResponse("DELETE", "friends/\(id.apiString)")
         await refreshFriends()
     }
 
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws {
         let _: StimulusPermission = try await client.send(
-            "PUT", "friends/\(friendID.uuidString)/permissions/\(kind.rawValue)",
+            "PUT", "friends/\(friendID.apiString)/permissions/\(kind.rawValue)",
             body: permission
         )
         await refreshFriends()
@@ -240,7 +249,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     // MARK: - Pokes
 
     private struct SendPokeBody: Encodable {
-        let friendId: UUID
+        let friendId: String
         let stimulus: StimulusConfig
     }
 
@@ -251,7 +260,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
         let _: PokeEvent = try await client.send(
             "POST", "pokes",
-            body: SendPokeBody(friendId: friendID, stimulus: stimulus)
+            body: SendPokeBody(friendId: friendID.apiString, stimulus: stimulus)
         )
         await refreshActivity()
     }
@@ -263,7 +272,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         // an alert push and a silent push for the same poke are both safe to
         // ack.
         try? await client.sendIgnoringResponse(
-            "POST", "pokes/\(payload.pokeID.uuidString)/ack",
+            "POST", "pokes/\(payload.pokeID.apiString)/ack",
             body: AckBody(status: status)
         )
         await refreshActivity()
