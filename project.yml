@@ -31,6 +31,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: "cz.peelco.jolt"
         PRODUCT_NAME: "Jolt"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Without this, `Color.accentColor`/`.tint(.accentColor)` silently
+        # fall back to system blue even though Resources/Assets.xcassets
+        # already has an AccentColor color set (the brand green) — Xcode
+        # only wires a same-named color set up as the real system accent
+        # color when this is set explicitly.
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # No INFOPLIST_KEY_* settings here on purpose: Xcode only honours them
         # when it generates the Info.plist (GENERATE_INFOPLIST_FILE = YES).
         # This target ships an explicit one, so they were silently dropped —

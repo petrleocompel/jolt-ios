@@ -49,12 +49,14 @@ struct RemoteDashboardView: View {
         .animation(.snappy, value: viewModel.lastActionMessage)
         .animation(.snappy, value: viewModel.lastError)
         .task {
-            if pokeViewModel == nil {
-                pokeViewModel = PokeViewModel(repository: dependencies.pokeRepository)
-            }
-            if friendsViewModel == nil {
-                friendsViewModel = FriendsViewModel(repository: dependencies.friendsRepository)
-            }
+            // Lazy on purpose: Friends' own streams already have one
+            // subscriber apiece the moment that tab is visited, and adding
+            // more from a tab that's on screen at every launch — whether or
+            // not anything here actually needs them — only grows the set of
+            // concurrent subscribers `FriendsRepository`/`PokeRepository`
+            // have to fan out to. Only construct what the widgets actually
+            // on screen need.
+            ensurePokeViewModelIfNeeded()
             if alarmsViewModel == nil {
                 let model = AlarmsViewModel(
                     alarmRepository: dependencies.alarmRepository,
@@ -65,6 +67,7 @@ struct RemoteDashboardView: View {
                 await model.load()
             }
         }
+        .onChange(of: layout.visible) { _, _ in ensurePokeViewModelIfNeeded() }
         .sheet(isPresented: $isShowingCustomize) {
             RemoteCustomizeView(
                 layoutService: dependencies.remoteDashboardLayoutService,
@@ -107,7 +110,7 @@ struct RemoteDashboardView: View {
                     firingMode: firingMode,
                     lastError: dependencies.quickPokeService.lastError,
                     onFire: { dependencies.quickPokeService.sendQuickPoke() },
-                    onOpenComposer: { isShowingQuickPokeComposer = true }
+                    onOpenComposer: openQuickPokeComposer
                 )
             }
         case .nextAlarm:
@@ -119,6 +122,27 @@ struct RemoteDashboardView: View {
                 RecentActivityCard(events: Array(pokeViewModel.activity.prefix(2)))
             }
         }
+    }
+
+    /// Only the "Recent activity" widget needs a live `activity` subscriber
+    /// on its own; the composer sheet brings up its own via
+    /// `openQuickPokeComposer` when it's actually opened.
+    private func ensurePokeViewModelIfNeeded() {
+        guard pokeViewModel == nil, layout.visible.contains(.recentActivity) else { return }
+        pokeViewModel = PokeViewModel(repository: dependencies.pokeRepository)
+    }
+
+    /// `FriendsViewModel` is only needed to resolve the quick-poke friend by
+    /// ID for this one-off override sheet — nothing else on the dashboard
+    /// reads it, so it isn't constructed until this is actually tapped.
+    private func openQuickPokeComposer() {
+        if pokeViewModel == nil {
+            pokeViewModel = PokeViewModel(repository: dependencies.pokeRepository)
+        }
+        if friendsViewModel == nil {
+            friendsViewModel = FriendsViewModel(repository: dependencies.friendsRepository)
+        }
+        isShowingQuickPokeComposer = true
     }
 
     private var nextAlarm: (Alarm, Date)? {
