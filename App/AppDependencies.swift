@@ -54,6 +54,8 @@ final class AppDependencies {
     var pendingServerRestartNotice = false
 
     init() {
+        Self.resetPersistedStateIfSnapshotMode()
+
         let container: ModelContainer
         do {
             if AppEnvironment.isSnapshotMode {
@@ -116,6 +118,20 @@ final class AppDependencies {
         UNUserNotificationCenter.current().delegate = delegate
 
         Self.shared = self
+    }
+
+    /// Every `UserDefaults`-backed store in the app (`PokeTriggerStore`,
+    /// `QuickPokeSettingsStore`, `StimulusSettingsStore`, ...) persists to
+    /// `.standard`, which survives an app relaunch — including between
+    /// separate UI test methods run back to back on the same simulator.
+    /// Without this, a test that enables the poke trigger (or any other
+    /// saved setting) leaves that flipped for whichever test runs next,
+    /// making outcomes depend on run order/history instead of the app under
+    /// test. Same "hermetic, non-accumulating" treatment as the in-memory
+    /// SwiftData container in `init`, for the same reason.
+    private static func resetPersistedStateIfSnapshotMode() {
+        guard AppEnvironment.isSnapshotMode, let bundleID = Bundle.main.bundleIdentifier else { return }
+        UserDefaults.standard.removePersistentDomain(forName: bundleID)
     }
 
     /// Two believable device alarms for the App Store / marketing screenshot,
