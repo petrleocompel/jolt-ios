@@ -31,6 +31,11 @@ final class AppDependencies {
     /// Settings → Quick Poke: a one-tap poke button on the Remote tab for a
     /// friend chosen ahead of time.
     let quickPokeService: QuickPokeService
+    /// Settings → Firing: whether stimulus/poke controls fire on tap, on
+    /// press-and-hold, or behind a confirm dialog.
+    let firingModeService: FiringModeService
+    /// Remote tab → Customize: widget order/visibility on the dashboard.
+    let remoteDashboardLayoutService: RemoteDashboardLayoutService
     let notificationDelegate: AppNotificationDelegate
     let modelContainer: ModelContainer
     /// Which server the social features are talking to. Nil in snapshot mode
@@ -103,6 +108,8 @@ final class AppDependencies {
         triggerService.start()
 
         self.quickPokeService = QuickPokeService(pokeRepository: social)
+        self.firingModeService = FiringModeService()
+        self.remoteDashboardLayoutService = RemoteDashboardLayoutService()
 
         let delegate = AppNotificationDelegate(pokeRepository: social, pushDiagnostics: social)
         self.notificationDelegate = delegate

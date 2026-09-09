@@ -43,6 +43,35 @@ struct Alarm: Identifiable, Codable, Equatable {
     }
 }
 
+extension Alarm {
+    /// The next real-world moment this alarm will ring, or `nil` when it's
+    /// disabled. Used by the Remote dashboard's "Next alarm" card to pick
+    /// the single soonest alarm out of however many exist.
+    func nextOccurrence(after now: Date = Date(), calendar: Calendar = .current) -> Date? {
+        guard isEnabled else { return nil }
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        if repeatDays.isEmpty {
+            return calendar.nextDate(after: now, matching: components, matchingPolicy: .nextTimePreservingSmallerComponents)
+        }
+        return repeatDays.compactMap { day -> Date? in
+            var withDay = components
+            withDay.weekday = day.calendarWeekday
+            return calendar.nextDate(after: now, matching: withDay, matchingPolicy: .nextTimePreservingSmallerComponents)
+        }.min()
+    }
+}
+
+/// `Calendar` weekday is 1 = Sunday...7 = Saturday; ours is 1 = Monday. Same
+/// mapping as `PhoneAlarmScheduler`'s private copy — kept local rather than
+/// shared since it's a one-line `Calendar` adapter, not domain logic.
+private extension Weekday {
+    var calendarWeekday: Int {
+        rawValue == Weekday.sunday.rawValue ? 1 : rawValue + 1
+    }
+}
+
 enum Weekday: Int, CaseIterable, Codable, Comparable {
     case monday = 1, tuesday, wednesday, thursday, friday, saturday, sunday
 

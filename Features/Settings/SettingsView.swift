@@ -53,6 +53,19 @@ struct SettingsView: View {
                         + "just your phone reacting to what the device already reports.")
                 }
                 Section {
+                    Picker("Firing", selection: Binding(
+                        get: { dependencies.firingModeService.mode },
+                        set: { dependencies.firingModeService.setMode($0) }
+                    )) {
+                        ForEach(FiringInteractionMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .accessibilityIdentifier("firingModePicker")
+                } footer: {
+                    Text(dependencies.firingModeService.mode.description)
+                }
+                Section {
                     NavigationLink {
                         QuickPokeSettingsView(
                             service: dependencies.quickPokeService,
