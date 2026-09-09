@@ -22,7 +22,7 @@ protocol DeviceRepository {
     func forgetPairedDevice() async
     func fire(_ stimulus: StimulusConfig) async throws
     func readDeviceInfo() async throws -> DeviceInfo
-    func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws
+    func setButtonConfig(_ config: ButtonConfig) async throws
     /// Pushes an `AlarmLocation.device` alarm onto the wearable's own RTC so
     /// it fires even if the phone is off. See `LegacyDeviceController` /
     /// `SCMaxDeviceController` for what's actually implemented per family.

@@ -35,9 +35,18 @@ struct PokeTrigger: Codable, Equatable {
     /// How strictly a live event must match the learned one. `exact` is the
     /// default; `prefix` tolerates a trailing counter/timestamp some firmwares
     /// append to otherwise-identical events.
-    enum MatchMode: String, Codable, CaseIterable {
+    enum MatchMode: String, Codable, CaseIterable, Identifiable {
         case exact
         case prefix
+
+        var id: String { rawValue }
+
+        var displayName: String {
+            switch self {
+            case .exact: return "Exact"
+            case .prefix: return "Tolerant"
+            }
+        }
     }
     var matchMode: MatchMode
 

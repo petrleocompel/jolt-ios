@@ -1,19 +1,18 @@
 import SwiftUI
 
+/// One row per real `DeviceButtonSlot` — see its doc comment for why this
+/// isn't a (button, pressType) grid. Only "Off" can actually be saved right
+/// now; picking anything else surfaces why rather than pretending to work.
 struct ButtonConfigView: View {
     let viewModel: DeviceControlViewModel
-    @State private var configs: [ButtonPressType: ButtonAction] = [
-        .singlePress: .fireStimulus,
-        .doublePress: .snoozeActiveAlarm,
-        .longPress: .toggleMute
-    ]
+    @State private var actions: [DeviceButtonSlot: ButtonAction] = [:]
     @State private var errorMessage: String?
 
     var body: some View {
         List {
-            ForEach(ButtonPressType.allCases, id: \.self) { press in
-                Section(press.displayName) {
-                    Picker("Action", selection: bindingFor(press)) {
+            ForEach(DeviceButtonSlot.allCases) { slot in
+                Section(slot.displayName) {
+                    Picker("Action", selection: bindingFor(slot)) {
                         ForEach(ButtonAction.allCases) { action in
                             Text(action.displayName).tag(action)
                         }
@@ -22,38 +21,34 @@ struct ButtonConfigView: View {
                     .labelsHidden()
                 }
             }
+            Section {
+                Text("Only \"Off\" is confirmed to work against real hardware today. "
+                    + "Other actions are shown for reference but aren't wired up yet — see docs/RE-FINDINGS.md.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle("Button")
         .errorBanner(errorMessage) { errorMessage = nil }
     }
 
-    private func bindingFor(_ press: ButtonPressType) -> Binding<ButtonAction> {
+    private func bindingFor(_ slot: DeviceButtonSlot) -> Binding<ButtonAction> {
         Binding(
-            get: { configs[press] ?? .none },
+            get: { actions[slot] ?? .defaultAction },
             set: { newValue in
-                configs[press] = newValue
-                save(press: press, action: newValue)
+                actions[slot] = newValue
+                save(slot: slot, action: newValue)
             }
         )
     }
 
-    private func save(press: ButtonPressType, action: ButtonAction) {
+    private func save(slot: DeviceButtonSlot, action: ButtonAction) {
         Task {
             do {
-                try await viewModel.setButtonConfig(ButtonConfig(pressType: press, action: action, stimulus: nil), press: press)
+                try await viewModel.setButtonConfig(ButtonConfig(slot: slot, action: action))
             } catch {
                 errorMessage = error.localizedDescription
             }
-        }
-    }
-}
-
-private extension ButtonPressType {
-    var displayName: String {
-        switch self {
-        case .singlePress: return "Single press"
-        case .doublePress: return "Double press"
-        case .longPress: return "Long press"
         }
     }
 }

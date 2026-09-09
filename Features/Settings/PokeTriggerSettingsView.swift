@@ -132,6 +132,15 @@ struct PokeTriggerSettingsView: View {
                         Text(bytes.map { String(format: "%02X", $0) }.joined(separator: " "))
                             .font(.footnote.monospaced())
                     }
+                    Picker("Matching", selection: Binding(
+                        get: { service.trigger.matchMode },
+                        set: { service.setMatchMode($0) }
+                    )) {
+                        ForEach(PokeTrigger.MatchMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .accessibilityIdentifier("pokeTriggerMatchModePicker")
                     Button("Clear", role: .destructive) { service.clearLearnedGesture() }
                 }
                 Button {
@@ -151,7 +160,10 @@ struct PokeTriggerSettingsView: View {
             if !service.isDeviceConnected {
                 Text("Connect your Pavlok to learn a gesture.")
             } else {
-                Text("We match the exact event your press produces, so no firmware decoding is needed.")
+                Text("We match the exact event your press produces, so no firmware decoding is needed "
+                    + "— a long press genuinely differs from a short press at the device level, so it can "
+                    + "be learned on its own. If it stops firing reliably after working once, switch "
+                    + "matching to \"Tolerant\" above.")
             }
         }
     }

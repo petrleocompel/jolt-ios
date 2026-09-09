@@ -131,6 +131,17 @@ final class PokeTriggerService {
         update(updated)
     }
 
+    /// Switches how a *already-learned* gesture is matched, without
+    /// recapturing it. Useful if `.exact` isn't firing reliably — some
+    /// firmwares append a trailing counter/timestamp byte that makes two
+    /// presses of the same physical gesture produce slightly different
+    /// notifications; `.prefix` tolerates that. See `PokeTrigger.MatchMode`.
+    func setMatchMode(_ mode: PokeTrigger.MatchMode) {
+        var updated = trigger
+        updated.matchMode = mode
+        update(updated)
+    }
+
     // MARK: Runtime
 
     /// Decides whether the event feed should be running, and (re)starts or

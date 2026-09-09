@@ -274,29 +274,6 @@ final class CompositeDeviceRepository: DeviceRepository {
         return try await deviceInfoReader.read(from: peripheral)
     }
 
-    func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws {
-        let (peripheral, family) = try requireConnection()
-        switch family {
-        case .pavlok2, .pavlok3:
-            // `BleManager::setButtonAction` writes to the *setup* service,
-            // not the application one. The payload it builds is variable
-            // length and depends on the action, so the two bytes below are
-            // still a guess — but they are at least aimed at the right
-            // characteristic now.
-            let payload = Data([press.wireValue, config.action.wireValue])
-            try await central.write(
-                payload,
-                to: LegacyGATT.setupCharacteristic,
-                serviceUUID: LegacyGATT.setupService,
-                on: peripheral
-            )
-        case .shockClockMax:
-            throw SCMaxDeviceController.ControllerError.notImplemented(
-                "Button config opcode not recovered — see BLE/SCMax/ProtocolMap.swift"
-            )
-        }
-    }
-
     func syncDeviceAlarm(_ alarm: Alarm) async throws {
         let (peripheral, family) = try requireConnection()
         switch family {
@@ -359,27 +336,5 @@ extension CompositeDeviceRepository {
     func deviceEventStream() async throws -> AsyncStream<DeviceEvent> {
         let (peripheral, _) = try requireConnection()
         return try await central.streamAllNotifications(on: peripheral)
-    }
-}
-
-private extension ButtonPressType {
-    /// Wire encoding unverified — see `LegacyDeviceController` header note.
-    var wireValue: UInt8 {
-        switch self {
-        case .singlePress: return 0x01
-        case .doublePress: return 0x02
-        case .longPress: return 0x03
-        }
-    }
-}
-
-private extension ButtonAction {
-    var wireValue: UInt8 {
-        switch self {
-        case .none: return 0x00
-        case .fireStimulus: return 0x01
-        case .toggleMute: return 0x02
-        case .snoozeActiveAlarm: return 0x03
-        }
     }
 }

@@ -95,7 +95,7 @@ final class FakeDeviceRepository: DeviceRepository {
 
     func readDeviceInfo() async throws -> DeviceInfo { fakeDevice.info }
 
-    func setButtonConfig(_ config: ButtonConfig, press: ButtonPressType) async throws {}
+    func setButtonConfig(_ config: ButtonConfig) async throws {}
 
     func syncDeviceAlarm(_ alarm: Alarm) async throws {}
 

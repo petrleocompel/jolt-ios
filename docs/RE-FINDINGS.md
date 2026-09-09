@@ -155,8 +155,73 @@ service, not the application one, and alarm slot bytes go to the download
 characteristic (`5002`) while alarm *commands* go to the control point
 (`5001`).
 
-Payloads for alarms and button config are still unrecovered — `setButtonAction`
-builds a variable-length list whose shape depends on the action type.
+Payloads for alarms are still unrecovered. Button config **is now recovered** —
+see below.
+
+### Button config — `setButtonAction` (from `utils_functions.dart` / `ble_manager.dart` disassembly)
+
+The physical button is not a single control with press-type variants; it's
+(up to) four independently-configurable buttons, and "long press" is a
+**separate button identity**, not a modifier applied to a shared press-type
+axis. There is no double-press. Confirmed via `Utils.getDeviceButtonType`
+(the decoder used for incoming press *events*, `dart-app/utils/utils_functions.dart:629`)
+and the `DeviceButtonType` object-pool dump — both agree on the same 7-value
+table:
+
+| `DeviceButtonType` | wire (`byte[2]` of a `156E2000/2002` notification, and `setButtonAction`'s 2nd payload byte) |
+|---|---|
+| `top` | `0x01` |
+| `middle` | `0x02` |
+| `bottom` | `0x03` |
+| `topLong` | `0x04` |
+| `middleLong` | `0x05` |
+| `bottomLong` | `0x06` |
+| `backLong` | `0x07` (unreliable — `setButtonAction` early-returns `false` for it, and `getDeviceButtonType`'s decoder has no case for `0x07`, falling back to `middle`) |
+
+**This means short vs. long press *is* distinguished at the raw BLE byte
+level** (byte index 2 of the event notification directly carries one of the
+codes above) — it is not client-side hold-duration timing. A "learn by
+example" trigger (this app's `PokeTrigger`) can in principle distinguish a
+long press from a short press of the same button, since the captured bytes
+genuinely differ. If it doesn't in practice, suspect either (a) a trailing
+counter/timestamp byte after index 2 breaking an *exact* byte-match (see
+`PokeTrigger.MatchMode.prefix`, which exists for exactly this) rather than
+the concept being impossible, or (b) the app capturing/matching the wrong
+byte range.
+
+`setButtonAction(buttonType, actionType, …)` writes to **setup `156E7000`/`7001`**
+(confirming the earlier guess) with payload `[0x02, buttonType.wire, actionType.wire, …]`
+— `0x02` is a fixed command tag (the same setup characteristic multiplexes
+`saveTimerToDevice` too), byte 1 is the `DeviceButtonType` wire value above,
+byte 2 is the `DeviceButtonActionType` wire value below, and some actions
+append further bytes whose shape depends on the action (traced two so far:
+`disabled` → exactly `[0x02, button, 0xff]` (3 bytes, no extra data);
+`toggleSleepTracking` → `[0x02, button, 0x13, 0x01, 0x02]` (5 bytes, trailing
+2 bytes not decoded). Actions not yet traced byte-for-byte: `zap`, `beep`,
+`vibrate` (has its own 5-byte tail, likely intensity-related — do not guess
+this one, it fires a real stimulus), `timer`, `stopWatch`, `findMyPhone`,
+`toggleCandle`, `nextTune`, `airplaneMode`, `doNotDisturb`.
+
+`DeviceButtonActionType` (from the object-pool dump — `ble_manager.dart` at
+`0xe960f8` switches on the enum's **ordinal**, not this wire value, to pick
+the payload shape per action):
+
+| Action | ordinal | wire |
+|---|---|---|
+| `findMyPhone` | 0 | `0x10` |
+| `stopWatch` | 1 | `0x01` |
+| `timer` | 2 | `0x02` |
+| `zap` | 3 | `0x03` |
+| `beep` | 4 | `0x02` |
+| `vibrate` | 5 | `0x01` |
+| `toggleCandle` | 6 | `0x06` |
+| `nextTune` | 7 | `0x07` |
+| `airplaneMode` | 8 | `0x08` |
+| `doNotDisturb` | 9 | `0x0d` |
+| `toggleSleepTracking` | 10 | `0x13` |
+| `disabled` | 11 | `0xff` |
+| `defaultAction` | 12 | `-1` |
+| `undefined` | 13 | `0x00` |
 
 ### Shock Clock Max
 
