@@ -34,12 +34,9 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// Held until the account is known — a token arriving before
     /// `registerPushToken` has an account to attach it to would 401.
     private var pendingPushToken: String?
-    /// A poke can arrive via both a background silent push and a subsequent
-    /// notification tap — must never fire the same poke twice. `activityLog`
-    /// isn't reliable for this check: it's only populated by a server
-    /// round-trip (`refreshActivity()`), which may not have completed by the
-    /// time the second delivery path calls in.
-    private var handledPokes: [UUID: PokeDeliveryStatus] = [:]
+    /// Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` fires test
+    /// pushes through the same firer, for the same idempotency reason.
+    let firer: LocalStimulusFirer
 
     // `StreamHub`, not a raw `AsyncStream` continuation: Friends, Settings'
     // poke triggers, and the quick-poke picker all subscribe to `friends`
@@ -67,6 +64,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         self.configuration = configuration
         self.deviceRepository = deviceRepository
         self.tokenStore = tokenStore
+        self.firer = LocalStimulusFirer(deviceRepository: deviceRepository)
         self.client = JoltAPIClient(
             configuration: configuration,
             token: tokenStore.token(for: configuration),
@@ -85,6 +83,43 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     var incomingRequests: AsyncStream<[FriendRequest]> { incomingHub.stream() }
     var outgoingRequests: AsyncStream<[FriendRequest]> { outgoingHub.stream() }
     var activity: AsyncStream<[PokeEvent]> { activityHub.stream() }
+
+    // MARK: - Requests
+    //
+    // Every authenticated call goes through these two rather than `client`
+    // directly, so a token rejected mid-session (revoked, or from a server
+    // we no longer point at) logs out immediately instead of only being
+    // caught at the next launch's `restoreSession`. `restoreSession` itself
+    // calls `client.send` directly — it already handles `.unauthorized`
+    // explicitly and would otherwise call `logOut()` twice.
+    //
+    // Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` is the same
+    // type in another file, and Swift's `private` is file-scoped.
+
+    func send<Response: Decodable>(
+        _ method: String, _ path: String,
+        body: (some Encodable)? = Optional<Never>.none,
+        query: [String: String] = [:]
+    ) async throws -> Response {
+        do {
+            return try await client.send(method, path, body: body, query: query)
+        } catch JoltAPIClient.APIError.unauthorized {
+            await logOut()
+            throw JoltAPIClient.APIError.unauthorized
+        }
+    }
+
+    func sendIgnoringResponse(
+        _ method: String, _ path: String,
+        body: (some Encodable)? = Optional<Never>.none
+    ) async throws {
+        do {
+            try await client.sendIgnoringResponse(method, path, body: body)
+        } catch JoltAPIClient.APIError.unauthorized {
+            await logOut()
+            throw JoltAPIClient.APIError.unauthorized
+        }
+    }
 
     // MARK: - Auth
 
@@ -116,7 +151,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func signUp(email: String, password: String, handle: String, displayName: String) async throws {
-        let response: AuthResponse = try await client.send(
+        let response: AuthResponse = try await send(
             "POST", "auth/signup",
             body: SignUpBody(
                 email: email.trimmingCharacters(in: .whitespaces),
@@ -129,7 +164,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func logIn(email: String, password: String) async throws {
-        let response: AuthResponse = try await client.send(
+        let response: AuthResponse = try await send(
             "POST", "auth/login",
             body: LogInBody(email: email.trimmingCharacters(in: .whitespaces), password: password)
         )
@@ -197,7 +232,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             pendingPushToken = token
             return
         }
-        try? await client.sendIgnoringResponse("POST", "devices/push-token", body: PushTokenBody(token: token))
+        try? await sendIgnoringResponse("POST", "devices/push-token", body: PushTokenBody(token: token))
     }
 
     // MARK: - Friends
@@ -213,7 +248,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func sendRequest(handle: String) async throws {
-        let _: FriendRequest = try await client.send(
+        let _: FriendRequest = try await send(
             "POST", "friends/requests",
             body: SendRequestBody(handle: handle.trimmingCharacters(in: .whitespaces).lowercased())
         )
@@ -221,7 +256,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func sendRequest(inviteCode: String) async throws {
-        let _: FriendRequest = try await client.send(
+        let _: FriendRequest = try await send(
             "POST", "friends/requests",
             body: SendRequestBody(inviteCode: inviteCode.trimmingCharacters(in: .whitespaces))
         )
@@ -229,23 +264,23 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func acceptRequest(_ id: FriendRequest.ID) async throws {
-        let _: Friend = try await client.send("POST", "friends/requests/\(id.apiString)/accept")
+        let _: Friend = try await send("POST", "friends/requests/\(id.apiString)/accept")
         await refreshFriends()
         await refreshRequests()
     }
 
     func rejectRequest(_ id: FriendRequest.ID) async throws {
-        try await client.sendIgnoringResponse("POST", "friends/requests/\(id.apiString)/reject")
+        try await sendIgnoringResponse("POST", "friends/requests/\(id.apiString)/reject")
         await refreshRequests()
     }
 
     func removeFriend(_ id: Friend.ID) async throws {
-        try await client.sendIgnoringResponse("DELETE", "friends/\(id.apiString)")
+        try await sendIgnoringResponse("DELETE", "friends/\(id.apiString)")
         await refreshFriends()
     }
 
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws {
-        let _: StimulusPermission = try await client.send(
+        let _: StimulusPermission = try await send(
             "PUT", "friends/\(friendID.apiString)/permissions/\(kind.rawValue)",
             body: permission
         )
@@ -264,7 +299,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
-        let _: PokeEvent = try await client.send(
+        let _: PokeEvent = try await send(
             "POST", "pokes",
             body: SendPokeBody(friendId: friendID.apiString, stimulus: stimulus)
         )
@@ -273,44 +308,18 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     @discardableResult
     func handleIncomingPoke(_ payload: PokePushPayload) async -> PokeDeliveryStatus {
-        // Idempotency check BEFORE firing: a poke can arrive via both a
-        // background silent push and a subsequent notification tap — must
-        // never fire the same poke twice. The reservation happens
-        // synchronously (no `await` between the check and the insert) so a
-        // second delivery path racing in during `fireLocally`'s `await`
-        // can't slip past the check too.
-        if let existing = handledPokes[payload.pokeID] {
-            return existing
-        }
-        handledPokes[payload.pokeID] = .pending
-        let status = await fireLocally(payload.stimulus)
-        handledPokes[payload.pokeID] = status
+        // `firer` guards against the same poke arriving via both a background
+        // silent push and a subsequent notification tap — never fires twice.
+        let status = await firer.fire(id: payload.pokeID, stimulus: payload.stimulus)
         // Tell the server what actually happened. Idempotent server-side, so
         // an alert push and a silent push for the same poke are both safe to
         // ack.
-        try? await client.sendIgnoringResponse(
+        try? await sendIgnoringResponse(
             "POST", "pokes/\(payload.pokeID.apiString)/ack",
             body: AckBody(status: status)
         )
         await refreshActivity()
         return status
-    }
-
-    /// Fires a stimulus locally, applying the same do-not-disturb rule the
-    /// mock uses. The server has already checked permissions; this is the
-    /// recipient-side half. Shared with test pushes, so "do not disturb"
-    /// means the same thing whether the stimulus came from a friend or from
-    /// your own diagnostic.
-    func fireLocally(_ stimulus: StimulusConfig) async -> PokeDeliveryStatus {
-        if UserDefaults.standard.bool(forKey: PokeSettings.doNotDisturbKey) {
-            return .muted
-        }
-        do {
-            try await deviceRepository.fire(stimulus)
-            return .fired
-        } catch {
-            return .deviceNotConnected
-        }
     }
 
     func simulateIncomingPoke(from friendID: Friend.ID, stimulus: StimulusConfig) async {
@@ -335,13 +344,13 @@ extension HTTPSocialBackend {
     }
 
     private func refreshFriends() async {
-        guard let list: [Friend] = try? await client.send("GET", "friends") else { return }
+        guard let list: [Friend] = try? await send("GET", "friends") else { return }
         friendsList = list
         friendsHub.yield(list)
     }
 
     private func refreshRequests() async {
-        guard let response: RequestsResponse = try? await client.send("GET", "friends/requests") else { return }
+        guard let response: RequestsResponse = try? await send("GET", "friends/requests") else { return }
         incoming = response.incoming
         outgoing = response.outgoing
         incomingHub.yield(incoming)
@@ -349,7 +358,7 @@ extension HTTPSocialBackend {
     }
 
     private func refreshActivity() async {
-        guard let events: [PokeEvent] = try? await client.send("GET", "pokes") else { return }
+        guard let events: [PokeEvent] = try? await send("GET", "pokes") else { return }
         activityLog = events
         activityHub.yield(events)
     }

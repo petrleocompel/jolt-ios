@@ -16,18 +16,18 @@ extension HTTPSocialBackend: PushDiagnosticsRepository {
     }
 
     func registeredDevices() async throws -> [RegisteredDevice] {
-        try await client.send("GET", "devices")
+        try await send("GET", "devices")
     }
 
     func sendTestPush(to deviceID: UUID?, stimulus: StimulusConfig?) async throws -> TestPushStatus {
-        try await client.send(
+        try await send(
             "POST", "devices/test-push",
             body: TestPushBody(deviceId: deviceID, stimulus: stimulus)
         )
     }
 
     func testPushStatus(_ testID: UUID) async throws -> TestPushStatus {
-        try await client.send("GET", "devices/test-push/\(testID.uuidString)")
+        try await send("GET", "devices/test-push/\(testID.uuidString)")
     }
 
     @discardableResult
@@ -37,8 +37,10 @@ extension HTTPSocialBackend: PushDiagnosticsRepository {
     ) async -> PokeDeliveryStatus? {
         // Only a test that asked for a stimulus touches the wearable. The
         // notification-only case still acks — arriving *is* the result.
+        // Routed through `firer` for the same reason a poke is: a test push
+        // also arrives via both the silent and alert delivery paths.
         let status: PokeDeliveryStatus? = if let stimulus = payload.stimulus {
-            await fireLocally(stimulus)
+            await firer.fire(id: payload.testID, stimulus: stimulus)
         } else {
             nil
         }
@@ -46,7 +48,7 @@ extension HTTPSocialBackend: PushDiagnosticsRepository {
         // Best effort by design: a failed ack costs the sender their "delivered
         // in 1.2s" line, and nothing else. Never worth surfacing an error for,
         // least of all from a background push handler.
-        try? await client.sendIgnoringResponse(
+        try? await sendIgnoringResponse(
             "POST", "devices/test-push/\(payload.testID.uuidString)/ack",
             body: TestPushAckBody(deviceId: payload.deviceID, path: path, status: status)
         )

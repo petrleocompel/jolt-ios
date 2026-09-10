@@ -47,6 +47,7 @@
 		4D175A78EEFABD16FEF00C79 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98791DA8F2EF88057FB41B93 /* AddFriendView.swift */; };
 		526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */; };
 		535EBA6E39EE0CD08FCE8971 /* ServerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620C2FBA2833B67D7C987D1 /* ServerSettingsView.swift */; };
+		536B5F857A1740AEACC99E0A /* HTTPSocialBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */; };
 		53AF65465FD42CEA84526374 /* NotificationTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE89D4B1C57490DDBAEB04 /* NotificationTestViewModel.swift */; };
 		540633BA86E7AD838EF4F1E8 /* ServerConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */; };
 		54C0CA907EF2B0D41BF6A3A2 /* LegacyProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4785053BD701DF87FCE5A72D /* LegacyProtocolTests.swift */; };
@@ -125,6 +126,7 @@
 		CA1C3F6B4A8D989A66F2D672 /* DeviceInformationReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */; };
 		CAA5D425D0EF9DE269EBD96E /* DismissChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */; };
 		CC46CE0D38C2A8DF60F661A3 /* PokeTriggerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C25D15319543C334BBFBCBF /* PokeTriggerStore.swift */; };
+		CD7A18C56FB08842F222A257 /* LocalStimulusFirerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF8F8AD6A08A6AD3B7F0D74E /* LocalStimulusFirerTests.swift */; };
 		CD8B3FF65CFF6FA3B87AE154 /* PokeDeliveryStatusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85CF7B6973503393E2FA669A /* PokeDeliveryStatusTests.swift */; };
 		D05B77BF63E019DFD2DF285F /* ProtocolMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39C152013BB7A25769E438DB /* ProtocolMap.swift */; };
 		D1DB6E5108E6321A1A715191 /* QuickPokeSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADFBD4B73B40566FF620785 /* QuickPokeSettingsTests.swift */; };
@@ -132,6 +134,7 @@
 		D39EFE87CA5857EC4251F744 /* QuickPokeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211ECBBA9F2A7DC0C6C767AE /* QuickPokeSettings.swift */; };
 		D576369E89AF107885426854 /* RemoteCustomizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398AF09AEA7456E719A3BE60 /* RemoteCustomizeView.swift */; };
 		D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */; };
+		D98D963DFF03B0C15FCE48CA /* LocalStimulusFirer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */; };
 		DA7A1E5E58A78C4A51777724 /* RemoteDashboardLayoutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE54C683DA891EC13865B978 /* RemoteDashboardLayoutStore.swift */; };
 		DB1DF0F1F738F84331C08A1A /* LegacyProtocolStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DED8E3672CD1D399D5DD3B7C /* LegacyProtocolStore.swift */; };
 		DC15FE1AFB23B9A52A211C31 /* ScreenshotsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */; };
@@ -265,6 +268,7 @@
 		85AB6BDC42BB67C1DD5DC49D /* PermissionEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionEditView.swift; sourceTree = "<group>"; };
 		85CF7B6973503393E2FA669A /* PokeDeliveryStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeDeliveryStatusTests.swift; sourceTree = "<group>"; };
 		8BE2FD5123762F32D9224DBB /* PushDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushDiagnostics.swift; sourceTree = "<group>"; };
+		8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPSocialBackendTests.swift; sourceTree = "<group>"; };
 		8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsViewModel.swift; sourceTree = "<group>"; };
 		8F59E143A4F0C4633C981368 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		8F8BB6D098B53F00B1F19518 /* FriendsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsListView.swift; sourceTree = "<group>"; };
@@ -286,6 +290,7 @@
 		A93A203663ED2E6C54D999C6 /* QuickPokeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPokeService.swift; sourceTree = "<group>"; };
 		ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAlarmView.swift; sourceTree = "<group>"; };
 		B4593DB54C3694E3E6816A45 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStimulusFirer.swift; sourceTree = "<group>"; };
 		BB63BE3829CCCBE5C11951BF /* PavlokAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokAccount.swift; sourceTree = "<group>"; };
 		BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCentralManager.swift; sourceTree = "<group>"; };
 		BD3CF1E5E9A49BD95D7BC1F7 /* PavlokAccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokAccountView.swift; sourceTree = "<group>"; };
@@ -322,6 +327,7 @@
 		EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigurationTests.swift; sourceTree = "<group>"; };
 		EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Delegates.swift"; sourceTree = "<group>"; };
 		ED177E123C49A2F9DEA54E05 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		EF8F8AD6A08A6AD3B7F0D74E /* LocalStimulusFirerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStimulusFirerTests.swift; sourceTree = "<group>"; };
 		F044A6D9143077ABC9E6548D /* FriendsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModelTests.swift; sourceTree = "<group>"; };
 		F3357B2E1D4E2799275C2B9A /* PokePushPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokePushPayloadTests.swift; sourceTree = "<group>"; };
 		F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoltAPIClient.swift; sourceTree = "<group>"; };
@@ -436,6 +442,7 @@
 				5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */,
 				F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */,
 				DED8E3672CD1D399D5DD3B7C /* LegacyProtocolStore.swift */,
+				B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */,
 				96552544D49CCD4D3F287C29 /* MockSocialBackend.swift */,
 				C0A72C61E08152D0A883DA3D /* MockSocialBackend+PushDiagnostics.swift */,
 				4BF3896FDA7D5E6870CF29B1 /* PairedDeviceStore.swift */,
@@ -503,8 +510,10 @@
 				4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */,
 				4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */,
 				F044A6D9143077ABC9E6548D /* FriendsViewModelTests.swift */,
+				8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */,
 				4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */,
 				4785053BD701DF87FCE5A72D /* LegacyProtocolTests.swift */,
+				EF8F8AD6A08A6AD3B7F0D74E /* LocalStimulusFirerTests.swift */,
 				63FFFC00BC44B2384A5DAC21 /* MockSocialBackendTests.swift */,
 				F947011453C822510A2EE4C1 /* NotificationTestViewModelTests.swift */,
 				510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */,
@@ -830,8 +839,10 @@
 				FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */,
 				F18868631569AE1FA033DF17 /* FriendPermissionSetTests.swift in Sources */,
 				FCD181385D75F62964D5F16C /* FriendsViewModelTests.swift in Sources */,
+				536B5F857A1740AEACC99E0A /* HTTPSocialBackendTests.swift in Sources */,
 				F0FF866C00905EAF5E5F2B37 /* LEB128Tests.swift in Sources */,
 				54C0CA907EF2B0D41BF6A3A2 /* LegacyProtocolTests.swift in Sources */,
+				CD7A18C56FB08842F222A257 /* LocalStimulusFirerTests.swift in Sources */,
 				75AD169CFC19589A936D3C13 /* MockSocialBackendTests.swift in Sources */,
 				11672FD896442C7D399887FB /* NotificationTestViewModelTests.swift in Sources */,
 				05C9AE950B595877457F54F1 /* PairedDeviceStoreTests.swift in Sources */,
@@ -916,6 +927,7 @@
 				B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */,
 				79497BC11FB358372C1F9843 /* LegacyGATT.swift in Sources */,
 				DB1DF0F1F738F84331C08A1A /* LegacyProtocolStore.swift in Sources */,
+				D98D963DFF03B0C15FCE48CA /* LocalStimulusFirer.swift in Sources */,
 				FC3A4120D7FADA17AB573B1B /* MathPuzzleChallengeView.swift in Sources */,
 				18EDD2B8884B03D5236A1388 /* MockSocialBackend+PushDiagnostics.swift in Sources */,
 				3C01F079734972A68CC8A62B /* MockSocialBackend.swift in Sources */,

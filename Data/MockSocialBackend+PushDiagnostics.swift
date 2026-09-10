@@ -61,15 +61,7 @@ extension MockSocialBackend: PushDiagnosticsRepository {
         path: TestPushPath
     ) async -> PokeDeliveryStatus? {
         guard let stimulus = payload.stimulus else { return nil }
-        if UserDefaults.standard.bool(forKey: PokeSettings.doNotDisturbKey) {
-            return .muted
-        }
-        do {
-            try await deviceRepository.fire(stimulus)
-            return .fired
-        } catch {
-            return .deviceNotConnected
-        }
+        return await firer.fire(id: payload.testID, stimulus: stimulus)
     }
 }
 

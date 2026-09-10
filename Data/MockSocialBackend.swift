@@ -27,6 +27,8 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// Not `private`: `MockSocialBackend+PushDiagnostics.swift` is the same
     /// type in another file, and Swift's `private` is file-scoped.
     let deviceRepository: DeviceRepository
+    /// Not `private`, for the same reason as `deviceRepository` above.
+    let firer: LocalStimulusFirer
 
     private var user: User?
     private var friendsList: [Friend] = []
@@ -51,6 +53,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     init(deviceRepository: DeviceRepository) {
         self.deviceRepository = deviceRepository
+        self.firer = LocalStimulusFirer(deviceRepository: deviceRepository)
     }
 
     var currentUser: AsyncStream<User?> { userHub.stream() }
@@ -177,17 +180,7 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         if let existing = activityLog.first(where: { $0.id == payload.pokeID }) {
             return existing.status
         }
-        var status: PokeDeliveryStatus
-        if UserDefaults.standard.bool(forKey: PokeSettings.doNotDisturbKey) {
-            status = .muted
-        } else {
-            do {
-                try await deviceRepository.fire(payload.stimulus)
-                status = .fired
-            } catch {
-                status = .deviceNotConnected
-            }
-        }
+        let status = await firer.fire(id: payload.pokeID, stimulus: payload.stimulus)
         let event = PokeEvent(
             id: payload.pokeID,
             direction: .received,
