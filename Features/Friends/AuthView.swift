@@ -16,46 +16,71 @@ struct AuthView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Picker("Mode", selection: $mode) {
-                    ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            List {
+                Section {
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.2.circle.fill")
+                            .font(.system(size: 56))
+                            .foregroundStyle(Color.accentColor)
+                        Text("Connect with friends")
+                            .font(.title3.bold())
+                        Text("Log in or create an account to add friends and send pokes.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+
+                    Picker("Mode", selection: $mode) {
+                        ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
                 Section {
                     TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .accessibilityIdentifier("emailField")
                     SecureField("Password", text: $password)
+                        .textContentType(mode == .signUp ? .newPassword : .password)
                         .accessibilityIdentifier("passwordField")
                     if mode == .signUp {
                         TextField("Handle (e.g. alice)", text: $handle)
+                            .textContentType(.username)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                         TextField("Display name", text: $displayName)
-                    }
-                }
-
-                if let error = viewModel.lastError {
-                    Section {
-                        Text(error).foregroundStyle(.red)
+                            .textContentType(.name)
                     }
                 }
 
                 Section {
-                    Button(mode == .logIn ? "Log In" : "Sign Up", action: submit)
-                        .disabled(!isValid)
-                        .accessibilityIdentifier("authSubmitButton")
+                    Button(action: submit) {
+                        HStack {
+                            Spacer()
+                            if viewModel.isBusy {
+                                ProgressView()
+                            } else {
+                                Text(mode == .logIn ? "Log In" : "Sign Up")
+                                    .bold()
+                            }
+                            Spacer()
+                        }
+                    }
+                    .disabled(!isValid || viewModel.isBusy)
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("authSubmitButton")
                 }
-            }
-            .disabled(viewModel.isBusy)
-            .overlay {
-                if viewModel.isBusy { ProgressView() }
+                .listRowBackground(Color.clear)
             }
             .navigationTitle("Friends")
+            .errorBanner(viewModel.lastError) { viewModel.lastError = nil }
         }
     }
 
