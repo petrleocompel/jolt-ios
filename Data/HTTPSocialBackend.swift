@@ -34,6 +34,12 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// Held until the account is known — a token arriving before
     /// `registerPushToken` has an account to attach it to would 401.
     private var pendingPushToken: String?
+    /// A poke can arrive via both a background silent push and a subsequent
+    /// notification tap — must never fire the same poke twice. `activityLog`
+    /// isn't reliable for this check: it's only populated by a server
+    /// round-trip (`refreshActivity()`), which may not have completed by the
+    /// time the second delivery path calls in.
+    private var handledPokes: [UUID: PokeDeliveryStatus] = [:]
 
     // `StreamHub`, not a raw `AsyncStream` continuation: Friends, Settings'
     // poke triggers, and the quick-poke picker all subscribe to `friends`
@@ -267,7 +273,18 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     @discardableResult
     func handleIncomingPoke(_ payload: PokePushPayload) async -> PokeDeliveryStatus {
+        // Idempotency check BEFORE firing: a poke can arrive via both a
+        // background silent push and a subsequent notification tap — must
+        // never fire the same poke twice. The reservation happens
+        // synchronously (no `await` between the check and the insert) so a
+        // second delivery path racing in during `fireLocally`'s `await`
+        // can't slip past the check too.
+        if let existing = handledPokes[payload.pokeID] {
+            return existing
+        }
+        handledPokes[payload.pokeID] = .pending
         let status = await fireLocally(payload.stimulus)
+        handledPokes[payload.pokeID] = status
         // Tell the server what actually happened. Idempotent server-side, so
         // an alert push and a silent push for the same poke are both safe to
         // ack.
