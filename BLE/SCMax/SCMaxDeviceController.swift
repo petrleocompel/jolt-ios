@@ -5,7 +5,7 @@ import Foundation
 /// today. Anything that requires an ESF message over the control point
 /// (`fire(_:)`, alarms, triggers, hand-detect) throws `.notImplemented` until
 /// `ProtocolMap.swift` is filled in from a real capture.
-struct SCMaxDeviceController {
+struct SCMaxDeviceController: DeviceController {
     enum ControllerError: LocalizedError {
         case notImplemented(String)
 

@@ -237,12 +237,7 @@ final class CompositeDeviceRepository: DeviceRepository {
 
     func fire(_ stimulus: StimulusConfig) async throws {
         let (peripheral, family) = try requireConnection()
-        switch family {
-        case .pavlok2, .pavlok3:
-            try await legacy.fire(stimulus, on: peripheral)
-        case .shockClockMax:
-            try await scMax.fire(stimulus, on: peripheral)
-        }
+        try await controller(for: family).fire(stimulus, on: peripheral)
     }
 
     @discardableResult
@@ -254,12 +249,7 @@ final class CompositeDeviceRepository: DeviceRepository {
             return .localOnly(reason: "No device connected")
         }
         do {
-            switch family {
-            case .pavlok2, .pavlok3:
-                try await legacy.saveStimulusConfig(config, on: peripheral)
-            case .shockClockMax:
-                try await scMax.saveStimulusConfig(config, on: peripheral)
-            }
+            try await controller(for: family).saveStimulusConfig(config, on: peripheral)
             return .syncedToDevice
         } catch {
             BLELog.error("Saving \(config.kind.rawValue) config to device failed: \(error.localizedDescription)")
@@ -276,22 +266,12 @@ final class CompositeDeviceRepository: DeviceRepository {
 
     func syncDeviceAlarm(_ alarm: Alarm) async throws {
         let (peripheral, family) = try requireConnection()
-        switch family {
-        case .pavlok2, .pavlok3:
-            try await legacy.syncAlarm(alarm, on: peripheral)
-        case .shockClockMax:
-            try await scMax.syncAlarm(alarm, on: peripheral)
-        }
+        try await controller(for: family).syncAlarm(alarm, on: peripheral)
     }
 
     func deleteDeviceAlarm(_ id: Alarm.ID) async throws {
         let (peripheral, family) = try requireConnection()
-        switch family {
-        case .pavlok2, .pavlok3:
-            try await legacy.deleteAlarm(id, on: peripheral)
-        case .shockClockMax:
-            try await scMax.deleteAlarm(id, on: peripheral)
-        }
+        try await controller(for: family).deleteAlarm(id, on: peripheral)
     }
 
     func requireConnection() throws -> (CBPeripheral, DeviceFamily) {
@@ -300,6 +280,15 @@ final class CompositeDeviceRepository: DeviceRepository {
             throw BluetoothCentralManager.BluetoothError.bluetoothUnavailable
         }
         return (peripheral, family)
+    }
+
+    /// The one place a device family maps to its controller — everywhere
+    /// above just calls through this instead of repeating the switch.
+    private func controller(for family: DeviceFamily) -> DeviceController {
+        switch family {
+        case .pavlok2, .pavlok3: return legacy
+        case .shockClockMax: return scMax
+        }
     }
 }
 

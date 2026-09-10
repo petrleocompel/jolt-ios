@@ -30,7 +30,7 @@ import Foundation
 /// `1002` and `01 19` on `1003` — count 1; the constant `0x0C` that
 /// `performMotor` writes literally; vibration 35, beep 100, zap 25; and the
 /// two encoded interval bytes. Every field lines up.
-struct LegacyDeviceController {
+struct LegacyDeviceController: DeviceController {
     enum ControllerError: LocalizedError {
         case unknownLayout(String, Int)
 
