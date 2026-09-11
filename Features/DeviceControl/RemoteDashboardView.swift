@@ -22,7 +22,7 @@ struct RemoteDashboardView: View {
 
     private var isConnected: Bool { viewModel.connectedDevice != nil }
     private var layout: RemoteDashboardLayout { dependencies.remoteDashboardLayoutService.layout }
-    private var firingMode: FiringInteractionMode { dependencies.firingModeService.mode }
+    private var firingModes: FiringInteractionSettings { dependencies.firingModeService.settings }
 
     var body: some View {
         ScrollView {
@@ -48,6 +48,8 @@ struct RemoteDashboardView: View {
         .safeAreaInset(edge: .bottom) { actionFeedback }
         .animation(.snappy, value: viewModel.lastActionMessage)
         .animation(.snappy, value: viewModel.lastError)
+        .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
+        .animation(.snappy, value: dependencies.quickPokeService.lastError)
         .task {
             // Lazy on purpose: Friends' own streams already have one
             // subscriber apiece the moment that tab is visited, and adding
@@ -98,7 +100,7 @@ struct RemoteDashboardView: View {
                     kind: stimulusKind,
                     config: viewModel.stimulusSettings[stimulusKind],
                     isEnabled: isConnected,
-                    firingMode: firingMode,
+                    firingMode: firingModes[stimulusKind],
                     onEdit: { editingStimulus = stimulusKind },
                     onFire: { viewModel.fire(viewModel.stimulusSettings[stimulusKind]) }
                 )
@@ -107,8 +109,9 @@ struct RemoteDashboardView: View {
             if dependencies.quickPokeService.settings.isConfigured {
                 QuickPokeCard(
                     settings: dependencies.quickPokeService.settings,
-                    firingMode: firingMode,
+                    firingMode: firingModes[dependencies.quickPokeService.settings.stimulus.kind],
                     lastError: dependencies.quickPokeService.lastError,
+                    feedback: dependencies.pokeFeedbackService,
                     onFire: { dependencies.quickPokeService.sendQuickPoke() },
                     onOpenComposer: openQuickPokeComposer
                 )
@@ -129,7 +132,10 @@ struct RemoteDashboardView: View {
     /// `openQuickPokeComposer` when it's actually opened.
     private func ensurePokeViewModelIfNeeded() {
         guard pokeViewModel == nil, layout.visible.contains(.recentActivity) else { return }
-        pokeViewModel = PokeViewModel(repository: dependencies.pokeRepository)
+        pokeViewModel = PokeViewModel(
+            repository: dependencies.pokeRepository,
+            feedback: dependencies.pokeFeedbackService
+        )
     }
 
     /// `FriendsViewModel` is only needed to resolve the quick-poke friend by
@@ -137,7 +143,10 @@ struct RemoteDashboardView: View {
     /// reads it, so it isn't constructed until this is actually tapped.
     private func openQuickPokeComposer() {
         if pokeViewModel == nil {
-            pokeViewModel = PokeViewModel(repository: dependencies.pokeRepository)
+            pokeViewModel = PokeViewModel(
+            repository: dependencies.pokeRepository,
+            feedback: dependencies.pokeFeedbackService
+        )
         }
         if friendsViewModel == nil {
             friendsViewModel = FriendsViewModel(repository: dependencies.friendsRepository)
@@ -179,8 +188,14 @@ struct RemoteDashboardView: View {
            let friend = friendsViewModel.friends.first(where: { $0.id == friendID }) {
             NavigationStack {
                 ScrollView {
-                    PokeComposerCard(friend: friend, pokeViewModel: pokeViewModel, firingMode: firingMode)
-                        .padding()
+                    PokeComposerCard(
+                        friend: friend,
+                        pokeViewModel: pokeViewModel,
+                        firingModeService: dependencies.firingModeService,
+                        draftStore: dependencies.friendPokeDraftStore,
+                        feedback: dependencies.pokeFeedbackService
+                    )
+                    .padding()
                 }
                 .navigationTitle("Poke \(friend.displayName)")
                 .navigationBarTitleDisplayMode(.inline)
@@ -189,6 +204,13 @@ struct RemoteDashboardView: View {
                         Button("Close") { isShowingQuickPokeComposer = false }
                     }
                 }
+                .safeAreaInset(edge: .bottom) {
+                    if let message = dependencies.pokeFeedbackService.lastSuccessMessage {
+                        InlineBanner(text: message, style: .success)
+                            .accessibilityIdentifier("pokeActionFeedback")
+                    }
+                }
+                .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
             }
         } else {
             ContentUnavailableView("Friend not found", systemImage: "person.slash")
@@ -204,9 +226,17 @@ struct RemoteDashboardView: View {
                 .onTapGesture { viewModel.lastError = nil }
                 .accessibilityIdentifier("errorFeedback")
                 .accessibilityHint("Tap to dismiss")
+        } else if let error = dependencies.quickPokeService.lastError {
+            InlineBanner(text: error, style: .error)
+                .onTapGesture { dependencies.quickPokeService.lastError = nil }
+                .accessibilityIdentifier("errorFeedback")
+                .accessibilityHint("Tap to dismiss")
         } else if let message = viewModel.lastActionMessage {
             InlineBanner(text: message, style: .success)
                 .accessibilityIdentifier("actionFeedback")
+        } else if let message = dependencies.pokeFeedbackService.lastSuccessMessage {
+            InlineBanner(text: message, style: .success)
+                .accessibilityIdentifier("pokeActionFeedback")
         }
     }
 }

@@ -85,7 +85,10 @@ struct FriendsListView: View {
                     friendsViewModel = FriendsViewModel(repository: dependencies.friendsRepository)
                 }
                 if pokeViewModel == nil {
-                    pokeViewModel = PokeViewModel(repository: dependencies.pokeRepository)
+                    pokeViewModel = PokeViewModel(
+                        repository: dependencies.pokeRepository,
+                        feedback: dependencies.pokeFeedbackService
+                    )
                 }
             }
         }

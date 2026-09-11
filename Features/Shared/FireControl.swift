@@ -159,6 +159,14 @@ struct HoldFillBar: View {
     var holdingLabel: String
     var tint: Color
     var ink: Color
+    var successLabel: String = "Sent"
+    var isShowingSuccess: Bool = false
+    var isFlashing: Bool = false
+
+    private var displayedLabel: String {
+        if isShowingSuccess { return successLabel }
+        return isHolding ? holdingLabel : idleLabel
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -170,13 +178,19 @@ struct HoldFillBar: View {
                         .frame(width: geometry.size.width * progress)
                         .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
                 }
-                Text(isHolding ? holdingLabel : idleLabel)
+                if isFlashing {
+                    RoundedRectangle(cornerRadius: 17, style: .continuous)
+                        .fill(.white.opacity(0.35))
+                }
+                Text(displayedLabel)
                     .font(.remoteNumeral(16))
                     .foregroundStyle(ink)
                     .frame(maxWidth: .infinity)
             }
         }
         .frame(height: 56)
+        .animation(.easeOut(duration: 0.15), value: isFlashing)
+        .animation(.snappy, value: isShowingSuccess)
     }
 }
 

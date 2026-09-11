@@ -31,9 +31,14 @@ final class AppDependencies {
     /// Settings → Quick Poke: a one-tap poke button on the Remote tab for a
     /// friend chosen ahead of time.
     let quickPokeService: QuickPokeService
-    /// Settings → Firing: whether stimulus/poke controls fire on tap, on
-    /// press-and-hold, or behind a confirm dialog.
+    /// Settings → Firing: per-stimulus tap / hold / confirm for Remote rows
+    /// and poke controls.
     let firingModeService: FiringModeService
+    /// Settings → Poke feedback: banner / flash / haptic / label after a
+    /// successful outgoing poke.
+    let pokeFeedbackService: PokeFeedbackService
+    /// Last kind + intensity per friend for the poke composer.
+    let friendPokeDraftStore: FriendPokeDraftStore
     /// Remote tab → Customize: widget order/visibility on the dashboard.
     let remoteDashboardLayoutService: RemoteDashboardLayoutService
     let notificationDelegate: AppNotificationDelegate
@@ -109,7 +114,13 @@ final class AppDependencies {
         // service simply idles.
         triggerService.start()
 
-        self.quickPokeService = QuickPokeService(pokeRepository: social)
+        let pokeFeedback = PokeFeedbackService()
+        self.pokeFeedbackService = pokeFeedback
+        self.friendPokeDraftStore = FriendPokeDraftStore()
+        self.quickPokeService = QuickPokeService(
+            pokeRepository: social,
+            feedback: pokeFeedback
+        )
         self.firingModeService = FiringModeService()
         self.remoteDashboardLayoutService = RemoteDashboardLayoutService()
 

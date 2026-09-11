@@ -13,13 +13,26 @@ import SwiftUI
 struct PokeComposerCard: View {
     let friend: Friend
     let pokeViewModel: PokeViewModel
-    let firingMode: FiringInteractionMode
+    let firingModeService: FiringModeService
+    let draftStore: FriendPokeDraftStore
+    let feedback: PokeFeedbackService
 
     @State private var selectedKind: StimulusKind?
-    @State private var intensity: Double = 20
+    @State private var intensity: Double = Double(FriendPokeDraft.preferredDefault.intensity)
     @State private var repetitions = 1
+    @State private var didLoadDraft = false
 
     private var allowedKinds: [StimulusKind] { friend.permissionsGrantedToMe.allowedKinds }
+
+    private var activeKind: StimulusKind? {
+        if let selectedKind { return selectedKind }
+        return allowedKinds.first
+    }
+
+    private var firingMode: FiringInteractionMode {
+        guard let kind = activeKind else { return .tap }
+        return firingModeService.mode(for: kind)
+    }
 
     var body: some View {
         Group {
@@ -30,16 +43,26 @@ struct PokeComposerCard: View {
                 composer
             }
         }
+        .onAppear { loadDraftIfNeeded() }
+        .onChange(of: friend.id) { _, _ in
+            didLoadDraft = false
+            loadDraftIfNeeded()
+        }
         .onChange(of: selectedKind) { _, newKind in
             guard let newKind else { return }
             clampIntensity(to: newKind)
+            persistDraft()
+        }
+        .onChange(of: intensity) { _, _ in
+            persistDraft()
         }
     }
 
     @ViewBuilder
     private var composer: some View {
-        let kind = selectedKind ?? allowedKinds[0]
+        let kind = activeKind ?? allowedKinds[0]
         let cap = friend.permissionsGrantedToMe[kind].maxIntensity
+        let mode = firingMode
 
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
@@ -76,7 +99,7 @@ struct PokeComposerCard: View {
             }
 
             FireControl(
-                mode: firingMode,
+                mode: mode,
                 confirmTitle: "Poke \(friend.displayName)?",
                 confirmMessage: "\(kind.displayName) at \(Int(intensity))%.",
                 onFire: {
@@ -87,10 +110,12 @@ struct PokeComposerCard: View {
                     HoldFillBar(
                         isHolding: state.isHolding,
                         progress: state.progress,
-                        idleLabel: "\(firingMode.actionVerb) to poke \(friend.displayName)",
+                        idleLabel: "\(mode.actionVerb) to poke \(friend.displayName)",
                         holdingLabel: "Keep holding…",
                         tint: RemoteTheme.violet,
-                        ink: .white
+                        ink: .white,
+                        isShowingSuccess: feedback.isShowingSuccessLabel,
+                        isFlashing: feedback.isFlashing
                     )
                 }
             )
@@ -119,6 +144,25 @@ struct PokeComposerCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(isOn ? RemoteTheme.violet.opacity(0.6) : .clear)
+        )
+    }
+
+    private func loadDraftIfNeeded() {
+        guard !didLoadDraft else { return }
+        didLoadDraft = true
+        guard let draft = FriendPokeDraft.resolved(
+            saved: draftStore.load(friendID: friend.id),
+            permissions: friend.permissionsGrantedToMe
+        ) else { return }
+        selectedKind = draft.kind
+        intensity = Double(draft.intensity)
+    }
+
+    private func persistDraft() {
+        guard didLoadDraft, let kind = selectedKind ?? activeKind else { return }
+        draftStore.save(
+            FriendPokeDraft(kind: kind, intensity: Int(intensity)),
+            for: friend.id
         )
     }
 

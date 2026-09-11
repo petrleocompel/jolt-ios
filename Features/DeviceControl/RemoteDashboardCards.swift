@@ -210,6 +210,7 @@ struct QuickPokeCard: View {
     let settings: QuickPokeSettings
     let firingMode: FiringInteractionMode
     let lastError: String?
+    let feedback: PokeFeedbackService
     let onFire: () -> Void
     let onOpenComposer: () -> Void
 
@@ -263,7 +264,9 @@ struct QuickPokeCard: View {
                         idleLabel: "\(firingMode.actionVerb) to poke \(settings.targetFriendName ?? "friend")",
                         holdingLabel: "Keep holding…",
                         tint: RemoteTheme.violet,
-                        ink: .white
+                        ink: .white,
+                        isShowingSuccess: feedback.isShowingSuccessLabel,
+                        isFlashing: feedback.isFlashing
                     )
                 }
             )

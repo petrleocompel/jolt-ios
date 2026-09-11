@@ -30,7 +30,9 @@ struct FriendDetailView: View {
                 PokeComposerCard(
                     friend: friend,
                     pokeViewModel: pokeViewModel,
-                    firingMode: dependencies.firingModeService.mode
+                    firingModeService: dependencies.firingModeService,
+                    draftStore: dependencies.friendPokeDraftStore,
+                    feedback: dependencies.pokeFeedbackService
                 )
             }
 
@@ -51,5 +53,15 @@ struct FriendDetailView: View {
             }
         }
         .navigationTitle(friend.displayName)
+        .safeAreaInset(edge: .bottom) { pokeFeedbackBanner }
+        .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
+    }
+
+    @ViewBuilder
+    private var pokeFeedbackBanner: some View {
+        if let message = dependencies.pokeFeedbackService.lastSuccessMessage {
+            InlineBanner(text: message, style: .success)
+                .accessibilityIdentifier("pokeActionFeedback")
+        }
     }
 }

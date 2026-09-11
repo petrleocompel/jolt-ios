@@ -13,6 +13,7 @@ import Observation
 final class QuickPokeService {
     private let pokeRepository: PokeRepository
     private let store: QuickPokeSettingsStore
+    private let feedback: PokeFeedbackService?
 
     private(set) var settings: QuickPokeSettings
     private(set) var lastPokeSentAt: Date?
@@ -20,10 +21,12 @@ final class QuickPokeService {
 
     init(
         pokeRepository: PokeRepository,
-        store: QuickPokeSettingsStore = QuickPokeSettingsStore()
+        store: QuickPokeSettingsStore = QuickPokeSettingsStore(),
+        feedback: PokeFeedbackService? = nil
     ) {
         self.pokeRepository = pokeRepository
         self.store = store
+        self.feedback = feedback
         self.settings = store.load()
     }
 
@@ -59,11 +62,15 @@ final class QuickPokeService {
         guard let friendID = settings.targetFriendID else { return }
         lastError = nil
         let stimulus = settings.stimulus
+        let friendName = settings.targetFriendName ?? "friend"
         Task { [weak self] in
             guard let self else { return }
             do {
                 try await pokeRepository.sendPoke(to: friendID, stimulus: stimulus)
                 self.lastPokeSentAt = Date()
+                self.feedback?.noteSuccess(
+                    message: "Poked \(friendName) · \(stimulus.kind.displayName) \(stimulus.intensity)%"
+                )
             } catch {
                 self.lastError = error.localizedDescription
             }

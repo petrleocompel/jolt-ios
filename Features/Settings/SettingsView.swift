@@ -94,22 +94,31 @@ struct SettingsView: View {
                 }
             }
             .accessibilityIdentifier("quickPokeSettingsLink")
-            Picker(selection: Binding(
-                get: { dependencies.firingModeService.mode },
-                set: { dependencies.firingModeService.setMode($0) }
-            )) {
-                ForEach(FiringInteractionMode.allCases) { mode in
-                    Text(mode.displayName).tag(mode)
-                }
+            NavigationLink {
+                FiringModesSettingsView(service: dependencies.firingModeService)
             } label: {
-                Label("Firing", systemImage: "slider.horizontal.3")
+                LabeledContent {
+                    Text(dependencies.firingModeService.settings.summaryLabel)
+                } label: {
+                    Label("Firing", systemImage: "slider.horizontal.3")
+                }
             }
-            .accessibilityIdentifier("firingModePicker")
+            .accessibilityIdentifier("firingModesSettingsLink")
+            NavigationLink {
+                PokeFeedbackSettingsView(service: dependencies.pokeFeedbackService)
+            } label: {
+                LabeledContent {
+                    Text(dependencies.pokeFeedbackService.settings.profile.displayName)
+                } label: {
+                    Label("Poke feedback", systemImage: "waveform")
+                }
+            }
+            .accessibilityIdentifier("pokeFeedbackSettingsLink")
         } header: {
             Text("Pokes & Firing")
         } footer: {
             Text("While Do Not Disturb is on, incoming pokes are logged in Friends activity but "
-                + "never fire your device. " + dependencies.firingModeService.mode.description)
+                + "never fire your device. Each stimulus can use its own firing gesture.")
         }
     }
 
