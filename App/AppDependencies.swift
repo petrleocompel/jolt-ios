@@ -61,22 +61,7 @@ final class AppDependencies {
     init() {
         Self.resetPersistedStateIfSnapshotMode()
 
-        let container: ModelContainer
-        do {
-            if AppEnvironment.isSnapshotMode {
-                // Hermetic, non-accumulating store seeded with demo alarms so
-                // the Alarms screenshot isn't an empty state.
-                container = try ModelContainer(
-                    for: AlarmEntity.self,
-                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-                )
-                Self.seedSnapshotAlarms(into: container)
-            } else {
-                container = try ModelContainer(for: AlarmEntity.self)
-            }
-        } catch {
-            fatalError("Failed to create SwiftData ModelContainer: \(error)")
-        }
+        let container = Self.makeModelContainer()
         self.modelContainer = container
         self.alarmRepository = SwiftDataAlarmRepository(modelContainer: container)
         self.phoneAlarmScheduler = PhoneAlarmScheduler()
@@ -88,18 +73,9 @@ final class AppDependencies {
         // network and no server. Everything else talks to the configured
         // Jolt server, which is ours by default and self-hosted if the user
         // has pointed Settings elsewhere.
-        let social: AuthRepository & FriendsRepository & PokeRepository & PushDiagnosticsRepository
-        if AppEnvironment.isSnapshotMode {
-            self.serverConfiguration = nil
-            social = MockSocialBackend(deviceRepository: deviceRepository)
-        } else {
-            let configuration = ServerSettingsStore().load()
-            self.serverConfiguration = configuration
-            social = HTTPSocialBackend(
-                configuration: configuration,
-                deviceRepository: deviceRepository
-            )
-        }
+        let socialStack = Self.makeSocialStack(deviceRepository: deviceRepository)
+        self.serverConfiguration = socialStack.configuration
+        let social = socialStack.backend
         self.authRepository = social
         self.friendsRepository = social
         self.pokeRepository = social
@@ -129,6 +105,40 @@ final class AppDependencies {
         UNUserNotificationCenter.current().delegate = delegate
 
         Self.shared = self
+    }
+
+    private typealias SocialBackend =
+        AuthRepository & FriendsRepository & PokeRepository & PushDiagnosticsRepository
+
+    private static func makeModelContainer() -> ModelContainer {
+        do {
+            if AppEnvironment.isSnapshotMode {
+                // Hermetic, non-accumulating store seeded with demo alarms so
+                // the Alarms screenshot isn't an empty state.
+                let container = try ModelContainer(
+                    for: AlarmEntity.self,
+                    configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+                )
+                seedSnapshotAlarms(into: container)
+                return container
+            }
+            return try ModelContainer(for: AlarmEntity.self)
+        } catch {
+            fatalError("Failed to create SwiftData ModelContainer: \(error)")
+        }
+    }
+
+    private static func makeSocialStack(
+        deviceRepository: DeviceRepository
+    ) -> (configuration: ServerConfiguration?, backend: SocialBackend) {
+        if AppEnvironment.isSnapshotMode {
+            return (nil, MockSocialBackend(deviceRepository: deviceRepository))
+        }
+        let configuration = ServerSettingsStore().load()
+        return (
+            configuration,
+            HTTPSocialBackend(configuration: configuration, deviceRepository: deviceRepository)
+        )
     }
 
     /// Every `UserDefaults`-backed store in the app (`PokeTriggerStore`,
