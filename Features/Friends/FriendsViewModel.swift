@@ -80,6 +80,13 @@ final class FriendsViewModel {
         Task { try? await repository.removeFriend(friend.id) }
     }
 
+    /// Retries the friends fetch. Needed when a caller subscribes well after
+    /// launch (e.g. a sheet opened on demand) and the one-time launch fetch
+    /// already failed — `friends` otherwise never yields again on its own.
+    func refresh() async {
+        await repository.refreshFriends()
+    }
+
     /// Updates `friends` locally before the network call returns, not just
     /// after. `PermissionEditView`'s "Allow" toggle and its two steppers
     /// each capture a `StimulusPermission` snapshot at render time and send

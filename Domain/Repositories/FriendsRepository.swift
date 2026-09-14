@@ -17,4 +17,11 @@ protocol FriendsRepository {
     func rejectRequest(_ id: FriendRequest.ID) async throws
     func removeFriend(_ id: Friend.ID) async throws
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws
+
+    /// Re-attempts the one-time fetch that normally only runs at launch (via
+    /// session restore) or after a mutation. Callers that subscribe to
+    /// `friends` well after launch — e.g. a sheet opened on demand — have no
+    /// other way to recover if that initial fetch failed (offline, server
+    /// unreachable): `friends` simply never yields again on its own.
+    func refreshFriends() async
 }

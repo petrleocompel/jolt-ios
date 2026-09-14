@@ -148,8 +148,18 @@ struct RemoteDashboardView: View {
             feedback: dependencies.pokeFeedbackService
         )
         }
+        var didCreateFriendsViewModel = false
         if friendsViewModel == nil {
             friendsViewModel = FriendsViewModel(repository: dependencies.friendsRepository)
+            didCreateFriendsViewModel = true
+        }
+        // The passive stream subscription above only replays whatever the
+        // launch-time fetch produced. If that fetch already failed (offline,
+        // server unreachable), `friends` will never yield again on its own —
+        // an explicit retry here is what actually gives this sheet a chance
+        // to recover instead of subscribing to a stream that's already dead.
+        if didCreateFriendsViewModel, let friendsViewModel {
+            Task { await friendsViewModel.refresh() }
         }
         isShowingQuickPokeComposer = true
     }
@@ -212,13 +222,13 @@ struct RemoteDashboardView: View {
                 }
                 .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
             }
-        } else if friendsViewModel?.hasLoadedFriends != true {
+        } else if let friendsViewModel, !friendsViewModel.hasLoadedFriends {
             // The friends stream hasn't delivered its first value yet — this
             // sheet's `friendsViewModel` was only just subscribed when it was
             // opened, so an empty/unresolved list here means "still loading,"
-            // not "missing." Without this, a real friend would briefly (or
-            // permanently, if the fetch is slow) show as not found.
-            ProgressView()
+            // not "missing." Without this, a real friend would briefly (or,
+            // if the fetch never completes, permanently) show as not found.
+            QuickPokeLoadingState(friendsViewModel: friendsViewModel)
         } else {
             ContentUnavailableView("Friend not found", systemImage: "person.slash")
         }
@@ -244,6 +254,40 @@ struct RemoteDashboardView: View {
         } else if let message = dependencies.pokeFeedbackService.lastSuccessMessage {
             InlineBanner(text: message, style: .success)
                 .accessibilityIdentifier("pokeActionFeedback")
+        }
+    }
+}
+
+/// Waits for `friendsViewModel`'s first `friends` emission. A plain spinner
+/// would hang forever if the fetch never completes (offline, server
+/// unreachable) — there's no other signal that it failed, since the stream
+/// just never yields again on its own. After a bounded wait, offer a retry
+/// instead of leaving the sheet stuck.
+private struct QuickPokeLoadingState: View {
+    let friendsViewModel: FriendsViewModel
+
+    @State private var timedOut = false
+
+    var body: some View {
+        if timedOut {
+            VStack(spacing: 12) {
+                Image(systemName: "wifi.slash")
+                    .font(.largeTitle)
+                    .foregroundStyle(.secondary)
+                Text("Couldn't reach the server")
+                    .font(.headline)
+                Button("Retry") {
+                    timedOut = false
+                    Task { await friendsViewModel.refresh() }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        } else {
+            ProgressView()
+                .task {
+                    try? await Task.sleep(for: .seconds(8))
+                    if !friendsViewModel.hasLoadedFriends { timedOut = true }
+                }
         }
     }
 }

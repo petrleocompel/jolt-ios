@@ -151,6 +151,10 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         friendsHub.yield(friendsList)
     }
 
+    func refreshFriends() async {
+        friendsHub.yield(friendsList)
+    }
+
     // MARK: - Pokes
 
     func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {

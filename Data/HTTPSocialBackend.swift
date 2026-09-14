@@ -343,7 +343,11 @@ extension HTTPSocialBackend {
         await refreshActivity()
     }
 
-    private func refreshFriends() async {
+    // Not `private`: `FriendsRepository.refreshFriends()` lets callers that
+    // subscribed after the launch-time fetch already failed (offline, server
+    // unreachable) retry it explicitly, since `friends` otherwise never
+    // yields again on its own.
+    func refreshFriends() async {
         guard let list: [Friend] = try? await send("GET", "friends") else { return }
         friendsList = list
         friendsHub.yield(list)
