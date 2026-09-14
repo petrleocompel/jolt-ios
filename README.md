@@ -26,6 +26,13 @@ the server's web dashboard under Devices.
 in-memory and is what snapshot/screenshot runs use, so the UI can be exercised
 without a server.
 
+### Test account
+
+| Field | Value |
+|-------|-------|
+| Email | `tester@example.com` |
+| Password | `REDACTED` |
+
 ## Requirements
 
 - Xcode (iOS 17.0+)
