@@ -91,6 +91,13 @@ final class PokeTriggerService {
         update(updated)
     }
 
+    func clearTarget() {
+        var updated = trigger
+        updated.targetFriendID = nil
+        updated.targetFriendName = nil
+        update(updated)
+    }
+
     func setStimulus(_ stimulus: StimulusConfig) {
         var updated = trigger
         updated.stimulus = stimulus

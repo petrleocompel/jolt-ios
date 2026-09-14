@@ -230,7 +230,23 @@ struct RemoteDashboardView: View {
             // if the fetch never completes, permanently) show as not found.
             QuickPokeLoadingState(friendsViewModel: friendsViewModel)
         } else {
-            ContentUnavailableView("Friend not found", systemImage: "person.slash")
+            // The saved target ID no longer matches anyone in the current
+            // friends list (e.g. picked before a "None" selection bug — now
+            // fixed — left a stale ID in place). Re-picking the friend in
+            // Quick Poke settings assigns a fresh, valid ID; this just needs
+            // to not be a dead end while that happens.
+            NavigationStack {
+                ContentUnavailableView(
+                    "Friend not found",
+                    systemImage: "person.slash",
+                    description: Text("Open Settings → Quick Poke and pick the friend again.")
+                )
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { isShowingQuickPokeComposer = false }
+                    }
+                }
+            }
         }
     }
 

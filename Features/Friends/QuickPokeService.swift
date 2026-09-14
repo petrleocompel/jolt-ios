@@ -50,6 +50,13 @@ final class QuickPokeService {
         update(updated)
     }
 
+    func clearTarget() {
+        var updated = settings
+        updated.targetFriendID = nil
+        updated.targetFriendName = nil
+        update(updated)
+    }
+
     func setStimulus(_ stimulus: StimulusConfig) {
         var updated = settings
         updated.stimulus = stimulus

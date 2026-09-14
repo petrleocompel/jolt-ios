@@ -59,7 +59,11 @@ struct PokeTriggerSettingsView: View {
                 Picker("Friend", selection: Binding(
                     get: { service.trigger.targetFriendID },
                     set: { id in
-                        if let id, let friend = friends.first(where: { $0.id == id }) {
+                        guard let id else {
+                            service.clearTarget()
+                            return
+                        }
+                        if let friend = friends.first(where: { $0.id == id }) {
                             service.setTarget(friendID: id, name: friend.displayName)
                         }
                     }
