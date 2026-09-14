@@ -60,7 +60,8 @@ extension BluetoothCentralManager: CBCentralManagerDelegate {
     nonisolated func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         Task { @MainActor in
             BLELog.info("Disconnected \(peripheral.identifier): \(error?.localizedDescription ?? "clean")")
-            notifyContinuations.removeValue(forKey: peripheral.identifier)?.values.forEach { $0.finish() }
+            notifyContinuations.removeValue(forKey: peripheral.identifier)?
+                .values.flatMap(\.values).forEach { $0.finish() }
             // Anything still parked on this peripheral will never be
             // answered now — fail it rather than leak the task.
             failPendingOperations(for: peripheral.identifier)
@@ -122,7 +123,10 @@ extension BluetoothCentralManager: CBPeripheralDelegate {
                 return
             }
             BLELog.debug("Notify \(characteristic.uuid.uuidString): \(data.map { String(format: "%02X", $0) }.joined(separator: " "))")
-            notifyContinuations[peripheral.identifier]?[characteristic.uuid.canonicalString]?.yield(data)
+            let subscribers = notifyContinuations[peripheral.identifier]?[characteristic.uuid.canonicalString] ?? [:]
+            for continuation in subscribers.values {
+                continuation.yield(data)
+            }
         }
     }
 

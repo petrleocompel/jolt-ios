@@ -32,6 +32,39 @@ enum DeviceButtonSlot: String, CaseIterable, Codable, Identifiable {
         case .backLong: return "Back (long press)"
         }
     }
+
+    /// The byte the device uses for this button — both as `setButtonAction`'s
+    /// second payload byte and as **byte 2 of an events notification**
+    /// (`156E2000/2002`), which is what makes an incoming press decodable.
+    /// See `docs/RE-FINDINGS.md` §3.
+    var wireValue: UInt8 {
+        switch self {
+        case .top: return 0x01
+        case .middle: return 0x02
+        case .bottom: return 0x03
+        case .topLong: return 0x04
+        case .middleLong: return 0x05
+        case .bottomLong: return 0x06
+        case .backLong: return 0x07
+        }
+    }
+
+    /// Decodes a button byte from an incoming event.
+    ///
+    /// `0x07` (`backLong`) is deliberately **not** decoded: the Android app's
+    /// own decoder (`Utils.getDeviceButtonType`) has no case for it and falls
+    /// back to `middle`, and `setButtonAction` early-returns for it — so a
+    /// `0x07` here would be a guess, and a wrong one would fire pokes on the
+    /// wrong press.
+    init?(wireValue: UInt8) {
+        guard let match = Self.allCases.first(where: { $0 != .backLong && $0.wireValue == wireValue })
+        else { return nil }
+        self = match
+    }
+
+    /// The slots a press can be recognised from. `backLong` is excluded for
+    /// the reason in `init?(wireValue:)`.
+    static var decodableCases: [DeviceButtonSlot] { allCases.filter { $0 != .backLong } }
 }
 
 /// What a button press does. Mirrors `DeviceButtonActionType`. Wire values
@@ -76,6 +109,21 @@ enum ButtonAction: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+extension ButtonAction {
+    /// Actions the *phone* has to carry out, which the device therefore has
+    /// to report over BLE for them to work at all. Setting a button to one of
+    /// these is what guarantees a press reaches the app — see
+    /// `jolt-firmware/docs/04-device-event-protocol.md`.
+    var isPhoneSideEffect: Bool {
+        switch self {
+        case .findMyPhone, .nextTune, .airplaneMode, .doNotDisturb, .toggleSleepTracking:
+            return true
+        case .stopWatch, .timer, .zap, .beep, .vibrate, .toggleCandle, .disabled, .defaultAction:
+            return false
+        }
+    }
+}
+
 struct ButtonConfig: Codable, Equatable {
     var slot: DeviceButtonSlot
     var action: ButtonAction
@@ -90,8 +138,8 @@ enum ButtonConfigError: LocalizedError {
         case .slotUnsupported(let slot):
             return "\(slot.displayName) can't be configured from the app yet."
         case .actionNotVerified(let action):
-            return "\"\(action.displayName)\" isn't confirmed to work on real hardware yet — "
-                + "only \"Off\" is currently supported."
+            return "\"\(action.displayName)\" has no recovered wire format yet — "
+                + "only \"Off\", \"Find my phone\" and \"Toggle sleep tracking\" can be written."
         }
     }
 }

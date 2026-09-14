@@ -1,12 +1,17 @@
 import SwiftUI
 
 /// One row per real `DeviceButtonSlot` — see its doc comment for why this
-/// isn't a (button, pressType) grid. Only "Off" can actually be saved right
-/// now; picking anything else surfaces why rather than pretending to work.
+/// isn't a (button, pressType) grid. Only the actions whose payload is
+/// recovered can be saved; picking any other surfaces why rather than
+/// pretending to work.
+///
+/// Setting a button to "Find my phone" is also how you make a press reach the
+/// phone at all — see `PokeTriggerService.makeButtonReportPresses()`.
 struct ButtonConfigView: View {
     let viewModel: DeviceControlViewModel
     @State private var actions: [DeviceButtonSlot: ButtonAction] = [:]
     @State private var errorMessage: String?
+    @State private var readback: String?
 
     var body: some View {
         List {
@@ -22,10 +27,29 @@ struct ButtonConfigView: View {
                 }
             }
             Section {
-                Text("Only \"Off\" is confirmed to work against real hardware today. "
-                    + "Other actions are shown for reference but aren't wired up yet — see docs/RE-FINDINGS.md.")
+                Button("Read current config from device") {
+                    Task {
+                        do {
+                            let bytes = try await viewModel.readRawButtonConfig()
+                            readback = bytes.isEmpty
+                                ? "(empty)"
+                                : bytes.map { String(format: "%02X", $0) }.joined(separator: " ")
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+                if let readback {
+                    LabeledContent("Device holds") {
+                        Text(readback).font(.footnote.monospaced())
+                    }
+                }
+            } footer: {
+                Text("Writable actions are \"Off\", \"Find my phone\" and \"Toggle sleep tracking\" — "
+                    + "the ones whose payload is recovered. The rest are listed for reference; picking "
+                    + "one says so rather than guessing bytes that could fire a stimulus. "
+                    + "The read-back is raw: the reply's layout isn't decoded yet. See docs/RE-FINDINGS.md.")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
         .navigationTitle("Button")

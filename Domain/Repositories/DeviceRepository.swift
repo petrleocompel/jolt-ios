@@ -23,6 +23,10 @@ protocol DeviceRepository {
     func fire(_ stimulus: StimulusConfig) async throws
     func readDeviceInfo() async throws -> DeviceInfo
     func setButtonConfig(_ config: ButtonConfig) async throws
+    /// The raw contents of the button-config characteristic. Non-destructive,
+    /// and the only honest confirmation that a `setButtonConfig` write landed
+    /// — see the implementation for why the reply isn't decoded.
+    func readRawButtonConfig() async throws -> Data
     /// Pushes an `AlarmLocation.device` alarm onto the wearable's own RTC so
     /// it fires even if the phone is off. See `LegacyDeviceController` /
     /// `SCMaxDeviceController` for what's actually implemented per family.

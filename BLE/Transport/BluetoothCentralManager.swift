@@ -88,7 +88,15 @@ final class BluetoothCentralManager: NSObject {
     /// form. Canonicalising both ends means the two agree regardless of
     /// which form each was written in — an unresolvable key here would park
     /// a write forever with no error. See `CBUUID+Canonical.swift`.
-    var notifyContinuations: [UUID: [String: AsyncStream<Data>.Continuation]] = [:]
+    /// Notify subscribers, keyed peripheral → characteristic → subscriber.
+    ///
+    /// The innermost dictionary is why this is three levels deep: a single
+    /// slot per characteristic meant the *second* subscriber replaced the
+    /// first, silently. That is not hypothetical — opening the diagnostics
+    /// capture screen re-subscribes to every notifying characteristic, which
+    /// used to knock the poke trigger off the air with no error anywhere, and
+    /// the trigger kept reporting itself as listening.
+    var notifyContinuations: [UUID: [String: [UUID: AsyncStream<Data>.Continuation]]] = [:]
     var readContinuations: [UUID: [String: CheckedContinuation<Data, Error>]] = [:]
     var writeContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
 
@@ -291,8 +299,16 @@ final class BluetoothCentralManager: NSObject {
         }
         peripheral.setNotifyValue(true, for: characteristic)
         BLELog.info("Subscribed to \(characteristicUUID.uuidString)")
+        let key = characteristicUUID.canonicalString
+        let peripheralID = peripheral.identifier
         return AsyncStream { continuation in
-            self.notifyContinuations[peripheral.identifier, default: [:]][characteristicUUID.canonicalString] = continuation
+            let token = UUID()
+            self.notifyContinuations[peripheralID, default: [:]][key, default: [:]][token] = continuation
+            continuation.onTermination = { [weak self] _ in
+                Task { @MainActor in
+                    self?.notifyContinuations[peripheralID]?[key]?.removeValue(forKey: token)
+                }
+            }
         }
     }
 

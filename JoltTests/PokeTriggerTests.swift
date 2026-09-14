@@ -39,6 +39,67 @@ final class PokeTriggerTests: XCTestCase {
         XCTAssertFalse(trigger.matches(event(charB, [0x0B, 0x0A])))        // wrong order
     }
 
+    /// The case the whole mode exists for, and the one it used to fail: a
+    /// gesture is learned from a *whole* captured frame, so if the firmware
+    /// appends a counter the learned bytes carry it too. Comparing the leading
+    /// header is the only comparison that can tolerate that.
+    func testPrefixModeToleratesACounterInsideTheLearnedFrame() {
+        let trigger = learned(mode: .prefix, bytes: [0x01, 0x02, 0x04, 0x5A], char: charB)
+        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x02, 0x04, 0x5B])))
+        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x02, 0x04])))
+        XCTAssertFalse(trigger.matches(event(charB, [0x01, 0x02, 0x01, 0x5A])))  // different button
+    }
+
+    // MARK: Decoded button matching
+
+    private func slotTrigger(_ slot: DeviceButtonSlot) -> PokeTrigger {
+        var t = PokeTrigger.default
+        t.isEnabled = true
+        t.targetFriendID = UUID()
+        t.buttonSlot = slot
+        return t
+    }
+
+    func testDecodedSlotMatchesRegardlessOfTrailingBytes() {
+        let trigger = slotTrigger(.topLong)
+        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x00, 0x04])))
+        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x00, 0x04, 0x7F, 0x21])))  // trailing counter
+        XCTAssertFalse(trigger.matches(event(charB, [0x01, 0x00, 0x01])))             // top, short press
+        XCTAssertFalse(trigger.matches(event(charA, [0x01, 0x00, 0x04])))             // wrong characteristic
+        XCTAssertFalse(trigger.matches(event(charB, [0x01, 0x00])))                   // truncated frame
+    }
+
+    func testDecodedSlotWinsOverAStaleLearnedSignature() {
+        var trigger = slotTrigger(.middle)
+        trigger.learnedCharacteristicUUID = charB
+        trigger.learnedBytes = Data([0x09, 0x09, 0x09])
+        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x00, 0x02])))
+        XCTAssertFalse(trigger.matches(event(charB, [0x09, 0x09, 0x09])))
+    }
+
+    func testEventsCharacteristicIsRecognisedInBluetoothBaseForm() {
+        // What a real Pavlok reports: a 16-bit characteristic inside a
+        // 128-bit vendor service, so it arrives expanded against the
+        // Bluetooth base, not the vendor base.
+        let shortForm = "00002002-0000-1000-8000-00805F9B34FB"
+        XCTAssertEqual(event(shortForm, [0x01, 0x00, 0x03]).buttonSlot, .bottom)
+    }
+
+    func testBackLongIsNotDecodedFromEvents() {
+        // `getDeviceButtonType` has no case for 0x07 — decoding it would be a
+        // guess, and a wrong one fires pokes on the wrong press.
+        XCTAssertNil(event(charB, [0x01, 0x00, 0x07]).buttonSlot)
+    }
+
+    func testArmedWithASlotButNoLearnedSignature() {
+        var t = PokeTrigger.default
+        t.isEnabled = true
+        t.targetFriendID = UUID()
+        XCTAssertFalse(t.isArmed)
+        t.buttonSlot = .top
+        XCTAssertTrue(t.isArmed)
+    }
+
     func testIsArmedNeedsEnabledFriendAndLearnedGesture() {
         var t = PokeTrigger.default
         XCTAssertFalse(t.isArmed)                       // default: nothing set
@@ -58,8 +119,22 @@ final class PokeTriggerTests: XCTestCase {
         XCTAssertFalse(t.isArmed)
     }
 
+    /// Old stored triggers predate `buttonSlot`; decoding must not fail on a
+    /// payload that has no such key, or every existing user silently loses
+    /// their configured trigger on update.
+    func testDecodingToleratesPayloadWithoutButtonSlot() throws {
+        let json = """
+        {"isEnabled":true,"stimulus":{"kind":"vibe","intensity":30,"repetitions":1},
+         "matchMode":"exact","debounceSeconds":2}
+        """
+        let decoded = try JSONDecoder().decode(PokeTrigger.self, from: Data(json.utf8))
+        XCTAssertNil(decoded.buttonSlot)
+        XCTAssertTrue(decoded.isEnabled)
+    }
+
     func testTriggerSurvivesJSONRoundTrip() throws {
-        let t = learned(mode: .prefix, bytes: [0xDE, 0xAD, 0xBE, 0xEF], char: charB)
+        var t = learned(mode: .prefix, bytes: [0xDE, 0xAD, 0xBE, 0xEF], char: charB)
+        t.buttonSlot = .bottomLong
         let data = try JSONEncoder().encode(t)
         let decoded = try JSONDecoder().decode(PokeTrigger.self, from: data)
         XCTAssertEqual(t, decoded)

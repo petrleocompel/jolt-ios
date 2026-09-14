@@ -164,4 +164,8 @@ final class DeviceControlViewModel {
     func setButtonConfig(_ config: ButtonConfig) async throws {
         try await repository.setButtonConfig(config)
     }
+
+    func readRawButtonConfig() async throws -> Data {
+        try await repository.readRawButtonConfig()
+    }
 }

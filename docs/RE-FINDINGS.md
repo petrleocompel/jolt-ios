@@ -180,14 +180,28 @@ table:
 
 **This means short vs. long press *is* distinguished at the raw BLE byte
 level** (byte index 2 of the event notification directly carries one of the
-codes above) — it is not client-side hold-duration timing. A "learn by
-example" trigger (this app's `PokeTrigger`) can in principle distinguish a
-long press from a short press of the same button, since the captured bytes
-genuinely differ. If it doesn't in practice, suspect either (a) a trailing
-counter/timestamp byte after index 2 breaking an *exact* byte-match (see
-`PokeTrigger.MatchMode.prefix`, which exists for exactly this) rather than
-the concept being impossible, or (b) the app capturing/matching the wrong
-byte range.
+codes above) — it is not client-side hold-duration timing.
+
+The app now **decodes** this rather than byte-matching a captured frame:
+`DeviceEvent.buttonSlot` reads byte 2 off the events characteristic, and
+`PokeTrigger.buttonSlot` fires on a named button. That is immune to any
+trailing counter/timestamp the firmware appends, which the previous
+learn-by-example path was not — `.prefix` mode compared the *whole* learned
+frame, counter included, so it could never tolerate the very thing it existed
+for. It now compares the leading three bytes (`MatchMode.toleratedPrefixLength`),
+and survives only as the fallback for frames the decoder doesn't recognise.
+
+`0x07` (`backLong`) is deliberately not decoded: the Android decoder has no
+case for it either.
+
+**A press only reaches the phone if the button's action needs the phone.**
+Actions like `zap` / `timer` are carried out inside the firmware and need not
+be announced at all; `findMyPhone`, `nextTune`, `airplaneMode`,
+`doNotDisturb` and `toggleSleepTracking` cannot work unless the press is
+delivered. So configuring the button is part of the poke-trigger setup, not
+an optional extra — `PokeTriggerService.makeButtonReportPresses()` writes
+`findMyPhone` to the chosen button for exactly this reason, and Jolt ignores
+the find-my-phone semantics itself.
 
 `setButtonAction(buttonType, actionType, …)` writes to **setup `156E7000`/`7001`**
 (confirming the earlier guess) with payload `[0x02, buttonType.wire, actionType.wire, …]`
@@ -199,8 +213,16 @@ append further bytes whose shape depends on the action (traced two so far:
 `toggleSleepTracking` → `[0x02, button, 0x13, 0x01, 0x02]` (5 bytes, trailing
 2 bytes not decoded). Actions not yet traced byte-for-byte: `zap`, `beep`,
 `vibrate` (has its own 5-byte tail, likely intensity-related — do not guess
-this one, it fires a real stimulus), `timer`, `stopWatch`, `findMyPhone`,
-`toggleCandle`, `nextTune`, `airplaneMode`, `doNotDisturb`.
+this one, it fires a real stimulus), `timer`, `stopWatch`, `toggleCandle`,
+`nextTune`, `airplaneMode`, `doNotDisturb`.
+
+`findMyPhone` is written as `[0x02, button, 0x10]` on the **assumption** that
+it has no tail, like `disabled`. That assumption is untraced, and it is the
+one guess the app makes — justified because a phone-side action can't fire a
+stimulus, so the worst case is a rejected write. `setButtonConfig` re-reads
+`7001` afterwards and logs what the device now holds; the reply's layout
+(`DeviceButtonConfigEntity.fromMap`) is still undecoded, so that read-back is
+raw bytes and is the thing to stare at when confirming the guess.
 
 `DeviceButtonActionType` (from the object-pool dump — `ble_manager.dart` at
 `0xe960f8` switches on the enum's **ordinal**, not this wire value, to pick

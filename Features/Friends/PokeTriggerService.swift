@@ -34,22 +34,46 @@ final class PokeTriggerService {
     /// Surfaced to Settings for a small activity line.
     private(set) var lastPokeSentAt: Date?
     private(set) var lastError: String?
+    /// Result of the last button-config write/read, shown in Settings.
+    private(set) var lastButtonConfigNote: String?
+    private(set) var isWritingButtonConfig = false
+
+    /// The most recent notifications the device sent, newest first.
+    ///
+    /// The one question this feature always raises is "did the press even
+    /// reach the phone?" — and until you can see the frames, a silent trigger
+    /// and a silent device look identical. Capped at `recentEventLimit`.
+    private(set) var recentEvents: [DeviceEvent] = []
+    static let recentEventLimit = 12
 
     private var lastFiredAt: Date?
+    /// Distinguishes "this loop finished" from "a newer loop replaced it", so
+    /// a finishing task can clear `eventTask` without stomping its successor.
+    private var eventLoopGeneration = 0
+    /// Consecutive failures to open the event feed; resets on success. Bounds
+    /// the retry so a permanently failing device can't spin.
+    private var eventLoopFailures = 0
+    private static let maxEventLoopRetries = 5
 
     @ObservationIgnored
     nonisolated(unsafe) private var connectionTask: Task<Void, Never>?
     @ObservationIgnored
     nonisolated(unsafe) private var eventTask: Task<Void, Never>?
 
+    /// How long to wait before re-opening a failed event feed. Injectable so
+    /// tests don't have to sit through the real delay.
+    private let retryDelay: Duration
+
     init(
         deviceRepository: DeviceRepository,
         pokeRepository: PokeRepository,
-        store: PokeTriggerStore = PokeTriggerStore()
+        store: PokeTriggerStore = PokeTriggerStore(),
+        retryDelay: Duration = .seconds(2)
     ) {
         self.deviceRepository = deviceRepository
         self.pokeRepository = pokeRepository
         self.store = store
+        self.retryDelay = retryDelay
         self.trigger = store.load()
     }
 
@@ -104,6 +128,46 @@ final class PokeTriggerService {
         update(updated)
     }
 
+    /// Choose the press by name — the decoded path (`PokeTrigger.buttonSlot`).
+    /// Clears any learned signature, since the two are alternatives and
+    /// leaving a stale blob behind only confuses the Settings screen.
+    func setButtonSlot(_ slot: DeviceButtonSlot?) {
+        var updated = trigger
+        updated.buttonSlot = slot
+        if slot != nil {
+            updated.learnedCharacteristicUUID = nil
+            updated.learnedBytes = nil
+        }
+        update(updated)
+    }
+
+    /// Configures the chosen button so its press actually reaches the phone.
+    ///
+    /// A button set to a device-local action (zap, timer, …) is handled inside
+    /// the firmware and need not be announced over BLE at all; the actions the
+    /// *phone* performs must be. `findMyPhone` is the least intrusive of those
+    /// — Jolt ignores the find-my-phone semantics and just takes the press —
+    /// so it's what we write. See `ButtonAction.isPhoneSideEffect`.
+    func makeButtonReportPresses() async {
+        guard let slot = trigger.buttonSlot else {
+            lastButtonConfigNote = "Pick a button first."
+            return
+        }
+        isWritingButtonConfig = true
+        defer { isWritingButtonConfig = false }
+        do {
+            try await deviceRepository.setButtonConfig(ButtonConfig(slot: slot, action: .findMyPhone))
+            let readback = try? await deviceRepository.readRawButtonConfig()
+            let hex = readback.map { $0.map { String(format: "%02X", $0) }.joined(separator: " ") }
+            lastButtonConfigNote = "\(slot.displayName) set to report presses"
+                + (hex.map { " — device now holds \($0)" } ?? "")
+            lastError = nil
+        } catch {
+            lastButtonConfigNote = nil
+            lastError = error.localizedDescription
+        }
+    }
+
     /// Begin recording. The next event the device sends becomes
     /// `learnCandidate`; `confirmLearn` then bakes it into the trigger.
     func startLearning() {
@@ -123,6 +187,7 @@ final class PokeTriggerService {
     func confirmLearn(matchMode: PokeTrigger.MatchMode = .exact) {
         guard let candidate = learnCandidate else { return }
         var updated = trigger
+        updated.buttonSlot = nil
         updated.learnedCharacteristicUUID = candidate.characteristicUUID
         updated.learnedBytes = candidate.data
         updated.matchMode = matchMode
@@ -165,28 +230,71 @@ final class PokeTriggerService {
 
     private func startEventLoop() {
         guard eventTask == nil else { return }
+        eventLoopGeneration += 1
+        let generation = eventLoopGeneration
         eventTask = Task { [weak self] in
             guard let self else { return }
+            var failed = false
             do {
                 let stream = try await deviceRepository.deviceEventStream()
+                self.eventLoopFailures = 0
                 self.isListening = true
                 for await event in stream {
                     self.handle(event)
                 }
             } catch {
+                failed = true
                 self.lastError = error.localizedDescription
+                BLELog.error("Poke trigger event feed failed: \(error.localizedDescription)")
             }
+            // Only a loop that is still the current one may clear the slot —
+            // otherwise a task finishing right after `stopEventLoop()` started
+            // a replacement would erase the new task's handle.
+            guard self.eventLoopGeneration == generation else { return }
             self.isListening = false
+            self.eventTask = nil
+            // The feed also ends *without* an error when the peripheral drops.
+            // Either way the loop has to be restartable: leaving `eventTask`
+            // set (what this used to do) meant one hiccup deafened the trigger
+            // until the app was relaunched, with nothing in the UI to say so.
+            if failed {
+                self.eventLoopFailures += 1
+                guard self.eventLoopFailures <= Self.maxEventLoopRetries else {
+                    BLELog.error("Poke trigger giving up after \(self.eventLoopFailures) failed attempts")
+                    return
+                }
+                self.scheduleEventLoopRetry()
+            } else {
+                self.reconcile()
+            }
+        }
+    }
+
+    /// Re-opens the feed shortly after a failure. Delayed rather than
+    /// immediate because the usual cause is a connect race — the connection
+    /// stream says "connected" a moment before the repository can hand out a
+    /// peripheral.
+    private func scheduleEventLoopRetry() {
+        let delay = retryDelay
+        Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard let self, !Task.isCancelled else { return }
+            self.reconcile()
         }
     }
 
     private func stopEventLoop() {
         eventTask?.cancel()
         eventTask = nil
+        eventLoopFailures = 0
         isListening = false
     }
 
     private func handle(_ event: DeviceEvent) {
+        recentEvents.insert(event, at: 0)
+        if recentEvents.count > Self.recentEventLimit {
+            recentEvents.removeLast(recentEvents.count - Self.recentEventLimit)
+        }
         if isLearning {
             learnCandidate = event
             return

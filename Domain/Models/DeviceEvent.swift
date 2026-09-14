@@ -40,4 +40,37 @@ struct DeviceEvent: Equatable, Codable, Identifiable {
     var hexString: String {
         data.isEmpty ? "(empty)" : data.map { String(format: "%02X", $0) }.joined(separator: " ")
     }
+
+    // MARK: Button presses
+
+    /// The events characteristic (`2002` of the notification service), in both
+    /// forms a peripheral can report it.
+    ///
+    /// Pavlok services carry the vendor base `156Exxxx-A300-…` while their
+    /// characteristics are plain 16-bit, so the same characteristic arrives as
+    /// the Bluetooth-base expansion on real hardware — but a device (or a
+    /// fixture) that declares it under the vendor base is equally valid. Both
+    /// are accepted so a decode never silently fails on UUID form; see
+    /// `CBUUID.canonicalString` for why this bites.
+    static let eventsCharacteristicUUIDs: Set<String> = [
+        "00002002-0000-1000-8000-00805F9B34FB",
+        "156E2002-A300-4FEA-897B-86F698D74461"
+    ]
+
+    var isButtonEventCharacteristic: Bool {
+        Self.eventsCharacteristicUUIDs.contains(characteristicUUID.uppercased())
+    }
+
+    /// Which button this notification reports, if it is one.
+    ///
+    /// Byte 2 of an events frame carries the `DeviceButtonType` wire value —
+    /// recovered from the Android app's own event decoder, `docs/RE-FINDINGS.md`
+    /// §3. Short and long press are *different values here*, not a duration
+    /// measured on the phone, so decoding this is strictly better than
+    /// byte-matching a captured frame: it is immune to any trailing counter
+    /// the firmware appends.
+    var buttonSlot: DeviceButtonSlot? {
+        guard isButtonEventCharacteristic, data.count > 2 else { return nil }
+        return DeviceButtonSlot(wireValue: data[data.startIndex + 2])
+    }
 }
