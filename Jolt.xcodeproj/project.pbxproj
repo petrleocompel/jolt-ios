@@ -166,6 +166,7 @@
 		F117091CE8F0C7B5EF82BEF2 /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD0154A817E7BE315780729 /* SnapshotHelper.swift */; };
 		F18868631569AE1FA033DF17 /* FriendPermissionSetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */; };
 		F290A76E43B763F6743332DD /* DeviceFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */; };
+		F6BF0DC5DFCF0191B00436C9 /* QuickPokeComposerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AEB4D2935604E2CCA19F24 /* QuickPokeComposerUITests.swift */; };
 		F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73676EE1B7477970179576C5 /* Stimulus.swift */; };
 		FB68389C147A45679D03E4F9 /* ESFCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */; };
 		FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */; };
@@ -293,6 +294,7 @@
 		9236FBE0FB1BDFB8ABD79DAE /* PavlokCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokCredentialStore.swift; sourceTree = "<group>"; };
 		930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotsUITests.swift; sourceTree = "<group>"; };
 		94ECC070890709E943D845F6 /* CompositeDeviceRepository+ButtonConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CompositeDeviceRepository+ButtonConfig.swift"; sourceTree = "<group>"; };
+		95AEB4D2935604E2CCA19F24 /* QuickPokeComposerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPokeComposerUITests.swift; sourceTree = "<group>"; };
 		96552544D49CCD4D3F287C29 /* MockSocialBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSocialBackend.swift; sourceTree = "<group>"; };
 		96B8896F658741B48ABE9882 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		96C7A7BC5B182B1DD46F2563 /* CBUUID+Canonical.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CBUUID+Canonical.swift"; sourceTree = "<group>"; };
@@ -378,6 +380,7 @@
 			isa = PBXGroup;
 			children = (
 				3669760429200CD7A7ABB56F /* FriendsFlowUITests.swift */,
+				95AEB4D2935604E2CCA19F24 /* QuickPokeComposerUITests.swift */,
 				930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */,
 				FDD0154A817E7BE315780729 /* SnapshotHelper.swift */,
 				CF21BF2C419580EB45CDCE26 /* TabNavigation.swift */,
@@ -855,6 +858,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23FF51D42A5EB65AA37FD2BB /* FriendsFlowUITests.swift in Sources */,
+				F6BF0DC5DFCF0191B00436C9 /* QuickPokeComposerUITests.swift in Sources */,
 				DC15FE1AFB23B9A52A211C31 /* ScreenshotsUITests.swift in Sources */,
 				F117091CE8F0C7B5EF82BEF2 /* SnapshotHelper.swift in Sources */,
 				2139B77ED2381FF082F8F040 /* TabNavigation.swift in Sources */,

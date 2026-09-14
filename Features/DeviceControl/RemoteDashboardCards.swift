@@ -241,6 +241,7 @@ struct QuickPokeCard: View {
                         .foregroundStyle(.white.opacity(0.5))
                 }
                 .accessibilityLabel("Adjust and send a one-off poke")
+                .accessibilityIdentifier("quickPokeComposerButton")
             }
 
             HStack(spacing: 8) {

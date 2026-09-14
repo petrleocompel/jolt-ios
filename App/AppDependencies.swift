@@ -65,7 +65,7 @@ final class AppDependencies {
         self.modelContainer = container
         self.alarmRepository = SwiftDataAlarmRepository(modelContainer: container)
         self.phoneAlarmScheduler = PhoneAlarmScheduler()
-        self.deviceRepository = AppEnvironment.isSnapshotMode
+        self.deviceRepository = AppEnvironment.usesFakeDevice
             ? FakeDeviceRepository()
             : CompositeDeviceRepository()
 
@@ -151,7 +151,7 @@ final class AppDependencies {
     /// test. Same "hermetic, non-accumulating" treatment as the in-memory
     /// SwiftData container in `init`, for the same reason.
     private static func resetPersistedStateIfSnapshotMode() {
-        guard AppEnvironment.isSnapshotMode, let bundleID = Bundle.main.bundleIdentifier else { return }
+        guard AppEnvironment.shouldResetPersistedState, let bundleID = Bundle.main.bundleIdentifier else { return }
         UserDefaults.standard.removePersistentDomain(forName: bundleID)
     }
 

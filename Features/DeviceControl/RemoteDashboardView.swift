@@ -87,7 +87,10 @@ struct RemoteDashboardView: View {
             }
         }
         .sheet(isPresented: $isShowingQuickPokeComposer) {
-            quickPokeComposerSheet
+            QuickPokeComposerSheet(
+                targetFriendID: dependencies.quickPokeService.settings.targetFriendID,
+                onClose: { isShowingQuickPokeComposer = false }
+            )
         }
     }
 
@@ -138,29 +141,12 @@ struct RemoteDashboardView: View {
         )
     }
 
-    /// `FriendsViewModel` is only needed to resolve the quick-poke friend by
-    /// ID for this one-off override sheet — nothing else on the dashboard
-    /// reads it, so it isn't constructed until this is actually tapped.
+    /// The sheet owns the view models it needs (see `QuickPokeComposerSheet`)
+    /// rather than being handed them from here: assigning `@State` and
+    /// presenting in the same turn meant the sheet's content was built
+    /// against the pre-assignment value — a nil `FriendsViewModel`, which
+    /// read as "Friend not found" no matter how healthy the friends list was.
     private func openQuickPokeComposer() {
-        if pokeViewModel == nil {
-            pokeViewModel = PokeViewModel(
-            repository: dependencies.pokeRepository,
-            feedback: dependencies.pokeFeedbackService
-        )
-        }
-        var didCreateFriendsViewModel = false
-        if friendsViewModel == nil {
-            friendsViewModel = FriendsViewModel(repository: dependencies.friendsRepository)
-            didCreateFriendsViewModel = true
-        }
-        // The passive stream subscription above only replays whatever the
-        // launch-time fetch produced. If that fetch already failed (offline,
-        // server unreachable), `friends` will never yield again on its own —
-        // an explicit retry here is what actually gives this sheet a chance
-        // to recover instead of subscribing to a stream that's already dead.
-        if didCreateFriendsViewModel, let friendsViewModel {
-            Task { await friendsViewModel.refresh() }
-        }
         isShowingQuickPokeComposer = true
     }
 
@@ -191,65 +177,6 @@ struct RemoteDashboardView: View {
         )
     }
 
-    @ViewBuilder
-    private var quickPokeComposerSheet: some View {
-        if let pokeViewModel, let friendsViewModel,
-           let friendID = dependencies.quickPokeService.settings.targetFriendID,
-           let friend = friendsViewModel.friends.first(where: { $0.id == friendID }) {
-            NavigationStack {
-                ScrollView {
-                    PokeComposerCard(
-                        friend: friend,
-                        pokeViewModel: pokeViewModel,
-                        firingModeService: dependencies.firingModeService,
-                        draftStore: dependencies.friendPokeDraftStore,
-                        feedback: dependencies.pokeFeedbackService
-                    )
-                    .padding()
-                }
-                .navigationTitle("Poke \(friend.displayName)")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { isShowingQuickPokeComposer = false }
-                    }
-                }
-                .safeAreaInset(edge: .bottom) {
-                    if let message = dependencies.pokeFeedbackService.lastSuccessMessage {
-                        InlineBanner(text: message, style: .success)
-                            .accessibilityIdentifier("pokeActionFeedback")
-                    }
-                }
-                .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
-            }
-        } else if let friendsViewModel, !friendsViewModel.hasLoadedFriends {
-            // The friends stream hasn't delivered its first value yet — this
-            // sheet's `friendsViewModel` was only just subscribed when it was
-            // opened, so an empty/unresolved list here means "still loading,"
-            // not "missing." Without this, a real friend would briefly (or,
-            // if the fetch never completes, permanently) show as not found.
-            QuickPokeLoadingState(friendsViewModel: friendsViewModel)
-        } else {
-            // The saved target ID no longer matches anyone in the current
-            // friends list (e.g. picked before a "None" selection bug — now
-            // fixed — left a stale ID in place). Re-picking the friend in
-            // Quick Poke settings assigns a fresh, valid ID; this just needs
-            // to not be a dead end while that happens.
-            NavigationStack {
-                ContentUnavailableView(
-                    "Friend not found",
-                    systemImage: "person.slash",
-                    description: Text("Open Settings → Quick Poke and pick the friend again.")
-                )
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { isShowingQuickPokeComposer = false }
-                    }
-                }
-            }
-        }
-    }
-
     /// Confirmation and errors share one slot: an error supersedes the
     /// success note, because if the write failed then "sent" is a lie.
     @ViewBuilder
@@ -274,13 +201,115 @@ struct RemoteDashboardView: View {
     }
 }
 
+/// The Remote dashboard's one-off poke composer, pre-loaded with the
+/// Settings → Quick Poke friend. Presents the same `PokeComposerCard` the
+/// Friends tab uses, so this is the full poke flow, not a reduced one.
+///
+/// Builds its own view models in `.task` instead of receiving them from the
+/// dashboard. The dashboard used to create them and set `isPresented` in the
+/// same synchronous call, and SwiftUI built the sheet's content from the
+/// state as it was *before* that assignment — a nil `FriendsViewModel` —
+/// which fell through to "Friend not found" permanently, even with the
+/// friend present and the server healthy.
+private struct QuickPokeComposerSheet: View {
+    let targetFriendID: Friend.ID?
+    let onClose: () -> Void
+
+    @Environment(AppDependencies.self) private var dependencies
+
+    @State private var friendsViewModel: FriendsViewModel?
+    @State private var pokeViewModel: PokeViewModel?
+
+    var body: some View {
+        content
+            .task {
+                if pokeViewModel == nil {
+                    pokeViewModel = PokeViewModel(
+                        repository: dependencies.pokeRepository,
+                        feedback: dependencies.pokeFeedbackService
+                    )
+                }
+                guard friendsViewModel == nil else { return }
+                let model = FriendsViewModel(repository: dependencies.friendsRepository)
+                friendsViewModel = model
+                // The stream only replays what the launch-time fetch produced;
+                // if that failed there is nothing to replay and no retry of
+                // its own, so ask for a fresh one.
+                await model.refresh()
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let pokeViewModel, let friendsViewModel, let targetFriendID,
+           let friend = friendsViewModel.friends.first(where: { $0.id == targetFriendID }) {
+            composer(friend: friend, pokeViewModel: pokeViewModel)
+        } else if friendsViewModel?.hasLoadedFriends != true {
+            // Still loading: an empty/unresolved list here does not yet mean
+            // the friend is missing.
+            QuickPokeLoadingState(friendsViewModel: friendsViewModel)
+        } else {
+            notFound
+        }
+    }
+
+    private func composer(friend: Friend, pokeViewModel: PokeViewModel) -> some View {
+        NavigationStack {
+            ScrollView {
+                PokeComposerCard(
+                    friend: friend,
+                    pokeViewModel: pokeViewModel,
+                    firingModeService: dependencies.firingModeService,
+                    draftStore: dependencies.friendPokeDraftStore,
+                    feedback: dependencies.pokeFeedbackService
+                )
+                .padding()
+            }
+            .accessibilityIdentifier("quickPokeComposerSheet")
+            .navigationTitle("Poke \(friend.displayName)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close", action: onClose)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if let message = dependencies.pokeFeedbackService.lastSuccessMessage {
+                    InlineBanner(text: message, style: .success)
+                        .accessibilityIdentifier("pokeActionFeedback")
+                }
+            }
+            .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
+        }
+    }
+
+    /// The saved target ID genuinely matches nobody in the current friends
+    /// list — e.g. it was configured against a different account. Re-picking
+    /// in Quick Poke settings writes a fresh, valid ID.
+    private var notFound: some View {
+        NavigationStack {
+            ContentUnavailableView(
+                "Friend not found",
+                systemImage: "person.slash",
+                description: Text("Open Settings → Quick Poke and pick the friend again.")
+            )
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close", action: onClose)
+                }
+            }
+            .accessibilityIdentifier("quickPokeFriendNotFound")
+        }
+    }
+}
+
 /// Waits for `friendsViewModel`'s first `friends` emission. A plain spinner
 /// would hang forever if the fetch never completes (offline, server
 /// unreachable) — there's no other signal that it failed, since the stream
 /// just never yields again on its own. After a bounded wait, offer a retry
 /// instead of leaving the sheet stuck.
 private struct QuickPokeLoadingState: View {
-    let friendsViewModel: FriendsViewModel
+    let friendsViewModel: FriendsViewModel?
 
     @State private var timedOut = false
 
@@ -294,15 +323,16 @@ private struct QuickPokeLoadingState: View {
                     .font(.headline)
                 Button("Retry") {
                     timedOut = false
-                    Task { await friendsViewModel.refresh() }
+                    Task { await friendsViewModel?.refresh() }
                 }
                 .buttonStyle(.borderedProminent)
             }
         } else {
             ProgressView()
+                .accessibilityIdentifier("quickPokeComposerLoading")
                 .task {
                     try? await Task.sleep(for: .seconds(8))
-                    if !friendsViewModel.hasLoadedFriends { timedOut = true }
+                    if friendsViewModel?.hasLoadedFriends != true { timedOut = true }
                 }
         }
     }
