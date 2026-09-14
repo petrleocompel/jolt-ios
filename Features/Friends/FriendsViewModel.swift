@@ -9,6 +9,10 @@ final class FriendsViewModel {
     private(set) var friends: [Friend] = []
     private(set) var incomingRequests: [FriendRequest] = []
     private(set) var outgoingRequests: [FriendRequest] = []
+    /// Flips true after the first emission from `repository.friends`, so
+    /// callers can tell "not loaded yet" apart from "loaded and genuinely
+    /// empty/missing" — an empty `friends` array means both until this fires.
+    private(set) var hasLoadedFriends = false
     var lastError: String?
 
     var myHandle: String { repository.myHandle }
@@ -25,7 +29,10 @@ final class FriendsViewModel {
         self.repository = repository
         friendsTask = Task { [weak self] in
             guard let self else { return }
-            for await value in repository.friends { self.friends = value }
+            for await value in repository.friends {
+                self.friends = value
+                self.hasLoadedFriends = true
+            }
         }
         incomingTask = Task { [weak self] in
             guard let self else { return }

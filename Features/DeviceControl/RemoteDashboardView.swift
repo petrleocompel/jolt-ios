@@ -212,6 +212,13 @@ struct RemoteDashboardView: View {
                 }
                 .animation(.snappy, value: dependencies.pokeFeedbackService.lastSuccessMessage)
             }
+        } else if friendsViewModel?.hasLoadedFriends != true {
+            // The friends stream hasn't delivered its first value yet — this
+            // sheet's `friendsViewModel` was only just subscribed when it was
+            // opened, so an empty/unresolved list here means "still loading,"
+            // not "missing." Without this, a real friend would briefly (or
+            // permanently, if the fetch is slow) show as not found.
+            ProgressView()
         } else {
             ContentUnavailableView("Friend not found", systemImage: "person.slash")
         }
