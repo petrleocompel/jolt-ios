@@ -19,9 +19,13 @@ struct PokeTriggerSettingsView: View {
             enableSection
             if trigger.isEnabled {
                 friendSection
-                stimulusSection
+                if trigger.targetFriendID != nil {
+                    stimulusSection
+                }
                 gestureSection
-                statusSection
+                if trigger.targetFriendID != nil {
+                    statusSection
+                }
             }
         }
         .navigationTitle("Poke from Pavlok")

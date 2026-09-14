@@ -16,8 +16,10 @@ struct QuickPokeSettingsView: View {
             enableSection
             if settings.isEnabled {
                 friendSection
-                stimulusSection
-                statusSection
+                if settings.targetFriendID != nil {
+                    stimulusSection
+                    statusSection
+                }
             }
         }
         .navigationTitle("Quick Poke")
