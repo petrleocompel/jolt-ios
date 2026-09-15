@@ -45,14 +45,19 @@ final class QuickPokeComposerUITests: XCTestCase {
         }
     }
 
+    /// - Parameter resetState: pass `false` to keep settings persisted by an
+    ///   earlier launch, which is how the app is actually used day to day.
     @MainActor
-    private func launchApp() -> XCUIApplication {
+    private func launchApp(resetState: Bool = true) -> XCUIApplication {
         let app = XCUIApplication()
         // No -snapshotMode: this must exercise HTTPSocialBackend against a
         // real server. `-fakeDevice` only stands in for the wearable, so the
         // tab bar is reachable; `-resetPersistedState` keeps a quick-poke
         // target from a previous run out of the way.
-        app.launchArguments += ["-fakeDevice", "-resetPersistedState"]
+        app.launchArguments += ["-fakeDevice"]
+        if resetState {
+            app.launchArguments += ["-resetPersistedState"]
+        }
         app.launch()
         return app
     }
@@ -88,6 +93,41 @@ final class QuickPokeComposerUITests: XCTestCase {
         XCTAssertTrue(
             app.buttons["sendPokeButton"].waitForExistence(timeout: 10),
             "Composer should offer the same full poke controls as the Friends tab"
+        )
+    }
+
+    /// The everyday path, and the one the bug was reported from: quick poke
+    /// was configured in an earlier session, so on this launch the target ID
+    /// comes off disk and the friends list from session restore — nothing is
+    /// freshly assigned in the tap that opens the sheet.
+    @MainActor
+    func testQuickPokeComposerResolvesFriendConfiguredInAnEarlierSession() throws {
+        let first = launchApp()
+        let friendName = try signInAndReadFirstFriendName(first)
+        try configureQuickPoke(first, friendName: friendName)
+        first.terminate()
+
+        // Relaunch without the reset flag: the quick-poke target and the auth
+        // token both survive, exactly as they do between real app launches.
+        let app = launchApp(resetState: false)
+        app.selectTab("Remote")
+
+        let composerButton = app.buttons["quickPokeComposerButton"]
+        XCTAssertTrue(
+            composerButton.waitForExistence(timeout: 20),
+            "Quick poke card should still be configured after a relaunch"
+        )
+        composerButton.tap()
+
+        let composer = app.descendants(matching: .any)["quickPokeComposerSheet"]
+        let notFound = app.descendants(matching: .any)["quickPokeFriendNotFound"]
+        let settled = NSPredicate { _, _ in composer.exists || notFound.exists }
+        wait(for: [expectation(for: settled, evaluatedWith: app)], timeout: 25)
+
+        XCTAssertFalse(notFound.exists, "Composer showed \"Friend not found\" after a relaunch")
+        XCTAssertTrue(
+            app.buttons["sendPokeButton"].waitForExistence(timeout: 10),
+            "Composer should offer the full poke controls after a relaunch"
         )
     }
 
