@@ -35,22 +35,22 @@ final class PokeTriggerTests: XCTestCase {
         let trigger = learned(mode: .prefix, bytes: [0x0A, 0x0B], char: charB)
         XCTAssertTrue(trigger.matches(event(charB, [0x0A, 0x0B, 0x99])))   // trailing counter
         XCTAssertTrue(trigger.matches(event(charB, [0x0A, 0x0B])))
-        XCTAssertFalse(trigger.matches(event(charB, [0x0A])))              // shorter than prefix
-        XCTAssertFalse(trigger.matches(event(charB, [0x0B, 0x0A])))        // wrong order
+        XCTAssertTrue(trigger.matches(event(charB, [0x0A])))               // same event type
+        XCTAssertFalse(trigger.matches(event(charB, [0x0B, 0x0A])))        // different event type
     }
 
     /// The case the whole mode exists for, and the one it used to fail: a
-    /// gesture is learned from a *whole* captured frame, so if the firmware
-    /// appends a counter the learned bytes carry it too. Comparing the leading
-    /// header is the only comparison that can tolerate that.
-    func testPrefixModeToleratesACounterInsideTheLearnedFrame() {
-        let trigger = learned(mode: .prefix, bytes: [0x01, 0x02, 0x04, 0x5A], char: charB)
-        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x02, 0x04, 0x5B])))
-        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x02, 0x04])))
-        XCTAssertFalse(trigger.matches(event(charB, [0x01, 0x02, 0x01, 0x5A])))  // different button
+    /// gesture is learned from a *whole* captured frame, so the changing state
+    /// bytes after the event type are baked into the learned copy. Comparing
+    /// the event type alone is the only comparison that can tolerate that.
+    func testPrefixModeToleratesAChangingTailInTheLearnedFrame() {
+        let trigger = learned(mode: .prefix, bytes: [0x0C, 0x01, 0x5A], char: charB)
+        XCTAssertTrue(trigger.matches(event(charB, [0x0C, 0x01, 0x5B])))
+        XCTAssertTrue(trigger.matches(event(charB, [0x0C, 0x00, 0x00])))
+        XCTAssertFalse(trigger.matches(event(charB, [0x04, 0x01, 0x5A])))  // different event
     }
 
-    // MARK: Decoded button matching
+    // MARK: Decoded press matching
 
     private func slotTrigger(_ slot: DeviceButtonSlot) -> PokeTrigger {
         var t = PokeTrigger.default
@@ -60,20 +60,24 @@ final class PokeTriggerTests: XCTestCase {
         return t
     }
 
-    func testDecodedSlotMatchesRegardlessOfTrailingBytes() {
+    /// The device announces the press as a find-my-phone event, and the
+    /// trailing state bytes differ press to press (the toggle alternates), so
+    /// matching has to key off the event type alone.
+    func testConfiguredPressMatchesRegardlessOfTrailingBytes() {
         let trigger = slotTrigger(.topLong)
-        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x00, 0x04])))
-        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x00, 0x04, 0x7F, 0x21])))  // trailing counter
-        XCTAssertFalse(trigger.matches(event(charB, [0x01, 0x00, 0x01])))             // top, short press
-        XCTAssertFalse(trigger.matches(event(charA, [0x01, 0x00, 0x04])))             // wrong characteristic
-        XCTAssertFalse(trigger.matches(event(charB, [0x01, 0x00])))                   // truncated frame
+        XCTAssertTrue(trigger.matches(event(charB, [0x0C, 0x01, 0x7F])))
+        XCTAssertTrue(trigger.matches(event(charB, [0x0C, 0x00, 0x00])))
+        XCTAssertTrue(trigger.matches(event(charB, [0x0C])))
+        XCTAssertFalse(trigger.matches(event(charB, [0x04, 0x01, 0x00])))  // another device event
+        XCTAssertFalse(trigger.matches(event(charA, [0x0C, 0x01, 0x7F])))  // wrong characteristic
+        XCTAssertFalse(trigger.matches(event(charB, [])))                  // empty frame
     }
 
-    func testDecodedSlotWinsOverAStaleLearnedSignature() {
+    func testConfiguredPressWinsOverAStaleLearnedSignature() {
         var trigger = slotTrigger(.middle)
         trigger.learnedCharacteristicUUID = charB
         trigger.learnedBytes = Data([0x09, 0x09, 0x09])
-        XCTAssertTrue(trigger.matches(event(charB, [0x01, 0x00, 0x02])))
+        XCTAssertTrue(trigger.matches(event(charB, [0x0C, 0x01, 0x00])))
         XCTAssertFalse(trigger.matches(event(charB, [0x09, 0x09, 0x09])))
     }
 
@@ -82,16 +86,18 @@ final class PokeTriggerTests: XCTestCase {
         // 128-bit vendor service, so it arrives expanded against the
         // Bluetooth base, not the vendor base.
         let shortForm = "00002002-0000-1000-8000-00805F9B34FB"
-        XCTAssertEqual(event(shortForm, [0x01, 0x00, 0x03]).buttonSlot, .bottom)
+        XCTAssertTrue(event(shortForm, [0x0C, 0x01, 0x00]).isFindMyPhoneEvent)
     }
 
-    func testBackLongIsNotDecodedFromEvents() {
-        // `getDeviceButtonType` has no case for 0x07 — decoding it would be a
-        // guess, and a wrong one fires pokes on the wrong press.
-        XCTAssertNil(event(charB, [0x01, 0x00, 0x07]).buttonSlot)
+    /// Frames on any other characteristic are not events, whatever byte 0 is —
+    /// the app subscribes to every notifying characteristic, so this guard is
+    /// the only thing stopping an unrelated `0C` from poking someone.
+    func testOnlyTheEventsCharacteristicDecodes() {
+        XCTAssertNil(event(charA, [0x0C, 0x01, 0x00]).eventType)
+        XCTAssertFalse(event(charA, [0x0C, 0x01, 0x00]).isFindMyPhoneEvent)
     }
 
-    func testArmedWithASlotButNoLearnedSignature() {
+    func testArmedWithAButtonButNoLearnedSignature() {
         var t = PokeTrigger.default
         t.isEnabled = true
         t.targetFriendID = UUID()

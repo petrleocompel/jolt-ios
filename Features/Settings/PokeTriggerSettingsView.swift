@@ -2,10 +2,11 @@ import SwiftUI
 
 /// Configures the "poke a friend from your Pavlok" trigger (Approach A).
 ///
-/// Flow: pick a friend, pick which button press sends the poke, and — because
-/// a button set to a device-local action may never be announced over BLE —
-/// let the app set that button to report presses. "Learn a gesture" remains
-/// for anything the decoder doesn't recognise.
+/// Flow: pick a friend, pick which button sends the poke, then let the app
+/// reconfigure that button — a button set to a device-local action is handled
+/// inside the firmware and is never announced over BLE, so without that step
+/// nothing reaches the phone. "Learn a gesture" remains for anything the
+/// decoder doesn't recognise.
 struct PokeTriggerSettingsView: View {
     @State var service: PokeTriggerService
     let friendsRepository: FriendsRepository
@@ -46,8 +47,8 @@ struct PokeTriggerSettingsView: View {
             ))
             .accessibilityIdentifier("pokeTriggerEnableToggle")
         } footer: {
-            Text("The wearable already tells the phone when you press its button. "
-                + "This turns a press you choose into an outgoing poke.")
+            Text("Pick a button on your Pavlok and Jolt reconfigures it to report "
+                + "presses. Pressing it then pokes the friend you choose.")
         }
     }
 
@@ -146,7 +147,7 @@ private struct PokeTriggerPressSection: View {
                 get: { service.trigger.buttonSlot },
                 set: { service.setButtonSlot($0) }
             )) {
-                ForEach(DeviceButtonSlot.decodableCases) { slot in
+                ForEach(DeviceButtonSlot.configurableCases) { slot in
                     Text(slot.displayName).tag(Optional(slot))
                 }
                 Text("Custom (learn it)").tag(DeviceButtonSlot?.none)
@@ -157,7 +158,7 @@ private struct PokeTriggerPressSection: View {
                 Button {
                     Task { await service.makeButtonReportPresses() }
                 } label: {
-                    Label("Make this button report presses", systemImage: "antenna.radiowaves.left.and.right")
+                    Label("Set this button up for poking", systemImage: "antenna.radiowaves.left.and.right")
                 }
                 .disabled(!service.isDeviceConnected || service.isWritingButtonConfig)
                 .accessibilityIdentifier("pokeTriggerReportPressesButton")
@@ -220,14 +221,14 @@ private struct PokeTriggerPressSection: View {
             return Text("Connect your Pavlok to set this up.")
         }
         if service.trigger.buttonSlot != nil {
-            return Text("A button set to something the device handles on its own — zap, timer — "
-                + "may never tell the phone it was pressed. \"Make this button report presses\" "
-                + "sets it to Find my phone, which the phone has to carry out, so the press "
-                + "always arrives. The device's own find-my-phone behaviour is ignored here.")
+            return Text("The Pavlok only tells the phone about a press when the button is set to "
+                + "something the phone has to do. This sets it to Find my phone — Jolt ignores the "
+                + "ringing and takes the press. The button stops doing whatever it did before, and "
+                + "only one button at a time can be the poke button.")
         }
         return Text("Learning captures the raw notification your press produces and matches it "
-            + "again later. Use it only if the named buttons above don't fire — they decode the "
-            + "press properly and can't be thrown off by a trailing counter byte.")
+            + "again later. Use it only if the button above doesn't fire — it needs no capture and "
+            + "survives the changing bytes the device puts after the event type.")
     }
 }
 
@@ -253,9 +254,9 @@ private struct PokeTriggerEventsSection: View {
                 ForEach(service.recentEvents) { event in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(event.hexString).font(.footnote.monospaced())
-                        Text(event.buttonSlot.map { "\($0.displayName) press" } ?? "not a decodable button event")
+                        Text(event.isFindMyPhoneEvent ? "poke button press" : "other device event")
                             .font(.caption)
-                            .foregroundStyle(event.buttonSlot == nil ? Color.secondary : Color.green)
+                            .foregroundStyle(event.isFindMyPhoneEvent ? Color.green : Color.secondary)
                     }
                 }
             }

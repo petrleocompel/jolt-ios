@@ -3,21 +3,22 @@ import Foundation
 /// "When I press *this* on my Pavlok, poke *this friend*."
 ///
 /// Approach A from the `jolt-firmware` RE (device→phone→friend-poke) without
-/// touching device firmware: the wearable already reports button presses to
-/// the phone, so a press becomes an outgoing poke.
+/// touching device firmware.
 ///
-/// There are two ways to say *which* press:
+/// How it actually works, which is narrower than it first looks: the device
+/// does **not** broadcast button presses. It only announces a press whose
+/// configured action the *phone* has to carry out. So the trigger is a pair:
 ///
-/// - `buttonSlot` — the decoded one, and the default. Byte 2 of an events
-///   notification is the `DeviceButtonType` (`docs/RE-FINDINGS.md` §3), so
-///   "top, long press" is a real selection rather than a captured blob.
-/// - `learnedCharacteristicUUID` / `learnedBytes` — learn-by-example, kept as
-///   the fallback for frames the decoder doesn't recognise.
+/// 1. `buttonSlot` — the button we reconfigure to `findMyPhone`, the one
+///    phone-side action whose payload is recovered
+///    (`PokeTriggerService.makeButtonReportPresses()` writes it).
+/// 2. the resulting announcement — `[0x0C, …]` on the events characteristic
+///    (`DeviceEvent.isFindMyPhoneEvent`) — which is what `matches` fires on.
 ///
-/// Note that a press only reaches the phone if the button is configured to an
-/// action the phone has to perform (`ButtonAction.isPhoneSideEffect`); a
-/// device-local action like zap is handled in firmware and may never be
-/// announced. `PokeTriggerService.makeButtonReportPresses()` sets that up.
+/// The frame carries no button identity, so only one button at a time can be
+/// the poke button; that's a firmware limit, not a shortcut here.
+/// `learnedCharacteristicUUID` / `learnedBytes` stay as the escape hatch for
+/// firmware that announces something else.
 struct PokeTrigger: Codable, Equatable {
     /// Master switch. Even when on, the trigger only arms once a friend and a
     /// learned signature exist (`isArmed`).
@@ -32,21 +33,20 @@ struct PokeTrigger: Codable, Equatable {
     /// enforced server-side like any other poke.
     var stimulus: StimulusConfig
 
-    /// The button whose press sends the poke, decoded from the event frame
-    /// (`DeviceEvent.buttonSlot`). This is the preferred way to arm the
-    /// trigger now that the button byte is recovered: it survives any trailing
-    /// counter the firmware appends, and short vs. long press are genuinely
-    /// distinct values rather than phone-side timing.
+    /// The button whose press sends the poke — i.e. the button the app sets
+    /// to `findMyPhone` so the device announces it at all.
     ///
-    /// When set, it takes precedence over the learned signature below.
+    /// Setting this is what switches the trigger to the decoded path: it then
+    /// matches the announcement rather than a captured blob, and the learned
+    /// signature below is ignored.
     var buttonSlot: DeviceButtonSlot?
 
     /// The captured event that arms the trigger: which characteristic it came
     /// from (canonical UUID) and the exact bytes.
     ///
     /// Kept as the fallback for anything the decoder doesn't recognise — a
-    /// press that arrives on another characteristic, or a frame whose byte 2
-    /// isn't a known button value.
+    /// firmware that announces presses some other way, or on some other
+    /// characteristic.
     var learnedCharacteristicUUID: String?
     var learnedBytes: Data?
 
@@ -59,14 +59,14 @@ struct PokeTrigger: Codable, Equatable {
 
         /// How many leading bytes `.prefix` compares.
         ///
-        /// Three, because that is exactly the decoded header: byte 2 is the
-        /// `DeviceButtonType` and everything after it is what varies between
-        /// two presses of the same button. Comparing the *whole* learned frame
-        /// (what this used to do) can never tolerate a trailing counter —
-        /// learned `01 02 01 5A` vs. live `01 02 01 5B` fails a `starts(with:)`
-        /// test just as it fails an equality test, which made this mode a
-        /// no-op in practice.
-        static let toleratedPrefixLength = 3
+        /// One, because byte 0 of an events frame is the event type and every
+        /// byte after it is state that changes between two presses of the same
+        /// button — a find-my-phone toggle alternates `0C 01 xx` / `0C 00 00`.
+        /// Comparing the *whole* learned frame (what this used to do) can
+        /// never tolerate a varying tail: learned `0C 01 5A` vs. live
+        /// `0C 01 5B` fails a `starts(with:)` test just as it fails an
+        /// equality test, which made this mode a no-op in practice.
+        static let toleratedPrefixLength = 1
 
         var id: String { rawValue }
 
@@ -103,9 +103,14 @@ struct PokeTrigger: Codable, Equatable {
     }
 
     /// Whether `event` is the press this trigger fires on.
+    ///
+    /// With a button chosen, that means the find-my-phone announcement — the
+    /// device's way of saying "the button you configured was pressed". The
+    /// per-press debounce in `PokeTriggerService` is what keeps the toggle's
+    /// second frame from sending a second poke.
     func matches(_ event: DeviceEvent) -> Bool {
-        if let buttonSlot {
-            return event.buttonSlot == buttonSlot
+        if buttonSlot != nil {
+            return event.isFindMyPhoneEvent
         }
         return matchesLearnedSignature(event)
     }

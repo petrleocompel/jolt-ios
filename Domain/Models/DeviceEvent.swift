@@ -1,18 +1,13 @@
 import Foundation
 
-/// One unsolicited notification the wearable pushed to the phone — a button
-/// press, hand-detect, alarm fire, timer tick, whatever the firmware reports
-/// on one of its notify characteristics.
+/// One unsolicited notification the wearable pushed to the phone — a timer
+/// tick, a sleep-tracking change, a find-my-phone toggle, whatever the
+/// firmware reports on one of its notify characteristics.
 ///
 /// This is deliberately *raw*: service/characteristic (as canonical UUID
 /// strings so `Features/` and `Domain/` never import CoreBluetooth) plus the
-/// exact bytes. We do **not** pretend to decode the tap opcode here — its byte
-/// layout is compiled into device firmware and isn't recovered yet (see the
-/// `jolt-firmware` repo, `docs/04-device-event-protocol.md`).
-///
-/// The poke trigger works by *matching* these raw events against one the user
-/// captured on purpose ("learn by example"), which sidesteps the unknown
-/// encoding entirely and stays correct even once we do decode it.
+/// exact bytes. Decoding happens in the accessors below, and only as far as
+/// the firmware disassembly actually supports.
 struct DeviceEvent: Equatable, Codable, Identifiable {
     var id: UUID
     /// Canonical (long-form, upper-hex) service UUID — see `CBUUID.canonicalString`.
@@ -41,7 +36,7 @@ struct DeviceEvent: Equatable, Codable, Identifiable {
         data.isEmpty ? "(empty)" : data.map { String(format: "%02X", $0) }.joined(separator: " ")
     }
 
-    // MARK: Button presses
+    // MARK: The Events characteristic
 
     /// The events characteristic (`2002` of the notification service), in both
     /// forms a peripheral can report it.
@@ -57,20 +52,36 @@ struct DeviceEvent: Equatable, Codable, Identifiable {
         "156E2002-A300-4FEA-897B-86F698D74461"
     ]
 
-    var isButtonEventCharacteristic: Bool {
+    var isEventsCharacteristic: Bool {
         Self.eventsCharacteristicUUIDs.contains(characteristicUUID.uppercased())
     }
 
-    /// Which button this notification reports, if it is one.
+    /// Byte 0 of an events frame: *what happened*.
     ///
-    /// Byte 2 of an events frame carries the `DeviceButtonType` wire value —
-    /// recovered from the Android app's own event decoder, `docs/RE-FINDINGS.md`
-    /// §3. Short and long press are *different values here*, not a duration
-    /// measured on the phone, so decoding this is strictly better than
-    /// byte-matching a captured frame: it is immune to any trailing counter
-    /// the firmware appends.
-    var buttonSlot: DeviceButtonSlot? {
-        guard isButtonEventCharacteristic, data.count > 2 else { return nil }
-        return DeviceButtonSlot(wireValue: data[data.startIndex + 2])
+    /// The firmware builds every frame on this characteristic as
+    /// `[eventType, payload…]` (`pavlok.bin` 6.8.0, `0x2E2C4`), with the
+    /// payload one or two bytes depending on the type. The frame carries no
+    /// button identity — see `findMyPhoneEventType`.
+    var eventType: UInt8? {
+        guard isEventsCharacteristic, let first = data.first else { return nil }
+        return first
+    }
+
+    /// The event a find-my-phone button press produces.
+    ///
+    /// Pressing a button configured to `findMyPhone` runs the firmware's
+    /// find-my-phone module, which — once a phone is connected — pushes
+    /// `[0x0C, state, flag]` on the events characteristic so the phone can
+    /// start (or stop) ringing. It is the one button-driven event the device
+    /// is guaranteed to announce, which is what the poke trigger rides on.
+    static let findMyPhoneEventType: UInt8 = 0x0C
+
+    /// True when this frame is the find-my-phone announcement above.
+    ///
+    /// Note it says nothing about *which* button was pressed: the firmware
+    /// doesn't put the button in the frame. Distinguishing presses means
+    /// giving exactly one button the `findMyPhone` action.
+    var isFindMyPhoneEvent: Bool {
+        eventType == Self.findMyPhoneEventType
     }
 }

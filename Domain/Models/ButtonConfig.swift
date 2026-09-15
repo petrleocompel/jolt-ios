@@ -1,9 +1,9 @@
 import Foundation
 
 /// Which physical button, and how long it was held. Mirrors `DeviceButtonType`
-/// from the Android app's `pavlok_flutter_ble` package — recovered by
-/// disassembling `setButtonAction` and the raw event decoder
-/// (`Utils.getDeviceButtonType`); see `docs/RE-FINDINGS.md` §3.
+/// from the Android app's `pavlok_flutter_ble` package, and matches the
+/// firmware's own button table (`pavlok.bin` 6.8.0) — see
+/// `docs/RE-FINDINGS.md` §3.
 ///
 /// This is *not* a (button, pressType) pair layered on top of a shared
 /// press-type axis — every button+duration combination has its own wire
@@ -33,10 +33,14 @@ enum DeviceButtonSlot: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    /// The byte the device uses for this button — both as `setButtonAction`'s
-    /// second payload byte and as **byte 2 of an events notification**
-    /// (`156E2000/2002`), which is what makes an incoming press decodable.
-    /// See `docs/RE-FINDINGS.md` §3.
+    /// The byte the device uses for this button: `setButtonAction`'s second
+    /// payload byte, and the index into the firmware's per-button action
+    /// table. The firmware validates it as `1...6` and rejects anything else
+    /// (`0x07`/`backLong` included), so these are not free-form.
+    ///
+    /// This byte does **not** appear in incoming press notifications — the
+    /// device never reports *which* button was pressed. See
+    /// `docs/RE-FINDINGS.md` §3.
     var wireValue: UInt8 {
         switch self {
         case .top: return 0x01
@@ -49,30 +53,31 @@ enum DeviceButtonSlot: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    /// Decodes a button byte from an incoming event.
+    /// Decodes a button byte from a device config frame.
     ///
-    /// `0x07` (`backLong`) is deliberately **not** decoded: the Android app's
-    /// own decoder (`Utils.getDeviceButtonType`) has no case for it and falls
-    /// back to `middle`, and `setButtonAction` early-returns for it — so a
-    /// `0x07` here would be a guess, and a wrong one would fire pokes on the
-    /// wrong press.
+    /// `0x07` (`backLong`) is deliberately **not** decoded: the firmware's
+    /// write handler rejects a button byte outside `1...6`, the Android app's
+    /// `setButtonAction` early-returns for it, and its `getDeviceButtonType`
+    /// has no case for it either — so `0x07` is a value we can neither write
+    /// nor trust.
     init?(wireValue: UInt8) {
         guard let match = Self.allCases.first(where: { $0 != .backLong && $0.wireValue == wireValue })
         else { return nil }
         self = match
     }
 
-    /// The slots a press can be recognised from. `backLong` is excluded for
+    /// The slots that can actually be configured. `backLong` is excluded for
     /// the reason in `init?(wireValue:)`.
-    static var decodableCases: [DeviceButtonSlot] { allCases.filter { $0 != .backLong } }
+    static var configurableCases: [DeviceButtonSlot] { allCases.filter { $0 != .backLong } }
 }
 
 /// What a button press does. Mirrors `DeviceButtonActionType`. Wire values
-/// recovered the same way as `DeviceButtonSlot` — see `docs/RE-FINDINGS.md`
-/// §3. Every real case is modeled here so the picker reflects what the
-/// device actually supports, but only `.disabled`'s write payload has been
-/// confirmed against the disassembly; `CompositeDeviceRepository.setButtonConfig`
-/// rejects the rest rather than guessing a stimulus-firing payload.
+/// and payload lengths are cross-checked against **both** the Android app's
+/// `setButtonAction` and the firmware's own length table — see
+/// `docs/RE-FINDINGS.md` §3. Every real case is modeled here so the picker
+/// reflects what the device supports; `CompositeDeviceRepository.setButtonConfig`
+/// writes only the ones whose full payload is known, because the firmware
+/// rejects a payload of the wrong length outright.
 enum ButtonAction: String, CaseIterable, Codable, Identifiable {
     case findMyPhone
     case stopWatch
@@ -112,8 +117,9 @@ enum ButtonAction: String, CaseIterable, Codable, Identifiable {
 extension ButtonAction {
     /// Actions the *phone* has to carry out, which the device therefore has
     /// to report over BLE for them to work at all. Setting a button to one of
-    /// these is what guarantees a press reaches the app — see
-    /// `jolt-firmware/docs/04-device-event-protocol.md`.
+    /// these is what makes a press reach the app at all — a device-local
+    /// action (zap, candle, timer) is handled inside the firmware and is
+    /// never announced. See `jolt-firmware/docs/04-device-event-protocol.md`.
     var isPhoneSideEffect: Bool {
         switch self {
         case .findMyPhone, .nextTune, .airplaneMode, .doNotDisturb, .toggleSleepTracking:
@@ -139,7 +145,8 @@ enum ButtonConfigError: LocalizedError {
             return "\(slot.displayName) can't be configured from the app yet."
         case .actionNotVerified(let action):
             return "\"\(action.displayName)\" has no recovered wire format yet — "
-                + "only \"Off\", \"Find my phone\" and \"Toggle sleep tracking\" can be written."
+                + "\"Find my phone\", \"Off\", \"Stopwatch\", \"Timer\", \"Next tune\", "
+                + "\"Toggle candle\" and \"Toggle sleep tracking\" can be written."
         }
     }
 }

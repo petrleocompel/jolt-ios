@@ -27,7 +27,7 @@ struct ButtonConfigView: View {
                 }
             }
             Section {
-                Button("Read current config from device") {
+                Button("Read setup characteristic") {
                     Task {
                         do {
                             let bytes = try await viewModel.readRawButtonConfig()
@@ -40,15 +40,17 @@ struct ButtonConfigView: View {
                     }
                 }
                 if let readback {
-                    LabeledContent("Device holds") {
+                    LabeledContent("Raw read") {
                         Text(readback).font(.footnote.monospaced())
                     }
                 }
             } footer: {
-                Text("Writable actions are \"Off\", \"Find my phone\" and \"Toggle sleep tracking\" — "
-                    + "the ones whose payload is recovered. The rest are listed for reference; picking "
-                    + "one says so rather than guessing bytes that could fire a stimulus. "
-                    + "The read-back is raw: the reply's layout isn't decoded yet. See docs/RE-FINDINGS.md.")
+                Text("Writable actions are the ones whose payload length is recovered — the device "
+                    + "rejects a payload of the wrong length outright. The rest are listed for "
+                    + "reference; picking one says so rather than guessing bytes that could fire a "
+                    + "stimulus. The raw read is not the config: a plain read of the setup "
+                    + "characteristic returns one status byte, not the stored actions. "
+                    + "See docs/RE-FINDINGS.md.")
                     .font(.footnote)
             }
         }

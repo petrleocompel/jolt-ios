@@ -134,6 +134,7 @@
 		C7C6B8E97608B484362DB3BC /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DCDC72F43CB8947131C023 /* AppEnvironment.swift */; };
 		C99083BAADD85698006D3EAC /* StimulusSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CABBB0E4D950B756C439136 /* StimulusSettings.swift */; };
 		CA1C3F6B4A8D989A66F2D672 /* DeviceInformationReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */; };
+		CA8DE45C857A5246649A1150 /* ButtonConfigPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD1F6C24A7AF324973F87FFB /* ButtonConfigPayloadTests.swift */; };
 		CAA5D425D0EF9DE269EBD96E /* DismissChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */; };
 		CC46CE0D38C2A8DF60F661A3 /* PokeTriggerStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C25D15319543C334BBFBCBF /* PokeTriggerStore.swift */; };
 		CD7A18C56FB08842F222A257 /* LocalStimulusFirerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF8F8AD6A08A6AD3B7F0D74E /* LocalStimulusFirerTests.swift */; };
@@ -329,6 +330,7 @@
 		CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
 		CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CompositeDeviceRepository+Reliability.swift"; sourceTree = "<group>"; };
 		CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeviceController.swift; sourceTree = "<group>"; };
+		CD1F6C24A7AF324973F87FFB /* ButtonConfigPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfigPayloadTests.swift; sourceTree = "<group>"; };
 		CD9EF092B259B55847C7549D /* RemoteControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteControlView.swift; sourceTree = "<group>"; };
 		CF21BF2C419580EB45CDCE26 /* TabNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabNavigation.swift; sourceTree = "<group>"; };
 		D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusConfigTests.swift; sourceTree = "<group>"; };
@@ -537,6 +539,7 @@
 		750B4CC90F78A54A1931F933 /* JoltTests */ = {
 			isa = PBXGroup;
 			children = (
+				CD1F6C24A7AF324973F87FFB /* ButtonConfigPayloadTests.swift */,
 				C27CEABD71F97CB87FC062B7 /* DeviceFamilyMatchingTests.swift */,
 				4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */,
 				4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */,
@@ -872,6 +875,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA8DE45C857A5246649A1150 /* ButtonConfigPayloadTests.swift in Sources */,
 				26CEBD9BADEDBD95EA0C2E25 /* DeviceFamilyMatchingTests.swift in Sources */,
 				FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */,
 				F18868631569AE1FA033DF17 /* FriendPermissionSetTests.swift in Sources */,

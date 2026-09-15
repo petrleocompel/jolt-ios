@@ -39,7 +39,7 @@ final class PokeTriggerServiceTests: XCTestCase {
         device.connect()
         try await waitUntil { service.isListening }
 
-        device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: eventsChar, data: Data([0x01, 0x00, 0x04])))
+        device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: eventsChar, data: Data([0x0C, 0x01, 0x00])))
         try await waitUntil { poke.sentCount == 1 }
         XCTAssertGreaterThanOrEqual(device.eventStreamRequests, 2)
     }
@@ -60,7 +60,7 @@ final class PokeTriggerServiceTests: XCTestCase {
         device.connect()
         try await waitUntil { service.isListening }
 
-        device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: eventsChar, data: Data([0x01, 0x00, 0x04])))
+        device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: eventsChar, data: Data([0x0C, 0x01, 0x00])))
         try await waitUntil { poke.sentCount == 1 }
     }
 
@@ -73,10 +73,11 @@ final class PokeTriggerServiceTests: XCTestCase {
         device.connect()
         try await waitUntil { service.isListening }
 
-        // Top *short* press, and a frame from another characteristic.
-        device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: eventsChar, data: Data([0x01, 0x00, 0x01])))
+        // Another device event on the events characteristic, and a
+        // find-my-phone-shaped frame from a different characteristic.
+        device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: eventsChar, data: Data([0x04, 0x01, 0x00])))
         device.emit(DeviceEvent(serviceUUID: "s", characteristicUUID: "0000200A-0000-1000-8000-00805F9B34FB",
-                                data: Data([0x01, 0x00, 0x04])))
+                                data: Data([0x0C, 0x01, 0x00])))
         try await waitUntil { service.recentEvents.count == 2 }
         XCTAssertEqual(poke.sentCount, 0)
     }
@@ -89,6 +90,22 @@ final class PokeTriggerServiceTests: XCTestCase {
 
         XCTAssertEqual(device.writtenButtonConfigs, [ButtonConfig(slot: .topLong, action: .findMyPhone)])
         XCTAssertNotNil(service.lastButtonConfigNote)
+        XCTAssertNil(service.lastError)
+    }
+
+    /// A rejected write must not read as success. The firmware refuses a
+    /// payload it doesn't accept (the setup characteristic is
+    /// write-authorized), and the whole point of surfacing that is to stop the
+    /// user pressing a button that was never reconfigured.
+    func testMakeButtonReportPressesSurfacesARejectedWrite() async {
+        let device = StubDeviceRepository()
+        device.failButtonConfigWrite = true
+        let service = makeService(device: device, poke: SpyPokeRepository())
+
+        await service.makeButtonReportPresses()
+
+        XCTAssertNil(service.lastButtonConfigNote)
+        XCTAssertNotNil(service.lastError)
     }
 
     // MARK: Helpers
@@ -165,7 +182,12 @@ private final class StubDeviceRepository: DeviceRepository {
         }
     }
 
+    /// Makes `setButtonConfig` throw, standing in for the device refusing the
+    /// write.
+    var failButtonConfigWrite = false
+
     func setButtonConfig(_ config: ButtonConfig) async throws {
+        if failButtonConfigWrite { throw StubError.notReady }
         writtenButtonConfigs.append(config)
     }
 

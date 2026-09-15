@@ -2,8 +2,8 @@ import Foundation
 import Observation
 
 /// Runs Approach A: while a wearable is connected and the trigger is enabled,
-/// it watches the device's own notifications and, when the learned gesture
-/// recurs, sends a friend poke through the normal poke path.
+/// it watches the device's own notifications and, when the configured press
+/// is announced, sends a friend poke through the normal poke path.
 ///
 /// Also drives the "learn a gesture" capture in Settings — the same event feed
 /// that arms the trigger is what the user records against.
@@ -128,9 +128,13 @@ final class PokeTriggerService {
         update(updated)
     }
 
-    /// Choose the press by name — the decoded path (`PokeTrigger.buttonSlot`).
-    /// Clears any learned signature, since the two are alternatives and
-    /// leaving a stale blob behind only confuses the Settings screen.
+    /// Choose which button sends the poke. Clears any learned signature,
+    /// since the two are alternatives and leaving a stale blob behind only
+    /// confuses the Settings screen.
+    ///
+    /// Choosing the button is not enough on its own — the device stays silent
+    /// until `makeButtonReportPresses()` writes the action that makes it
+    /// announce the press.
     func setButtonSlot(_ slot: DeviceButtonSlot?) {
         var updated = trigger
         updated.buttonSlot = slot
@@ -143,11 +147,17 @@ final class PokeTriggerService {
 
     /// Configures the chosen button so its press actually reaches the phone.
     ///
-    /// A button set to a device-local action (zap, timer, …) is handled inside
-    /// the firmware and need not be announced over BLE at all; the actions the
-    /// *phone* performs must be. `findMyPhone` is the least intrusive of those
-    /// — Jolt ignores the find-my-phone semantics and just takes the press —
-    /// so it's what we write. See `ButtonAction.isPhoneSideEffect`.
+    /// This is the step the whole feature hangs on. A button set to a
+    /// device-local action (zap, candle, timer) is handled inside the firmware
+    /// and is never announced over BLE, so no amount of listening will see it.
+    /// `findMyPhone` is the one phone-side action whose write payload is
+    /// recovered; Jolt ignores the find-my-phone semantics and just takes the
+    /// press. See `ButtonAction.isPhoneSideEffect`.
+    ///
+    /// The write is acknowledged (or refused) by the device: the setup
+    /// characteristic requires write authorization, so a payload the firmware
+    /// doesn't accept comes back as an ATT error rather than silently doing
+    /// nothing. That makes the success note here mean something.
     func makeButtonReportPresses() async {
         guard let slot = trigger.buttonSlot else {
             lastButtonConfigNote = "Pick a button first."
@@ -157,10 +167,7 @@ final class PokeTriggerService {
         defer { isWritingButtonConfig = false }
         do {
             try await deviceRepository.setButtonConfig(ButtonConfig(slot: slot, action: .findMyPhone))
-            let readback = try? await deviceRepository.readRawButtonConfig()
-            let hex = readback.map { $0.map { String(format: "%02X", $0) }.joined(separator: " ") }
-            lastButtonConfigNote = "\(slot.displayName) set to report presses"
-                + (hex.map { " — device now holds \($0)" } ?? "")
+            lastButtonConfigNote = "\(slot.displayName) accepted by the device — press it to send a poke."
             lastError = nil
         } catch {
             lastButtonConfigNote = nil

@@ -158,17 +158,32 @@ characteristic (`5002`) while alarm *commands* go to the control point
 Payloads for alarms are still unrecovered. Button config **is now recovered** —
 see below.
 
-### Button config — `setButtonAction` (from `utils_functions.dart` / `ble_manager.dart` disassembly)
+### Button config — `setButtonAction` (Dart snapshot **and** device firmware)
 
-The physical button is not a single control with press-type variants; it's
-(up to) four independently-configurable buttons, and "long press" is a
-**separate button identity**, not a modifier applied to a shared press-type
-axis. There is no double-press. Confirmed via `Utils.getDeviceButtonType`
-(the decoder used for incoming press *events*, `dart-app/utils/utils_functions.dart:629`)
-and the `DeviceButtonType` object-pool dump — both agree on the same 7-value
-table:
+Recovered twice, independently, and the two agree byte for byte: from the
+Android app's `ble_manager.dart` (`0xe960f8`) and from the device firmware's
+own parser (`pavlok.bin` 6.8.0 at `0x2F974`, loaded at base `0x1F000` — see
+`jolt-firmware/docs/04-device-event-protocol.md` for how to get there).
 
-| `DeviceButtonType` | wire (`byte[2]` of a `156E2000/2002` notification, and `setButtonAction`'s 2nd payload byte) |
+**Two earlier claims in this file were wrong and are corrected below.** They
+are called out because they were the reason the device-triggered poke never
+worked:
+
+1. ~~"byte 2 of a `156E2002` notification carries the button"~~. It does not.
+   `Utils.getDeviceButtonType` is the decoder for the **config read-back**
+   frames, not for press events; it was mis-attributed. The device never
+   reports which button was pressed.
+2. ~~"`findMyPhone` → `[0x02, button, 0x10]`, tail assumed empty"~~. The tail
+   is not empty, and the guess was rejected by the device.
+
+#### Buttons
+
+The physical button is not a single control with press-type variants; each
+button+duration pair has its own identity. There is no double-press.
+`DeviceButtonType`, from the object-pool dump, confirmed by the firmware's
+own bounds check:
+
+| `DeviceButtonType` | wire (`setButtonAction`'s 2nd payload byte) |
 |---|---|
 | `top` | `0x01` |
 | `middle` | `0x02` |
@@ -176,57 +191,98 @@ table:
 | `topLong` | `0x04` |
 | `middleLong` | `0x05` |
 | `bottomLong` | `0x06` |
-| `backLong` | `0x07` (unreliable — `setButtonAction` early-returns `false` for it, and `getDeviceButtonType`'s decoder has no case for `0x07`, falling back to `middle`) |
+| `backLong` | `0x07` — unwritable: the firmware validates this byte as `1…6`
+  and answers anything else with an ATT error, and `setButtonAction`
+  early-returns `false` for it |
 
-**This means short vs. long press *is* distinguished at the raw BLE byte
-level** (byte index 2 of the event notification directly carries one of the
-codes above) — it is not client-side hold-duration timing.
+So short vs. long press *is* distinguished in the protocol, as separate
+buttons. It is not client-side hold timing. But that distinction lives in the
+**config**, not in any event the device sends.
 
-The app now **decodes** this rather than byte-matching a captured frame:
-`DeviceEvent.buttonSlot` reads byte 2 off the events characteristic, and
-`PokeTrigger.buttonSlot` fires on a named button. That is immune to any
-trailing counter/timestamp the firmware appends, which the previous
-learn-by-example path was not — `.prefix` mode compared the *whole* learned
-frame, counter included, so it could never tolerate the very thing it existed
-for. It now compares the leading three bytes (`MatchMode.toleratedPrefixLength`),
-and survives only as the fallback for frames the decoder doesn't recognise.
+#### The write
 
-`0x07` (`backLong`) is deliberately not decoded: the Android decoder has no
-case for it either.
+`setButtonAction` writes to **setup `156E7000`/`7001`** with
 
-**A press only reaches the phone if the button's action needs the phone.**
-Actions like `zap` / `timer` are carried out inside the firmware and need not
-be announced at all; `findMyPhone`, `nextTune`, `airplaneMode`,
-`doNotDisturb` and `toggleSleepTracking` cannot work unless the press is
-delivered. So configuring the button is part of the poke-trigger setup, not
-an optional extra — `PokeTriggerService.makeButtonReportPresses()` writes
-`findMyPhone` to the chosen button for exactly this reason, and Jolt ignores
-the find-my-phone semantics itself.
+    [0x02, buttonWire, actionWire, …tail]
 
-`setButtonAction(buttonType, actionType, …)` writes to **setup `156E7000`/`7001`**
-(confirming the earlier guess) with payload `[0x02, buttonType.wire, actionType.wire, …]`
-— `0x02` is a fixed command tag (the same setup characteristic multiplexes
-`saveTimerToDevice` too), byte 1 is the `DeviceButtonType` wire value above,
-byte 2 is the `DeviceButtonActionType` wire value below, and some actions
-append further bytes whose shape depends on the action (traced two so far:
-`disabled` → exactly `[0x02, button, 0xff]` (3 bytes, no extra data);
-`toggleSleepTracking` → `[0x02, button, 0x13, 0x01, 0x02]` (5 bytes, trailing
-2 bytes not decoded). Actions not yet traced byte-for-byte: `zap`, `beep`,
-`vibrate` (has its own 5-byte tail, likely intensity-related — do not guess
-this one, it fires a real stimulus), `timer`, `stopWatch`, `toggleCandle`,
-`nextTune`, `airplaneMode`, `doNotDisturb`.
+`0x02` is the command tag (the same characteristic multiplexes the config
+query `01 01` and `saveTimerToDevice`). The characteristic requires **write
+authorization**, so the firmware vets every write and answers a bad one with
+ATT `0x0180` rather than applying it — writes must therefore be
+write-with-response, and the error is the only signal that a config didn't
+take.
 
-`findMyPhone` is written as `[0x02, button, 0x10]` on the **assumption** that
-it has no tail, like `disabled`. That assumption is untraced, and it is the
-one guess the app makes — justified because a phone-side action can't fire a
-stimulus, so the worst case is a rejected write. `setButtonConfig` re-reads
-`7001` afterwards and logs what the device now holds; the reply's layout
-(`DeviceButtonConfigEntity.fromMap`) is still undecoded, so that read-back is
-raw bytes and is the thing to stare at when confirming the guess.
+**The tail length is fixed per action and is checked.** The firmware looks the
+action byte up in a length table (`0x225AC`) and refuses the write if fewer
+bytes follow. This is the bug that made the feature look dead: `findMyPhone`
+needs two bytes, was written with one, and every write was rejected — the
+button kept whatever it already did, so no press was ever announced.
 
-`DeviceButtonActionType` (from the object-pool dump — `ble_manager.dart` at
-`0xe960f8` switches on the enum's **ordinal**, not this wire value, to pick
-the payload shape per action):
+| Action | payload (after `[0x02, button]`) | fw length | source |
+|---|---|---|---|
+| `findMyPhone` | `10 00` | 2 | both |
+| `stopWatch` | `11 02 10 01` | 4 | both |
+| `timer` | `11 02 10 02` | 4 | both |
+| `zap` | `03 <count> <level>` | 3 | fw defaults |
+| `beep` | `02 <count> <x> <level> <on> <off>` | 6 | fw defaults |
+| `vibrate` | `01 <count> <x> <level> <on> <off>` | 6 | fw defaults |
+| `toggleCandle` | `06` | 1 | both |
+| `nextTune` | `07` | 1 | both |
+| `airplaneMode` | `08` | 1 | fw only — the Android app refuses to write it |
+| `doNotDisturb` | `0D` | 1 | fw only — same |
+| `toggleSleepTracking` | `13 01 02` | 3 | app only — **fw 6.8.0 rejects `0x13`** (length table returns 0) |
+| `disabled` | `FF` | 1 | both |
+
+The firmware's own per-button defaults are readable at `0x3E85C` (a table of
+12 pointers to 6-byte records) and are what `zap`/`beep`/`vibrate` above are
+read off: e.g. `01 01 02 50 16 16` (vibrate, level `0x50`) and
+`03 01 1E` (zap, level 30).
+
+Jolt writes only the actions whose full payload is confirmed; `zap` / `beep` /
+`vibrate` stay out because a wrong guess there fires a real stimulus on the
+user's wrist (`CompositeDeviceRepository+ButtonConfig.swift`).
+
+Each button's 6-byte record is stored per button (`0x2000CD69 + 6*(button-1)`
+in device RAM) and persisted, so the config survives a reconnect.
+
+#### Reading the config back
+
+A plain GATT read of `7001` returns **one status byte**, not the config — the
+firmware's read-authorize handler answers with a single byte from its own
+state block. The real query is: write `01 01` to `7001`, then collect the
+notifications the device pushes on `7001` (three-byte headers plus data
+frames). That is what `getDeviceButtonActions` does; Jolt doesn't parse that
+reply yet, and relies on the write acknowledgement instead.
+
+#### What the phone actually receives on a press
+
+Nothing, for a button whose action the device handles itself. The press path
+(`0x32968`) looks up the button's record and executes it locally; the only
+outbound trace is a log record, not a notification.
+
+A button set to a **phone-side** action is different, because the phone has to
+do the work. `findMyPhone` (`0x10`) runs the firmware's find-my-phone module,
+which — once a phone is connected — pushes a frame on the events
+characteristic `156E2002`:
+
+    [0x0C, state, flag]
+
+Every frame on `156E2002` is `[eventType, payload…]`; `0x0C` is find-my-phone.
+Pressing the button toggles the state, so consecutive presses alternate
+(`0C 01 xx` / `0C 00 00`). The frame does **not** say which button was
+pressed, which is why only one button at a time can be the poke button.
+
+That event is what `DeviceEvent.isFindMyPhoneEvent` matches and what
+`PokeTrigger` fires on. Learn-by-example survives as the fallback; its
+`.prefix` mode now compares one leading byte (the event type), because
+everything after it is state that changes between presses — comparing the
+whole learned frame, as it used to, could never tolerate the very thing the
+mode exists for.
+
+#### `DeviceButtonActionType`
+
+From the object-pool dump. `ble_manager.dart` at `0xe960f8` switches on the
+enum's **ordinal**, not this wire value, to pick the payload shape:
 
 | Action | ordinal | wire |
 |---|---|---|
