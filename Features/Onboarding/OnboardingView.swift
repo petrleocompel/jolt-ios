@@ -1,9 +1,15 @@
 import SwiftUI
 
+/// First run only: offers to pair a wearable, and — just as prominently —
+/// to carry on without one. Everything that doesn't touch your own skin
+/// (Friends, sending and receiving pokes, phone alarms, stimulus defaults)
+/// works with no device, so this is an offer rather than a gate. Taking the
+/// "not now" route records `DevicePairing.didChooseNoDeviceKey` and drops
+/// straight into the app; Settings → Device and the Remote tab's device card
+/// both lead back here.
 struct OnboardingView: View {
     let viewModel: DeviceControlViewModel
-    @State private var selectedFamilies: Set<DeviceFamily> = Set(DeviceFamily.allCases)
-    @State private var isScanning = false
+    let onContinueWithoutDevice: () -> Void
 
     var body: some View {
         NavigationStack {
@@ -21,67 +27,21 @@ struct OnboardingView: View {
                 }
                 .padding(.top, 32)
 
-                deviceFamilyPicker
+                DeviceScannerList(viewModel: viewModel)
 
-                if isScanning && viewModel.discoveredDevices.isEmpty {
-                    ProgressView("Scanning…")
-                        .accessibilityIdentifier("scanningIndicator")
+                VStack(spacing: 4) {
+                    Button("Continue without a device", action: onContinueWithoutDevice)
+                        .accessibilityIdentifier("continueWithoutDeviceButton")
+                    Text("You can still poke friends and set phone alarms. Pair any time from Settings.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-
-                List(viewModel.discoveredDevices) { device in
-                    Button {
-                        viewModel.connect(to: device)
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(device.name).font(.headline)
-                                Text(device.family.displayName).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if case .connecting = viewModel.connectionState {
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .accessibilityIdentifier("discoveredDevice_\(device.name)")
-                }
-                .listStyle(.plain)
-
-                Spacer()
-
-                Button(isScanning ? "Stop scanning" : "Start scanning") {
-                    isScanning.toggle()
-                    if isScanning {
-                        viewModel.startScan(for: selectedFamilies)
-                    } else {
-                        viewModel.stopScan()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("toggleScanButton")
                 .padding(.bottom, 24)
             }
             .padding(.horizontal)
             .navigationTitle("Pair device")
             .errorBanner(viewModel.lastError) { viewModel.lastError = nil }
         }
-    }
-
-    private var deviceFamilyPicker: some View {
-        HStack {
-            ForEach(DeviceFamily.allCases, id: \.self) { family in
-                let isSelected = selectedFamilies.contains(family)
-                Button(family.displayName) {
-                    if isSelected {
-                        selectedFamilies.remove(family)
-                    } else {
-                        selectedFamilies.insert(family)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .tint(isSelected ? .accentColor : .secondary)
-            }
-        }
-        .accessibilityIdentifier("deviceFamilyPicker")
     }
 }

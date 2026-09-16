@@ -170,6 +170,7 @@ private final class StubDeviceRepository: DeviceRepository {
 
     var connectionState: AsyncStream<DeviceConnectionState> { AsyncStream { $0.finish() } }
     var connectedDevice: AsyncStream<PavlokDevice?> { connectionHub.stream() }
+    let hasPairedDevice = true
 
     func deviceEventStream() async throws -> AsyncStream<DeviceEvent> {
         eventStreamRequests += 1

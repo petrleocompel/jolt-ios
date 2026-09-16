@@ -1,10 +1,11 @@
 import Foundation
 
-/// Used only when `AppEnvironment.isSnapshotMode` is true, so App Store
-/// screenshots show a connected device without needing real hardware in the
-/// CI screenshot runner. See screenshot contract in
+/// Stand-in wearable for runs with no hardware: App Store screenshots show a
+/// connected device without needing one (see the screenshot contract in
 /// `~/.claude/skills/create-ios-app/screenshot-contract.md` /
-/// `docs/RE-FINDINGS.md`.
+/// `docs/RE-FINDINGS.md`), and UI tests reach the tab bar. Selected by
+/// `AppEnvironment.usesFakeDevice`; `startsPaired` picks which side of the
+/// device/no-device split to simulate.
 @MainActor
 final class FakeDeviceRepository: DeviceRepository {
     private let fakeDevice = PavlokDevice(
@@ -23,14 +24,22 @@ final class FakeDeviceRepository: DeviceRepository {
         lastConnectedAt: .now
     )
 
-    // Multi-consumer (device UI + poke trigger), seeded "connected" so every
-    // subscriber — whichever starts first — sees the fake device.
+    // Multi-consumer (device UI + poke trigger), seeded so every subscriber —
+    // whichever starts first — sees the same starting state.
     private let connectionStateHub = StreamHub<DeviceConnectionState>()
     private let connectedDeviceHub = StreamHub<PavlokDevice?>()
 
-    init() {
-        connectionStateHub.yield(.connected)
-        connectedDeviceHub.yield(fakeDevice)
+    private(set) var hasPairedDevice: Bool
+
+    /// - Parameter startsPaired: pass `false` (see
+    ///   `AppEnvironment.startsWithoutDevice`) for a launch that has never
+    ///   paired a wearable — the state a new user is in before, or instead
+    ///   of, buying one. Lets the device-free path be exercised hermetically
+    ///   rather than only on hardware.
+    init(startsPaired: Bool = true) {
+        self.hasPairedDevice = startsPaired
+        connectionStateHub.yield(startsPaired ? .connected : .disconnected)
+        connectedDeviceHub.yield(startsPaired ? fakeDevice : nil)
     }
 
     var connectionState: AsyncStream<DeviceConnectionState> { connectionStateHub.stream() }
@@ -46,21 +55,30 @@ final class FakeDeviceRepository: DeviceRepository {
     func stopScan() {}
 
     func connect(to device: PavlokDevice) async throws {
+        hasPairedDevice = true
         connectionStateHub.yield(.connected)
         connectedDeviceHub.yield(fakeDevice)
     }
 
+    /// Disconnecting keeps the pairing, matching `CompositeDeviceRepository`.
     func disconnect() async {
         connectionStateHub.yield(.disconnected)
         connectedDeviceHub.yield(nil)
     }
 
     func forgetPairedDevice() async {
+        hasPairedDevice = false
         connectionStateHub.yield(.disconnected)
         connectedDeviceHub.yield(nil)
     }
 
-    func fire(_ stimulus: StimulusConfig) async throws {}
+    /// Throws when nothing is connected rather than silently succeeding, so
+    /// an incoming poke with no wearable around lands on
+    /// `PokeDeliveryStatus.deviceNotConnected` here exactly as it would on
+    /// real hardware.
+    func fire(_ stimulus: StimulusConfig) async throws {
+        guard hasPairedDevice else { throw FakeDeviceError.notConnected }
+    }
 
     private(set) var stimulusSettings: StimulusSettings = .default
 
@@ -102,4 +120,10 @@ final class FakeDeviceRepository: DeviceRepository {
     func syncDeviceAlarm(_ alarm: Alarm) async throws {}
 
     func deleteDeviceAlarm(_ id: Alarm.ID) async throws {}
+
+    enum FakeDeviceError: LocalizedError {
+        case notConnected
+
+        var errorDescription: String? { "No device connected." }
+    }
 }

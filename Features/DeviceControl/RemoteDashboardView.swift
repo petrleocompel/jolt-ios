@@ -19,6 +19,7 @@ struct RemoteDashboardView: View {
     @State private var editingAlarm: Alarm?
     @State private var isShowingCustomize = false
     @State private var isShowingQuickPokeComposer = false
+    @State private var isShowingPairSheet = false
 
     private var isConnected: Bool { viewModel.connectedDevice != nil }
     private var layout: RemoteDashboardLayout { dependencies.remoteDashboardLayoutService.layout }
@@ -29,7 +30,9 @@ struct RemoteDashboardView: View {
             VStack(spacing: 14) {
                 DeviceHeroCard(
                     device: viewModel.connectedDevice,
-                    connectionState: viewModel.connectionState
+                    connectionState: viewModel.connectionState,
+                    hasPairedDevice: viewModel.hasPairedDevice,
+                    onPairDevice: { isShowingPairSheet = true }
                 )
 
                 ForEach(layout.visible) { kind in
@@ -85,6 +88,9 @@ struct RemoteDashboardView: View {
             AlarmEditView(alarm: alarm) { updated in
                 Task { await alarmsViewModel?.save(updated) }
             }
+        }
+        .sheet(isPresented: $isShowingPairSheet) {
+            PairDeviceSheet(viewModel: viewModel)
         }
         .sheet(isPresented: $isShowingQuickPokeComposer) {
             QuickPokeComposerSheet(

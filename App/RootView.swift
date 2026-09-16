@@ -3,16 +3,17 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppDependencies.self) private var dependencies
     @State private var deviceControlViewModel: DeviceControlViewModel?
+    /// Set by "Continue without a device" on the first-run pairing screen.
+    /// See `DevicePairing` for why pairing is an offer rather than a gate.
+    @AppStorage(DevicePairing.didChooseNoDeviceKey) private var didChooseNoDevice = false
 
     var body: some View {
         Group {
             if let viewModel = deviceControlViewModel {
-                if viewModel.connectedDevice != nil {
-                    MainTabView(deviceControlViewModel: viewModel)
-                } else if viewModel.connectionState == .connecting && !viewModel.isManualConnectInProgress {
-                    ReconnectingView(onCancel: viewModel.forgetPairedDevice)
+                if showsPairingOffer(for: viewModel) {
+                    OnboardingView(viewModel: viewModel) { didChooseNoDevice = true }
                 } else {
-                    OnboardingView(viewModel: viewModel)
+                    MainTabView(deviceControlViewModel: viewModel)
                 }
             } else {
                 ProgressView()
@@ -30,6 +31,15 @@ struct RootView: View {
                 }
             }
         }
+    }
+
+    /// Only a user who has neither paired a device nor declined to is shown
+    /// the pairing screen. In particular a *paired but unreachable* device
+    /// (out of range, Bluetooth off, mid-reconnect) goes straight to the tabs
+    /// — reconnect progress shows non-blockingly on the Remote tab's device
+    /// card, so losing the wearable never costs you the rest of the app.
+    private func showsPairingOffer(for viewModel: DeviceControlViewModel) -> Bool {
+        viewModel.connectedDevice == nil && !viewModel.hasPairedDevice && !didChooseNoDevice
     }
 
     private var activeAlarmBinding: Binding<Bool> {

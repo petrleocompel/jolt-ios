@@ -8,6 +8,7 @@ struct SettingsView: View {
     /// optional side-channel that only this screen and its children use, and
     /// nothing else in the app should depend on it existing.
     @State private var pavlokViewModel = PavlokAccountViewModel()
+    @State private var isShowingPairSheet = false
 
     /// Host only — the full base URL with `/api/v1` is too long for a row.
     private var serverSummary: String {
@@ -30,6 +31,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $isShowingPairSheet) {
+                PairDeviceSheet(viewModel: deviceControlViewModel)
+            }
             .alert("Restart Jolt to finish switching", isPresented: Bindable(dependencies).pendingServerRestartNotice) {
                 Button("OK") { dependencies.pendingServerRestartNotice = false }
             } message: {
@@ -46,20 +50,35 @@ struct SettingsView: View {
                 Label("Connected", systemImage: "antenna.radiowaves.left.and.right")
             }
             Button {
-                deviceControlViewModel.disconnect()
+                isShowingPairSheet = true
             } label: {
-                Label("Disconnect", systemImage: "xmark.circle")
+                Label(
+                    deviceControlViewModel.hasPairedDevice ? "Pair a different device" : "Pair a device",
+                    systemImage: "badge.plus.radiowaves.right"
+                )
             }
-            Button(role: .destructive) {
-                deviceControlViewModel.forgetPairedDevice()
-            } label: {
-                Label("Forget device", systemImage: "trash")
+            .accessibilityIdentifier("pairDeviceButton")
+            // Nothing to disconnect from or forget until something is paired,
+            // and offering both on a device-free install just reads as broken.
+            if deviceControlViewModel.hasPairedDevice {
+                Button {
+                    deviceControlViewModel.disconnect()
+                } label: {
+                    Label("Disconnect", systemImage: "xmark.circle")
+                }
+                Button(role: .destructive) {
+                    deviceControlViewModel.forgetPairedDevice()
+                } label: {
+                    Label("Forget device", systemImage: "trash")
+                }
             }
         } header: {
             Text("Device")
         } footer: {
-            Text("Disconnect keeps this device paired — the app reconnects to it automatically next time. "
-                + "Forget removes the pairing entirely.")
+            Text("Jolt works without a device — you can still poke friends and set phone alarms. "
+                + "A device is only needed to fire a stimulus on yourself. "
+                + "Disconnect keeps the pairing so the app reconnects automatically next time; "
+                + "Forget removes it entirely.")
         }
     }
 

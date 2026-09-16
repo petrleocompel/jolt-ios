@@ -54,6 +54,7 @@ private final class CountingDeviceRepository: DeviceRepository {
 
     var connectionState: AsyncStream<DeviceConnectionState> { AsyncStream { $0.finish() } }
     var connectedDevice: AsyncStream<PavlokDevice?> { AsyncStream { $0.finish() } }
+    let hasPairedDevice = true
 
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice> { AsyncStream { $0.finish() } }
     func stopScan() {}

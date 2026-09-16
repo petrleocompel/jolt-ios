@@ -67,6 +67,11 @@ final class CompositeDeviceRepository: DeviceRepository {
         return connectedDeviceHub.stream()
     }
 
+    /// Deliberately does *not* call `startIfNeeded()` — this is a plain
+    /// question about persisted state, and answering it shouldn't be what
+    /// powers up Bluetooth.
+    var hasPairedDevice: Bool { store.load() != nil }
+
     /// Wires up event observation and kicks off an initial reconnect
     /// attempt. Deferred to first access of either stream (rather than
     /// `init`) so nothing tries to reconnect before there's a subscriber; the

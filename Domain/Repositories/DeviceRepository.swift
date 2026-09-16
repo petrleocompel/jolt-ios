@@ -13,12 +13,20 @@ protocol DeviceRepository {
     var connectionState: AsyncStream<DeviceConnectionState> { get }
     var connectedDevice: AsyncStream<PavlokDevice?> { get }
 
+    /// Whether a device has ever been paired on this phone, regardless of
+    /// whether it's reachable right now. Distinct from `connectedDevice`:
+    /// out of range, Bluetooth off, or mid-reconnect all mean "paired but
+    /// not connected". `RootView` uses it to decide whether the first-run
+    /// pairing screen is still owed, rather than treating every disconnect
+    /// as "unpaired".
+    var hasPairedDevice: Bool { get }
+
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice>
     func stopScan()
     func connect(to device: PavlokDevice) async throws
     func disconnect() async
     /// Disconnects (if connected) and forgets the persisted pairing, so the
-    /// next launch goes back to onboarding instead of auto-reconnecting.
+    /// app stops auto-reconnecting to it.
     func forgetPairedDevice() async
     func fire(_ stimulus: StimulusConfig) async throws
     func readDeviceInfo() async throws -> DeviceInfo

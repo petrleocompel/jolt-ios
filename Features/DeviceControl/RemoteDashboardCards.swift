@@ -5,6 +5,10 @@ import SwiftUI
 struct DeviceHeroCard: View {
     let device: PavlokDevice?
     let connectionState: DeviceConnectionState
+    /// Whether a wearable has ever been paired — decides between "pair one"
+    /// and "we're working on getting yours back".
+    let hasPairedDevice: Bool
+    let onPairDevice: () -> Void
 
     private var isConnected: Bool { connectionState == .connected }
 
@@ -45,18 +49,35 @@ struct DeviceHeroCard: View {
                     .foregroundStyle(Color.accentColor)
                 }
             } else {
-                Label {
-                    Text("Connect your Pavlok to send a stimulus.")
-                        .foregroundStyle(.white.opacity(0.75))
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                }
-                .font(.subheadline)
-                .accessibilityIdentifier("disconnectedNotice")
+                disconnectedNotice
             }
         }
         .remoteCard(isConnected ? .device : .neutral)
         .accessibilityIdentifier("deviceStatusRow")
+    }
+
+    /// Firing a stimulus is the *only* thing a missing device costs you —
+    /// pokes to friends, alarms and settings all carry on — so this says so
+    /// rather than reading as a dead end, and offers the way out.
+    private var disconnectedNotice: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label {
+                Text("Pokes to friends still work. A device is only needed to fire a stimulus on yourself.")
+                    .foregroundStyle(.white.opacity(0.75))
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            }
+            .font(.subheadline)
+            .accessibilityIdentifier("disconnectedNotice")
+
+            // No `accessibilityIdentifier` here: the card-level
+            // `deviceStatusRow` identifier propagates down and overrides
+            // anything set on its children, so one here would silently never
+            // match. Tests query this by label instead.
+            Button(hasPairedDevice ? "Pair a different device" : "Pair a device", action: onPairDevice)
+                .font(.footnote.weight(.medium))
+        }
     }
 
     private var statusLabel: String {
@@ -74,7 +95,7 @@ struct DeviceHeroCard: View {
         case .connected: return device?.family.displayName ?? "Connected"
         case .connecting: return "Connecting…"
         case .scanning: return "Scanning…"
-        case .disconnected: return "Nothing can fire until you connect"
+        case .disconnected: return hasPairedDevice ? "Out of range or switched off" : "No device paired"
         case .failed(let reason): return reason
         }
     }

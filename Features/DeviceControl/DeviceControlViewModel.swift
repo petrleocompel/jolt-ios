@@ -22,6 +22,11 @@ final class DeviceControlViewModel {
     private(set) var discoveredDevices: [PavlokDevice] = []
     var lastError: String?
 
+    /// Mirrored from the repository so views can observe it — the repository
+    /// itself isn't `@Observable`, so reading `repository.hasPairedDevice`
+    /// straight from a `body` would never refresh when pairing changes.
+    private(set) var hasPairedDevice: Bool
+
     /// Per-kind stimulus defaults, mirrored from the repository so views can
     /// bind to them directly.
     private(set) var stimulusSettings: StimulusSettings
@@ -36,6 +41,7 @@ final class DeviceControlViewModel {
     init(repository: DeviceRepository) {
         self.repository = repository
         self.stimulusSettings = repository.stimulusSettings
+        self.hasPairedDevice = repository.hasPairedDevice
         observationTask = Task { [weak self] in
             guard let self else { return }
             for await state in repository.connectionState {
@@ -46,6 +52,8 @@ final class DeviceControlViewModel {
             guard let self else { return }
             for await device in repository.connectedDevice {
                 self.connectedDevice = device
+                // A successful connect is also what persists the pairing.
+                self.hasPairedDevice = repository.hasPairedDevice
             }
         }
     }
@@ -73,18 +81,10 @@ final class DeviceControlViewModel {
         repository.stopScan()
     }
 
-    /// True while a *manually initiated* connect (from onboarding) is in
-    /// flight — distinguishes that from an automatic reconnect-on-launch,
-    /// which also passes through `connectionState == .connecting` but
-    /// should show a different screen (see `RootView`).
-    private(set) var isManualConnectInProgress = false
-
     func connect(to device: PavlokDevice) {
         stopScan()
-        isManualConnectInProgress = true
         Task { [weak self] in
             guard let self else { return }
-            defer { isManualConnectInProgress = false }
             do {
                 try await repository.connect(to: device)
             } catch {
@@ -98,7 +98,11 @@ final class DeviceControlViewModel {
     }
 
     func forgetPairedDevice() {
-        Task { await repository.forgetPairedDevice() }
+        Task { [weak self] in
+            guard let self else { return }
+            await repository.forgetPairedDevice()
+            hasPairedDevice = repository.hasPairedDevice
+        }
     }
 
     func fire(_ stimulus: StimulusConfig) {

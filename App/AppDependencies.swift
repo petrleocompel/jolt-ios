@@ -66,7 +66,7 @@ final class AppDependencies {
         self.alarmRepository = SwiftDataAlarmRepository(modelContainer: container)
         self.phoneAlarmScheduler = PhoneAlarmScheduler()
         self.deviceRepository = AppEnvironment.usesFakeDevice
-            ? FakeDeviceRepository()
+            ? FakeDeviceRepository(startsPaired: !AppEnvironment.startsWithoutDevice)
             : CompositeDeviceRepository()
 
         // Snapshot runs must stay hermetic — the screenshot runner has no
