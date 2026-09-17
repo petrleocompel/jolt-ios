@@ -120,11 +120,18 @@ final class FakeDeviceRepository: DeviceRepository {
     /// Every raw write, in order, so tests can assert what the Protocol lab
     /// actually asked for — including the write type, which is otherwise
     /// invisible without hardware.
-    private(set) var rawWrites: [(data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode)] = []
+    private(set) var rawWrites: [RawWrite] = []
+
+    struct RawWrite {
+        let data: Data
+        let characteristicUUID: String
+        let serviceUUID: String
+        let mode: RawWriteMode
+    }
 
     func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode) async throws {
         guard hasPairedDevice else { throw FakeDeviceError.notConnected }
-        rawWrites.append((data, characteristicUUID, serviceUUID, mode))
+        rawWrites.append(RawWrite(data: data, characteristicUUID: characteristicUUID, serviceUUID: serviceUUID, mode: mode))
     }
 
     @discardableResult

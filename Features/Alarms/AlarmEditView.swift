@@ -97,7 +97,8 @@ struct AlarmEditView: View {
                 } footer: {
                     if alarm.dismissChallenge == .qrCodeScan {
                         Text(alarm.dismissQRCode == nil
-                             ? "Print a QR code or pick one on something you own, and keep it away from your bed. Until you save one, any QR code dismisses this alarm."
+                             ? "Print a QR code or pick one on something you own, and keep it away from your bed. "
+                                + "Until you save one, any QR code dismisses this alarm."
                              : "Only this code will dismiss the alarm — keep it somewhere away from your bed.")
                     }
                 }

@@ -216,9 +216,9 @@ struct DeviceDiagnosticsView: View {
         eventLog.events.lazy.filter(DeviceEventCaptureView.isCapturedEvent).count
     }
 
-    private func setListening(_ on: Bool) {
+    private func setListening(_ isOn: Bool) {
         listenError = nil
-        guard on else {
+        guard isOn else {
             viewModel.stopListeningForDeviceEvents()
             isListening = false
             return
