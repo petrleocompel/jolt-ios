@@ -70,6 +70,7 @@ private final class CountingDeviceRepository: DeviceRepository {
 
     func readDeviceInfo() async throws -> DeviceInfo { DeviceInfo() }
     func setButtonConfig(_ config: ButtonConfig) async throws {}
+    func readButtonConfig() async throws -> ButtonConfigReport { ButtonConfigReport() }
     func readRawButtonConfig() async throws -> Data { Data() }
     func syncDeviceAlarm(_ alarm: Alarm) async throws {}
     func deleteDeviceAlarm(_ id: Alarm.ID) async throws {}

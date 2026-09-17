@@ -147,6 +147,15 @@ final class FakeDeviceRepository: DeviceRepository {
 
     func setButtonConfig(_ config: ButtonConfig) async throws {}
 
+    func readButtonConfig() async throws -> ButtonConfigReport {
+        // A plausible two-button report: top is left at the firmware's
+        // vibrate default, top-long has been set to findMyPhone.
+        ButtonConfigReport.parse(frames: [
+            Data([0xE1, 0x01, 0x01]), Data([0x01, 0x01, 0x02, 0x50, 0x16, 0x16]),
+            Data([0xE1, 0x04, 0x01]), Data([0x10, 0x00])
+        ])
+    }
+
     func readRawButtonConfig() async throws -> Data { Data([0x02, 0x01, 0xFF]) }
 
     func syncDeviceAlarm(_ alarm: Alarm) async throws {}

@@ -40,16 +40,72 @@ extension CompositeDeviceRepository {
         }
     }
 
+    /// Asks the device what every button is currently set to.
+    ///
+    /// This is the half that was missing, and its absence is what made button
+    /// config feel broken: the app could write an action and see the write
+    /// acknowledged, but had no way to show what a button *was*, so every
+    /// picker read "Device default" no matter what the device thought. Worse,
+    /// a rejected write and an applied one looked identical in the UI.
+    ///
+    /// The sequence is the one `getDeviceButtonActions` uses, and it is not a
+    /// GATT read — see `ButtonConfigReport` for why, and for the frame
+    /// format. Subscribe to `7001` first, *then* write the query `01 01`,
+    /// because the device starts pushing immediately and a subscription set
+    /// up afterwards misses the burst.
+    ///
+    /// Collection is time-boxed rather than terminated by a sentinel: the
+    /// report machine has no end-of-report frame we can rely on, so the
+    /// window closes on a timer and whatever arrived gets parsed.
+    func readButtonConfig() async throws -> ButtonConfigReport {
+        let (peripheral, family) = try requireConnection()
+        guard family != .shockClockMax else {
+            throw SCMaxDeviceController.ControllerError.notImplemented(
+                "Button config opcode not recovered — see BLE/SCMax/ProtocolMap.swift"
+            )
+        }
+
+        let collector = ButtonConfigFrameCollector()
+        let stream = try await central.subscribe(
+            LegacyGATT.setupCharacteristic,
+            in: LegacyGATT.setupService,
+            on: peripheral
+        )
+        let task = Task { @MainActor in
+            for await frame in stream where !frame.isEmpty {
+                collector.append(frame)
+            }
+        }
+        defer { task.cancel() }
+
+        try await central.write(
+            Data([0x01, 0x01]),
+            to: LegacyGATT.setupCharacteristic,
+            serviceUUID: LegacyGATT.setupService,
+            on: peripheral
+        )
+        try? await Task.sleep(for: Self.buttonConfigReportWindow)
+
+        let report = ButtonConfigReport.parse(frames: collector.frames)
+        BLELog.info(
+            "Button config report: \(report.frames.count) frame(s), "
+                + "\(report.records.count) button(s) decoded"
+        )
+        return report
+    }
+
+    /// How long to keep collecting report frames after the query. Long enough
+    /// for a twelve-entry burst at a normal connection interval, short enough
+    /// that a device which answers nothing doesn't hang the screen.
+    static var buttonConfigReportWindow: Duration { .milliseconds(1500) }
+
     /// The setup characteristic's current contents, raw.
     ///
     /// Note this is **not** the button config: the firmware's read-authorize
     /// handler answers a plain read of `7001` with a single status byte from
-    /// its own state block, not with the stored actions. Reading the config
-    /// back means writing the query command `01 01` and collecting the
-    /// notifications the device then pushes on `7001` (what the Android app's
-    /// `getDeviceButtonActions` does); that reply format isn't parsed yet.
-    /// Kept because a read is harmless and the byte is still a live signal
-    /// from the device.
+    /// its own state block (`0x2FAD4`), not with the stored actions. Use
+    /// `readButtonConfig()` for the real thing. Kept because a read is
+    /// harmless and the byte is still a live signal from the device.
     func readRawButtonConfig() async throws -> Data {
         let (peripheral, family) = try requireConnection()
         guard family != .shockClockMax else {
@@ -63,6 +119,15 @@ extension CompositeDeviceRepository {
             on: peripheral
         )
     }
+}
+
+/// Gathers report frames while the query is in flight. A tiny reference box
+/// so the collecting task and the awaiting caller share one buffer without
+/// `inout` capture games.
+@MainActor
+final class ButtonConfigFrameCollector {
+    private(set) var frames: [Data] = []
+    func append(_ frame: Data) { frames.append(frame) }
 }
 
 extension ButtonAction {
@@ -90,6 +155,7 @@ extension ButtonAction {
     /// | `nextTune` | `07` | 1 |
     /// | `toggleSleepTracking` | `13 01 02` | 3 (rejected by fw 6.8.0) |
     /// | `disabled` | `FF` | 1 |
+    /// | `defaultAction` | `00` | n/a — restores the firmware default |
     ///
     /// `zap` / `beep` / `vibrate` are left out on purpose: their payloads
     /// carry a count and an intensity (3 and 6 bytes), and writing one
@@ -117,7 +183,14 @@ extension ButtonAction {
             return Data(header + [0x13, 0x01, 0x02])
         case .disabled:
             return Data(header + [0xFF])
-        case .zap, .beep, .vibrate, .airplaneMode, .doNotDisturb, .defaultAction:
+        case .defaultAction:
+            // Action byte `0x00` is not "no action" — `set_action`
+            // (`0x2F3D8`) treats it as *restore this button's firmware
+            // default*: it looks the button up in the default table via
+            // `0x225FC` and copies that record instead of the payload. No
+            // tail is read, so three bytes is the whole write.
+            return Data(header + [0x00])
+        case .zap, .beep, .vibrate, .airplaneMode, .doNotDisturb:
             return nil
         }
     }

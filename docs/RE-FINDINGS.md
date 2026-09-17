@@ -232,6 +232,7 @@ button kept whatever it already did, so no press was ever announced.
 | `doNotDisturb` | `0D` | 1 | fw only — same |
 | `toggleSleepTracking` | `13 01 02` | 3 | app only — **fw 6.8.0 rejects `0x13`** (length table returns 0) |
 | `disabled` | `FF` | 1 | both |
+| `defaultAction` | `00` | — | fw only — restores the factory record |
 
 The firmware's own per-button defaults are readable at `0x3E85C` (a table of
 12 pointers to 6-byte records) and are what `zap`/`beep`/`vibrate` above are
@@ -249,10 +250,29 @@ in device RAM) and persisted, so the config survives a reconnect.
 
 A plain GATT read of `7001` returns **one status byte**, not the config — the
 firmware's read-authorize handler answers with a single byte from its own
-state block. The real query is: write `01 01` to `7001`, then collect the
-notifications the device pushes on `7001` (three-byte headers plus data
-frames). That is what `getDeviceButtonActions` does; Jolt doesn't parse that
-reply yet, and relies on the write acknowledgement instead.
+state block (`0x2FAD4`). The real query is: write `01 01` to `7001`, then
+collect the notifications the device pushes on `7001`. That is what
+`getDeviceButtonActions` does, and Jolt now does it too
+(`CompositeDeviceRepository.readButtonConfig`).
+
+The report machine (`0x2F07C`) emits a 3-byte header `[0xE0 | kind, button,
+0x01]` — the queued type masked with `0x7F`, or-ed with `0xE0` at `0x2F0EC` —
+followed by each button's raw record, sized by the *same* `action_size` helper
+the write path uses, with the firmware default substituted when a button has
+no stored record. The button numbering is the write's `1…6` (`0x2F194`:
+`records + 6 * (n - 1)`).
+
+The framing immediately around each record is still unconfirmed: `0x2F1CC`
+copies a state byte ahead of the payload, and it takes a live capture to say
+whether it reaches the wire. `Domain/Models/ButtonConfigReport.swift` parses
+tolerantly and keeps every frame for that reason.
+
+#### Action `0x00` — restore the firmware default
+
+Not "no action". `set_action` checks for a zero action byte first
+(`0x2F3E8`), and in that branch ignores the payload, looks the button up in
+the default table via `0x225FC`, and copies that record in. No length check
+applies, so `02 <button> 00` is the entire write.
 
 #### What the phone actually receives on a press
 

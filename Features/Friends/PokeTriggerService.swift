@@ -167,7 +167,26 @@ final class PokeTriggerService {
         defer { isWritingButtonConfig = false }
         do {
             try await deviceRepository.setButtonConfig(ButtonConfig(slot: slot, action: .findMyPhone))
-            lastButtonConfigNote = "\(slot.displayName) accepted by the device — press it to send a poke."
+            // Then ask the device what that button actually holds now. The
+            // write acknowledgement only says the bytes were accepted; this
+            // says they stuck. A device that answers nothing still leaves the
+            // acknowledgement as the best available evidence, so that case
+            // reports the weaker claim rather than a failure.
+            let report = try? await deviceRepository.readButtonConfig()
+            switch report?.actions[slot] {
+            case .findMyPhone:
+                lastButtonConfigNote =
+                    "\(slot.displayName) is set to report presses — press it to send a poke."
+            case .some(let other):
+                lastButtonConfigNote = nil
+                lastError = "The device accepted the write but \(slot.displayName) still reads as "
+                    + "\"\(other.displayName)\". It will not send a poke."
+                return
+            case nil:
+                lastButtonConfigNote = "\(slot.displayName) accepted by the device — press it to "
+                    + "send a poke. (The device did not report its configuration back, so this is "
+                    + "unconfirmed.)"
+            }
             lastError = nil
         } catch {
             lastButtonConfigNote = nil

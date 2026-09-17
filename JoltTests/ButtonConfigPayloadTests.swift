@@ -52,6 +52,13 @@ final class ButtonConfigPayloadTests: XCTestCase {
     func testUntracedPhoneActionsAreRefused() {
         XCTAssertNil(payload(.airplaneMode))
         XCTAssertNil(payload(.doNotDisturb))
-        XCTAssertNil(payload(.defaultAction))
+    }
+
+    /// Action byte `0x00` is not "no action": `set_action` reads it as
+    /// *restore this button's firmware default*, copying the record from the
+    /// default table at `0x3E85C` instead of from the payload. That's why it
+    /// needs no tail and why three bytes is the whole write.
+    func testDeviceDefaultRestoresTheFirmwareRecord() {
+        XCTAssertEqual(payload(.defaultAction), [0x02, 0x04, 0x00])
     }
 }

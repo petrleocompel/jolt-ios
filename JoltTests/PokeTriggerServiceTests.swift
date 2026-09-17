@@ -194,6 +194,7 @@ private final class StubDeviceRepository: DeviceRepository {
         writtenButtonConfigs.append(config)
     }
 
+    func readButtonConfig() async throws -> ButtonConfigReport { ButtonConfigReport() }
     func readRawButtonConfig() async throws -> Data { Data([0x02, 0x04, 0x10]) }
 
     // Unused surface.

@@ -145,8 +145,8 @@ enum ButtonConfigError: LocalizedError {
             return "\(slot.displayName) can't be configured from the app yet."
         case .actionNotVerified(let action):
             return "\"\(action.displayName)\" has no recovered wire format yet — "
-                + "\"Find my phone\", \"Off\", \"Stopwatch\", \"Timer\", \"Next tune\", "
-                + "\"Toggle candle\" and \"Toggle sleep tracking\" can be written."
+                + "\"Find my phone\", \"Off\", \"Device default\", \"Stopwatch\", \"Timer\", "
+                + "\"Next tune\", \"Toggle candle\" and \"Toggle sleep tracking\" can be written."
         }
     }
 }
