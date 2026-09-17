@@ -1,0 +1,12 @@
+{
+  "name": "jolt-design-reference",
+  "private": true,
+  "description": "Renders docs/design/*.dc.html into per-screen PNGs and builds an app-vs-design comparison page.",
+  "scripts": {
+    "render": "node render.mjs",
+    "compare": "node compare.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

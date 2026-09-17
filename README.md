@@ -66,6 +66,7 @@ bundle exec fastlane beta             # Release IPA → TestFlight
 bundle exec fastlane internal         # ad-hoc IPA (if enabled)
 bundle exec fastlane appstore         # upload binary, no auto-submit (if enabled)
 bundle exec fastlane screenshots      # capture + flatten (if enabled)
+bundle exec fastlane design_compare   # app screens (light + dark) vs docs/design replica → fastlane/design_screenshots/compare.html
 bundle exec fastlane store_assets     # screenshots + metadata upload (if enabled)
 ```
 

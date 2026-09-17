@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Pairing reached *after* onboarding — from Settings → Device or the Remote
-/// tab's device card. Presented as a sheet rather than replacing the app's
+/// Pairing reached *after* onboarding — from Settings → Device, Device detail
+/// or the Remote tab's device card. Presented as a sheet rather than replacing the app's
 /// UI, so someone who is mid-conversation on the Friends tab doesn't lose
 /// their place to go connect a wearable.
 ///
@@ -15,10 +15,7 @@ struct PairDeviceSheet: View {
     var body: some View {
         NavigationStack {
             DeviceScannerList(viewModel: viewModel)
-                .padding(.horizontal)
-                .padding(.bottom, 16)
-                .navigationTitle("Pair device")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle(viewModel.hasPairedDevice ? "Pair a different device" : "Pair device")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Not now") { dismiss() }

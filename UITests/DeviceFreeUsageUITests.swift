@@ -42,7 +42,7 @@ final class DeviceFreeUsageUITests: XCTestCase {
         // The Remote tab is honest about what's missing, and offers the way
         // back. Queried by label, not identifier: the hero card's own
         // `deviceStatusRow` identifier propagates to all its children.
-        XCTAssertTrue(app.staticTexts["No device paired"].exists)
+        XCTAssertTrue(app.staticTexts["Not connected"].exists)
         XCTAssertTrue(app.buttons["Pair a device"].exists)
         // Firing at a device we haven't got is the one thing that's off.
         XCTAssertFalse(app.buttons["fireButton_zap"].isEnabled)

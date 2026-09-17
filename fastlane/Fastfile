@@ -234,8 +234,51 @@ platform :ios do
   desc "Capture App Store screenshots, then flatten alpha"
   lane :screenshots do
     generate_project if ENV["FASTLANE_RUN_XCODEGEN"] == "1"
-    capture_screenshots
+    # Only the App Store set — DesignReferenceUITests also snapshots and would
+    # otherwise land its ~40 screens in the upload folder.
+    capture_screenshots(only_testing: ["JoltUITests/ScreenshotsUITests"])
     flatten_screenshots
+  end
+
+  desc "Capture every reachable screen in light + dark for design work"
+  lane :design_screenshots do
+    generate_project if ENV["FASTLANE_RUN_XCODEGEN"] == "1"
+    root = File.expand_path("design_screenshots", __dir__)
+    # DESIGN_APPEARANCES=dark captures one appearance for a faster loop.
+    appearances = ENV.fetch("DESIGN_APPEARANCES", "light,dark").split(",").map(&:strip)
+    { "light" => false, "dark" => true }.slice(*appearances).each do |appearance, dark|
+      capture_screenshots(
+        only_testing: ["JoltUITests/DesignReferenceUITests"],
+        devices: [ENV.fetch("DESIGN_DEVICE_NAME", "iPhone 17 Pro")],
+        dark_mode: dark,
+        output_directory: File.join(root, appearance),
+        concurrent_simulators: false,
+        stop_after_first_error: false,
+        skip_open_summary: true
+      )
+    end
+    UI.success("Design screenshots in #{root}")
+  end
+
+  desc "Render docs/design/Jolt Replica.dc.html per screen, next to the app's design_screenshots"
+  lane :design_reference do
+    tool = File.expand_path("../tools/design-reference", __dir__)
+    unless system("command -v node > /dev/null 2>&1")
+      UI.user_error!("Node.js required. Install: brew install node")
+    end
+    Dir.chdir(tool) do
+      sh("npm install --no-audit --no-fund") unless File.directory?("node_modules")
+      sh("npx playwright install chromium")
+      sh("node render.mjs")
+    end
+  end
+
+  desc "Capture the app (design_screenshots), render the design, and build compare.html side by side"
+  lane :design_compare do
+    design_screenshots unless ENV["DESIGN_SKIP_CAPTURE"] == "1"
+    design_reference
+    Dir.chdir(File.expand_path("../tools/design-reference", __dir__)) { sh("node compare.mjs") }
+    UI.success("Open #{File.expand_path('design_screenshots/compare.html', __dir__)}")
   end
 
   private_lane :flatten_screenshots do

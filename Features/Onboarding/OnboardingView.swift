@@ -13,22 +13,7 @@ struct OnboardingView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
-                    Image(systemName: "bolt.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.tint)
-                    Text("Find your Pavlok")
-                        .font(.title2.bold())
-                    Text("Make sure your device is charged and nearby, then start scanning.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, 32)
-
-                DeviceScannerList(viewModel: viewModel)
-
+            DeviceScannerList(viewModel: viewModel) {
                 VStack(spacing: 4) {
                     Button("Continue without a device", action: onContinueWithoutDevice)
                         .accessibilityIdentifier("continueWithoutDeviceButton")
@@ -37,9 +22,7 @@ struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.bottom, 24)
             }
-            .padding(.horizontal)
             .navigationTitle("Pair device")
             .errorBanner(viewModel.lastError) { viewModel.lastError = nil }
         }

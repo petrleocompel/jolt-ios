@@ -113,6 +113,9 @@ struct RemoteDashboardView: View {
                     onEdit: { editingStimulus = stimulusKind },
                     onFire: { viewModel.fire(viewModel.stimulusSettings[stimulusKind]) }
                 )
+                // Dimmed, not hidden: the saved intensity stays visible and
+                // editable, it just can't fire until a device is back.
+                .opacity(isConnected ? 1 : 0.4)
             }
         case .quickPoke:
             if dependencies.quickPokeService.settings.isConfigured {

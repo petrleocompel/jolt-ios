@@ -133,6 +133,7 @@
 		BE07FB79112D1FF4525F3B01 /* HTTPSocialBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B35D9983EA32CBC9307B82 /* HTTPSocialBackend.swift */; };
 		BE6756E9CF6E5E10430741E4 /* PokeFeedbackSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1EC1C1C3C72F053AD1D651 /* PokeFeedbackSettingsStore.swift */; };
 		C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */; };
+		C4726286A7EA2982C8A882F5 /* DesignReferenceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918F2A817ED312D0EDCFDDF8 /* DesignReferenceUITests.swift */; };
 		C6575CA48B6ACDF839CAA9FD /* RemoteDeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFBFF7CBA11D17D7CC2558A /* RemoteDeviceDetailView.swift */; };
 		C679C74DB39A8CD27A743115 /* QuickPokeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAFCF0D4E0E1D455A6D9AF7 /* QuickPokeSettingsView.swift */; };
 		C7C6B8E97608B484362DB3BC /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DCDC72F43CB8947131C023 /* AppEnvironment.swift */; };
@@ -299,6 +300,7 @@
 		8F59E143A4F0C4633C981368 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		8F8BB6D098B53F00B1F19518 /* FriendsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsListView.swift; sourceTree = "<group>"; };
 		910E2135246DB5575B328B9D /* FriendPokeDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendPokeDraftStore.swift; sourceTree = "<group>"; };
+		918F2A817ED312D0EDCFDDF8 /* DesignReferenceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignReferenceUITests.swift; sourceTree = "<group>"; };
 		91FBBCCFAC9005B5460D2593 /* PokeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeEvent.swift; sourceTree = "<group>"; };
 		9236FBE0FB1BDFB8ABD79DAE /* PavlokCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokCredentialStore.swift; sourceTree = "<group>"; };
 		930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotsUITests.swift; sourceTree = "<group>"; };
@@ -391,6 +393,7 @@
 		44BB84AEF1E7F3722A60E3E7 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				918F2A817ED312D0EDCFDDF8 /* DesignReferenceUITests.swift */,
 				26C4FBE48E390505C317ED53 /* DeviceFreeUsageUITests.swift */,
 				3669760429200CD7A7ABB56F /* FriendsFlowUITests.swift */,
 				95AEB4D2935604E2CCA19F24 /* QuickPokeComposerUITests.swift */,
@@ -875,6 +878,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4726286A7EA2982C8A882F5 /* DesignReferenceUITests.swift in Sources */,
 				AEF1FA1F3EA2B656B054289A /* DeviceFreeUsageUITests.swift in Sources */,
 				23FF51D42A5EB65AA37FD2BB /* FriendsFlowUITests.swift in Sources */,
 				F6BF0DC5DFCF0191B00436C9 /* QuickPokeComposerUITests.swift in Sources */,

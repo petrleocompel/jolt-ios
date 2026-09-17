@@ -13,20 +13,26 @@ struct DeviceHeroCard: View {
     private var isConnected: Bool { connectionState == .connected }
 
     var body: some View {
+        Group {
+            if isConnected {
+                connectedContent
+            } else {
+                disconnectedContent
+            }
+        }
+        .remoteCard(isConnected ? .device : .neutral)
+        .accessibilityIdentifier("deviceStatusRow")
+    }
+
+    private var connectedContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 7) {
-                    HStack(spacing: 7) {
-                        Circle().fill(statusTint).frame(width: 7, height: 7)
-                        Text(statusLabel)
-                            .font(.caption2.weight(.semibold))
-                            .tracking(1.2)
-                            .foregroundStyle(statusTint)
-                    }
+                    statusBadge
                     Text(device?.name ?? "No device")
                         .font(.remoteNumeral(22))
                         .foregroundStyle(.white)
-                    Text(subtitle)
+                    Text(device?.family.displayName ?? "Connected")
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.5))
                 }
@@ -40,43 +46,81 @@ struct DeviceHeroCard: View {
                 batteryBar(percent: battery)
             }
 
-            if isConnected {
-                HStack {
-                    Spacer()
-                    NavigationLink(value: RemoteDestination.deviceDetail) {
-                        Text("More info ›").font(.footnote.weight(.medium))
-                    }
-                    .foregroundStyle(Color.accentColor)
+            HStack {
+                Spacer()
+                NavigationLink(value: RemoteDestination.deviceDetail) {
+                    Text("More info ›").font(.footnote.weight(.medium))
                 }
-            } else {
-                disconnectedNotice
+                .foregroundStyle(Color.accentColor)
             }
         }
-        .remoteCard(isConnected ? .device : .neutral)
-        .accessibilityIdentifier("deviceStatusRow")
     }
 
     /// Firing a stimulus is the *only* thing a missing device costs you —
     /// pokes to friends, alarms and settings all carry on — so this says so
-    /// rather than reading as a dead end, and offers the way out.
-    private var disconnectedNotice: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label {
-                Text("Pokes to friends still work. A device is only needed to fire a stimulus on yourself.")
-                    .foregroundStyle(.white.opacity(0.75))
-                    .fixedSize(horizontal: false, vertical: true)
-            } icon: {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-            }
-            .font(.subheadline)
-            .accessibilityIdentifier("disconnectedNotice")
+    /// rather than reading as a dead end, and makes the way out the card's
+    /// primary action.
+    ///
+    /// No `accessibilityIdentifier`s in here: the card-level `deviceStatusRow`
+    /// identifier propagates down and overrides anything set on children, so
+    /// one here would silently never match. Tests query by label instead.
+    private var disconnectedContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            statusBadge
+            Text(title)
+                .font(.remoteNumeral(30))
+                .foregroundStyle(.white)
+                .padding(.top, 2)
+            Text(disconnectedMessage)
+                .font(.callout)
+                .foregroundStyle(.white.opacity(0.55))
+                .fixedSize(horizontal: false, vertical: true)
 
-            // No `accessibilityIdentifier` here: the card-level
-            // `deviceStatusRow` identifier propagates down and overrides
-            // anything set on its children, so one here would silently never
-            // match. Tests query this by label instead.
-            Button(hasPairedDevice ? "Pair a different device" : "Pair a device", action: onPairDevice)
-                .font(.footnote.weight(.medium))
+            Button(action: onPairDevice) {
+                Text(hasPairedDevice ? "Pair a different device" : "Pair a device")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .background(Capsule().fill(Color.accentColor))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+        }
+    }
+
+    private var statusBadge: some View {
+        HStack(spacing: 7) {
+            Circle().fill(statusTint).frame(width: 7, height: 7)
+            Text(statusLabel)
+                .font(.caption2.weight(.semibold))
+                .tracking(1.2)
+                .foregroundStyle(statusTint)
+        }
+    }
+
+    private var title: String {
+        switch connectionState {
+        case .connected: return device?.name ?? "Connected"
+        case .connecting: return "Connecting…"
+        case .scanning: return "Scanning…"
+        case .disconnected: return "Not connected"
+        case .failed: return "Connection failed"
+        }
+    }
+
+    private var disconnectedMessage: String {
+        let stillWorks = "Alarms, friends and pokes still work."
+        switch connectionState {
+        case .disconnected where !hasPairedDevice:
+            return "\(stillWorks) Firing needs a paired Pavlok."
+        case .disconnected:
+            return "Out of range or switched off. \(stillWorks)"
+        case .connecting, .scanning:
+            return "Looking for your Pavlok. \(stillWorks)"
+        case .failed(let reason):
+            return "\(reason) \(stillWorks)"
+        case .connected:
+            return stillWorks
         }
     }
 
@@ -85,18 +129,8 @@ struct DeviceHeroCard: View {
         case .connected: return "CONNECTED"
         case .connecting: return "CONNECTING"
         case .scanning: return "SCANNING"
-        case .disconnected: return "NOT CONNECTED"
+        case .disconnected: return hasPairedDevice ? "NOT CONNECTED" : "NO DEVICE"
         case .failed: return "FAILED"
-        }
-    }
-
-    private var subtitle: String {
-        switch connectionState {
-        case .connected: return device?.family.displayName ?? "Connected"
-        case .connecting: return "Connecting…"
-        case .scanning: return "Scanning…"
-        case .disconnected: return hasPairedDevice ? "Out of range or switched off" : "No device paired"
-        case .failed(let reason): return reason
         }
     }
 

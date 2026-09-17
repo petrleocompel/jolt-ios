@@ -44,20 +44,7 @@ struct SettingsView: View {
 
     private var deviceSection: some View {
         Section {
-            LabeledContent {
-                Text(deviceControlViewModel.connectedDevice?.name ?? "None")
-            } label: {
-                Label("Connected", systemImage: "antenna.radiowaves.left.and.right")
-            }
-            Button {
-                isShowingPairSheet = true
-            } label: {
-                Label(
-                    deviceControlViewModel.hasPairedDevice ? "Pair a different device" : "Pair a device",
-                    systemImage: "badge.plus.radiowaves.right"
-                )
-            }
-            .accessibilityIdentifier("pairDeviceButton")
+            deviceStatusRow
             // Nothing to disconnect from or forget until something is paired,
             // and offering both on a device-free install just reads as broken.
             if deviceControlViewModel.hasPairedDevice {
@@ -72,13 +59,51 @@ struct SettingsView: View {
                     Label("Forget device", systemImage: "trash")
                 }
             }
+            Button {
+                isShowingPairSheet = true
+            } label: {
+                HStack {
+                    Label(
+                        deviceControlViewModel.hasPairedDevice ? "Pair a different device" : "Pair device",
+                        systemImage: "plus"
+                    )
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .accessibilityIdentifier("pairDeviceButton")
         } header: {
             Text("Device")
         } footer: {
-            Text("Jolt works without a device — you can still poke friends and set phone alarms. "
-                + "A device is only needed to fire a stimulus on yourself. "
-                + "Disconnect keeps the pairing so the app reconnects automatically next time; "
-                + "Forget removes it entirely.")
+            if deviceControlViewModel.hasPairedDevice {
+                Text("Disconnect keeps this device paired — the app reconnects to it automatically next time. "
+                    + "Forget removes the pairing entirely. Pairing a different device replaces the current one.")
+            } else {
+                Text("No device is paired. Alarms, friends and pokes work without one; firing needs a paired Pavlok.")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var deviceStatusRow: some View {
+        if let device = deviceControlViewModel.connectedDevice {
+            LabeledContent {
+                Text(device.name)
+            } label: {
+                Label("Connected", systemImage: "dot.radiowaves.left.and.right")
+            }
+        } else {
+            LabeledContent {
+                Text(deviceControlViewModel.hasPairedDevice ? "Not connected" : "None paired")
+            } label: {
+                Label {
+                    Text("Device")
+                } icon: {
+                    Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(.secondary)
+                }
+            }
         }
     }
 
