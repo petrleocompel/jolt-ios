@@ -16,6 +16,7 @@ struct PairDeviceSheet: View {
         NavigationStack {
             DeviceScannerList(viewModel: viewModel)
                 .navigationTitle(viewModel.hasPairedDevice ? "Pair a different device" : "Pair device")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Not now") { dismiss() }

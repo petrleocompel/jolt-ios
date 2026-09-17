@@ -66,7 +66,10 @@ final class AppDependencies {
         self.alarmRepository = SwiftDataAlarmRepository(modelContainer: container)
         self.phoneAlarmScheduler = PhoneAlarmScheduler()
         self.deviceRepository = AppEnvironment.usesFakeDevice
-            ? FakeDeviceRepository(startsPaired: !AppEnvironment.startsWithoutDevice)
+            ? FakeDeviceRepository(
+                startsPaired: !AppEnvironment.startsWithoutDevice,
+                unreachableState: AppEnvironment.fakeDeviceLinkState
+            )
             : CompositeDeviceRepository()
 
         // Snapshot runs must stay hermetic — the screenshot runner has no
@@ -103,6 +106,14 @@ final class AppDependencies {
         let delegate = AppNotificationDelegate(pokeRepository: social, pushDiagnostics: social)
         self.notificationDelegate = delegate
         UNUserNotificationCenter.current().delegate = delegate
+
+        if AppEnvironment.ringsDemoAlarm {
+            let alarms = alarmRepository
+            Task {
+                let wakeUp = try? await alarms.fetchAll().first { $0.label == "Wake up" }
+                if let wakeUp { delegate.presentAlarm(wakeUp.id) }
+            }
+        }
 
         Self.shared = self
     }

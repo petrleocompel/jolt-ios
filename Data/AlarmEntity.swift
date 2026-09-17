@@ -15,6 +15,9 @@ final class AlarmEntity {
     var label: String
     var stimulusData: Data
     var dismissChallengeRaw: String
+    /// Optional so SwiftData's lightweight migration can add the column to
+    /// stores created before QR dismiss codes were saved.
+    var dismissQRCode: String?
 
     init(
         id: UUID,
@@ -25,7 +28,8 @@ final class AlarmEntity {
         isEnabled: Bool,
         label: String,
         stimulusData: Data,
-        dismissChallengeRaw: String
+        dismissChallengeRaw: String,
+        dismissQRCode: String? = nil
     ) {
         self.id = id
         self.locationRaw = locationRaw
@@ -36,6 +40,7 @@ final class AlarmEntity {
         self.label = label
         self.stimulusData = stimulusData
         self.dismissChallengeRaw = dismissChallengeRaw
+        self.dismissQRCode = dismissQRCode
     }
 }
 
@@ -53,7 +58,8 @@ extension Alarm {
             isEnabled: entity.isEnabled,
             label: entity.label,
             stimulus: stimulus,
-            dismissChallenge: challenge
+            dismissChallenge: challenge,
+            dismissQRCode: entity.dismissQRCode
         )
     }
 
@@ -68,7 +74,8 @@ extension Alarm {
             isEnabled: isEnabled,
             label: label,
             stimulusData: stimulusData,
-            dismissChallengeRaw: dismissChallenge.rawValue
+            dismissChallengeRaw: dismissChallenge.rawValue,
+            dismissQRCode: dismissQRCode
         )
     }
 }

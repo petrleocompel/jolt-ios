@@ -14,6 +14,8 @@
   *{box-sizing:border-box;}
   a{color:#00E676;text-decoration:none}a:hover{color:#5BFFA8}
   ::-webkit-scrollbar{width:0;height:0}
+  @keyframes jolt-spin{to{transform:rotate(360deg)}}
+  @keyframes jolt-pulse{0%,100%{opacity:1}50%{opacity:0.35}}
 </style>
 </helmet>
 <div style="min-height:100vh;background:#0d0d0f;color:#fff;font-family:-apple-system,'SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px;padding:28px">
@@ -45,19 +47,31 @@
 
       <div ref="{{ scrollRef }}" style="position:absolute;top:54px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden">
 
+        <sc-if value="{{ s.bannerOn }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="60 Inline banner" style="background:{{ s.bannerBg }};border-bottom:1px solid {{ s.bannerBd }};display:flex;align-items:center;gap:10px;padding:14px 16px">
+          <span style="font-size:15px;line-height:1.35;color:{{ s.bannerFg }};flex:1;text-wrap:pretty">{{ s.banner }}</span>
+          <div data-action="dismissbanner" onClick="{{ tap }}" style="width:26px;height:26px;border-radius:13px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></div>
+        </div>
+        </sc-if>
+
         <sc-if value="{{ sc.remote }}" hint-placeholder-val="{{ true }}">
         <div data-screen-label="01 Remote — Dashboard" style="background:#0A0A0A;min-height:798px;padding:0 16px 150px">
           <div style="height:60px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600">Remote</div>
 
           <sc-if value="{{ sc.noconn }}" hint-placeholder-val="{{ false }}">
-          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);border-radius:22px;padding:18px">
+          <div data-screen-label="01b Remote — No connection" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.14);border-radius:22px;padding:18px">
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="width:9px;height:9px;border-radius:5px;background:#8E8E93;display:block"></span>
-              <span style="font-size:12px;font-weight:600;letter-spacing:1.2px;color:#8E8E93">NO DEVICE</span>
+              <span style="width:9px;height:9px;border-radius:5px;background:{{ s.linkDot }};display:block"></span>
+              <span style="font-size:12px;font-weight:600;letter-spacing:1.2px;color:{{ s.linkAccent }}">{{ s.linkLabel }}</span>
             </div>
-            <div style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:30px;font-weight:600;margin-top:6px">Not connected</div>
-            <div style="font-size:16px;color:#8E8E93;margin-top:4px;text-wrap:pretty">Alarms, friends and pokes still work. Firing needs a paired Pavlok.</div>
-            <div data-action="pair" onClick="{{ tap }}" style="margin-top:16px;height:50px;border-radius:25px;background:#00E676;color:#000;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer">Pair a device</div>
+            <div style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:30px;font-weight:600;margin-top:6px">{{ s.linkTitle }}</div>
+            <div style="font-size:16px;color:#8E8E93;margin-top:4px;text-wrap:pretty">{{ s.linkMsg }}</div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <sc-if value="{{ sc.paired }}" hint-placeholder-val="{{ false }}">
+              <div data-action="link:connecting" onClick="{{ tap }}" style="flex:1;height:50px;border-radius:25px;background:#00E676;color:#000;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer">Try again</div>
+              </sc-if>
+              <div data-action="pair" onClick="{{ tap }}" style="flex:1;height:50px;border-radius:25px;background:{{ s.linkBtnBg }};color:{{ s.linkBtnFg }};border:1px solid rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;cursor:pointer;text-align:center">{{ s.linkBtn }}</div>
+            </div>
           </div>
           </sc-if>
 
@@ -96,14 +110,17 @@
                 <div style="display:flex;align-items:center;gap:9px">
                   <svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg>
                   <span style="font-size:19px;font-weight:600">Zap</span>
+                  <sc-if value="{{ s.zapHigh }}" hint-placeholder-val="{{ false }}">
+                  <span style="padding:3px 8px;border-radius:9px;background:rgba(255,69,58,0.18);border:1px solid rgba(255,69,58,0.5);color:#FF453A;font-size:11px;font-weight:700;letter-spacing:1px">HIGH</span>
+                  </sc-if>
                 </div>
                 <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px">
-                  <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:36px;font-weight:600">20</span>
+                  <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:36px;font-weight:600">{{ s.zapInt }}</span>
                   <span style="font-size:15px;color:#8E8E93">%</span>
-                  <span style="font-size:15px;color:#8E8E93;margin-left:6px">tap to fire</span>
+                  <span style="font-size:15px;color:#8E8E93;margin-left:6px">{{ s.zapHint }}</span>
                 </div>
               </div>
-              <div data-action="fire:Zap" onClick="{{ tap }}" style="width:64px;height:64px;border-radius:32px;background:rgba(0,230,118,0.10);border:1.5px solid rgba(0,230,118,0.5);display:flex;align-items:center;justify-content:center;color:#00E676;cursor:pointer;flex:0 0 auto">
+              <div data-action="fire:Zap" data-stim="Zap" onClick="{{ tap }}" onMouseDown="{{ holdStart }}" onMouseUp="{{ holdEnd }}" onMouseLeave="{{ holdEnd }}" style="width:64px;height:64px;border-radius:32px;background:{{ s.zapRing }};border:1.5px solid rgba(0,230,118,0.5);display:flex;align-items:center;justify-content:center;color:#00E676;cursor:pointer;flex:0 0 auto">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg>
               </div>
             </div>
@@ -113,14 +130,17 @@
                 <div style="display:flex;align-items:center;gap:9px">
                   <svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><rect x="2" y="10" width="2" height="4" rx="1"></rect><rect x="6" y="7" width="2" height="10" rx="1"></rect><rect x="10" y="4" width="2" height="16" rx="1"></rect><rect x="14" y="7" width="2" height="10" rx="1"></rect><rect x="18" y="10" width="2" height="4" rx="1"></rect></svg>
                   <span style="font-size:19px;font-weight:600">Vibe</span>
+                  <sc-if value="{{ s.vibeHigh }}" hint-placeholder-val="{{ false }}">
+                  <span style="padding:3px 8px;border-radius:9px;background:rgba(255,69,58,0.18);border:1px solid rgba(255,69,58,0.5);color:#FF453A;font-size:11px;font-weight:700;letter-spacing:1px">HIGH</span>
+                  </sc-if>
                 </div>
                 <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px">
-                  <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:36px;font-weight:600">60</span>
+                  <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:36px;font-weight:600">{{ s.vibeInt }}</span>
                   <span style="font-size:15px;color:#8E8E93">%</span>
-                  <span style="font-size:15px;color:#8E8E93;margin-left:6px">tap to fire</span>
+                  <span style="font-size:15px;color:#8E8E93;margin-left:6px">{{ s.vibeHint }}</span>
                 </div>
               </div>
-              <div data-action="fire:Vibe" onClick="{{ tap }}" style="width:64px;height:64px;border-radius:32px;background:rgba(0,230,118,0.10);border:1.5px solid rgba(0,230,118,0.5);display:flex;align-items:center;justify-content:center;color:#00E676;cursor:pointer;flex:0 0 auto">
+              <div data-action="fire:Vibe" data-stim="Vibe" onClick="{{ tap }}" onMouseDown="{{ holdStart }}" onMouseUp="{{ holdEnd }}" onMouseLeave="{{ holdEnd }}" style="width:64px;height:64px;border-radius:32px;background:{{ s.vibeRing }};border:1.5px solid rgba(0,230,118,0.5);display:flex;align-items:center;justify-content:center;color:#00E676;cursor:pointer;flex:0 0 auto">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><rect x="2" y="10" width="2" height="4" rx="1"></rect><rect x="6" y="7" width="2" height="10" rx="1"></rect><rect x="10" y="4" width="2" height="16" rx="1"></rect><rect x="14" y="7" width="2" height="10" rx="1"></rect><rect x="18" y="10" width="2" height="4" rx="1"></rect></svg>
               </div>
             </div>
@@ -130,14 +150,17 @@
                 <div style="display:flex;align-items:center;gap:9px">
                   <svg viewBox="0 0 24 24" width="21" height="21" fill="#fff"><path d="M3 9h3l5-4v14l-5-4H3z"></path><path d="M15 8.6a4.6 4.6 0 0 1 0 6.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"></path><path d="M18 6a8.4 8.4 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"></path></svg>
                   <span style="font-size:19px;font-weight:600">Beep</span>
+                  <sc-if value="{{ s.beepHigh }}" hint-placeholder-val="{{ false }}">
+                  <span style="padding:3px 8px;border-radius:9px;background:rgba(255,69,58,0.18);border:1px solid rgba(255,69,58,0.5);color:#FF453A;font-size:11px;font-weight:700;letter-spacing:1px">HIGH</span>
+                  </sc-if>
                 </div>
                 <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px">
-                  <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:36px;font-weight:600">60</span>
+                  <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:36px;font-weight:600">{{ s.beepInt }}</span>
                   <span style="font-size:15px;color:#8E8E93">%</span>
-                  <span style="font-size:15px;color:#8E8E93;margin-left:6px">tap to fire</span>
+                  <span style="font-size:15px;color:#8E8E93;margin-left:6px">{{ s.beepHint }}</span>
                 </div>
               </div>
-              <div data-action="fire:Beep" onClick="{{ tap }}" style="width:64px;height:64px;border-radius:32px;background:rgba(0,230,118,0.10);border:1.5px solid rgba(0,230,118,0.5);display:flex;align-items:center;justify-content:center;color:#00E676;cursor:pointer;flex:0 0 auto">
+              <div data-action="fire:Beep" data-stim="Beep" onClick="{{ tap }}" onMouseDown="{{ holdStart }}" onMouseUp="{{ holdEnd }}" onMouseLeave="{{ holdEnd }}" style="width:64px;height:64px;border-radius:32px;background:{{ s.beepRing }};border:1.5px solid rgba(0,230,118,0.5);display:flex;align-items:center;justify-content:center;color:#00E676;cursor:pointer;flex:0 0 auto">
                 <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M3 9h3l5-4v14l-5-4H3z"></path><path d="M15 8.6a4.6 4.6 0 0 1 0 6.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M18 6a8.4 8.4 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
               </div>
             </div>
@@ -180,36 +203,19 @@
         </div>
         </sc-if>
 
-        <sc-if value="{{ sc.pair }}" hint-placeholder-val="{{ false }}">
-        <div data-screen-label="50 Pair device" style="background:#000;min-height:798px;padding:0 16px 40px;position:relative">
-          <div style="height:60px;display:flex;align-items:center">
-            <div data-action="back" onClick="{{ tap }}" style="width:44px;height:44px;border-radius:22px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
-          </div>
-          <div style="font-size:34px;font-weight:700;letter-spacing:-0.5px">{{ s.pairTitle }}</div>
-          <div style="display:flex;flex-direction:column;align-items:center;margin-top:44px">
+        <sc-if value="{{ sc.firstRun }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="00 First run" style="background:#000;min-height:798px;padding:0 16px 40px;position:relative">
+          <div style="height:96px"></div>
+          <div style="display:flex;flex-direction:column;align-items:center">
             <div style="width:96px;height:96px;border-radius:48px;background:#00E676;display:flex;align-items:center;justify-content:center">
               <svg viewBox="0 0 24 24" width="48" height="48" fill="#000"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg>
             </div>
-            <div style="font-size:24px;font-weight:700;margin-top:18px">Find your Pavlok</div>
-            <div style="font-size:17px;color:#8E8E93;text-align:center;margin-top:8px;max-width:330px;text-wrap:pretty">Make sure your device is charged and nearby, then start scanning.</div>
-            <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;justify-content:center">
-              <span style="padding:11px 12px;border-radius:22px;background:rgba(0,230,118,0.16);color:#00E676;font-size:17px">Pavlok 2</span>
-              <span style="padding:11px 12px;border-radius:22px;background:rgba(0,230,118,0.16);color:#00E676;font-size:17px">Pavlok 3</span>
-              <span style="padding:11px 12px;border-radius:22px;background:rgba(0,230,118,0.16);color:#00E676;font-size:17px">Shock Clock Max</span>
-            </div>
+            <div style="font-size:30px;font-weight:700;margin-top:22px;text-align:center">Find your Pavlok</div>
+            <div style="font-size:17px;color:#8E8E93;text-align:center;margin-top:8px;max-width:330px;text-wrap:pretty">Pair now to fire from your phone, or carry on without one — alarms, friends and pokes work either way.</div>
           </div>
-          <sc-if value="{{ s.scanning }}" hint-placeholder-val="{{ false }}">
-          <div data-screen-label="51 Onboarding — Scanning" style="margin-top:26px">
-            <div style="height:1px;background:rgba(255,255,255,0.14)"></div>
-            <div data-action="connect" onClick="{{ tap }}" style="padding:16px 0;cursor:pointer">
-              <div style="font-size:20px;font-weight:600">pavlok-3</div>
-              <div style="font-size:16px;color:#8E8E93;margin-top:2px">Pavlok 3</div>
-            </div>
-            <div style="height:1px;background:rgba(255,255,255,0.14)"></div>
-          </div>
-          </sc-if>
-          <div data-action="scan" onClick="{{ tap }}" style="position:absolute;left:0;right:0;bottom:110px;display:flex;justify-content:center">
-            <div style="padding:15px 44px;border-radius:28px;background:#00E676;color:#000;font-size:19px;font-weight:500;cursor:pointer">{{ s.scanLabel }}</div>
+          <div style="position:absolute;left:16px;right:16px;bottom:44px;display:flex;flex-direction:column;gap:12px">
+            <div data-action="pair" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:#00E676;color:#000;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;cursor:pointer">Pair a device</div>
+            <div data-action="skippair" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer">Continue without a device</div>
           </div>
         </div>
         </sc-if>
@@ -220,10 +226,10 @@
             <div data-action="back" onClick="{{ tap }}" style="width:44px;height:44px;border-radius:22px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
             <div style="position:absolute;left:0;right:0;text-align:center;font-size:17px;font-weight:600">pavlok-3</div>
           </div>
-          <div style="background:linear-gradient(180deg,rgba(0,230,118,0.10),rgba(0,230,118,0.015));border:1px solid rgba(0,230,118,0.33);border-radius:22px;padding:26px;display:flex;flex-direction:column;align-items:center">
-            <div style="width:84px;height:84px;border-radius:42px;background:rgba(0,230,118,0.16);display:flex;align-items:center;justify-content:center;color:#00E676"><svg viewBox="0 0 24 24" width="38" height="38" fill="currentColor"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg></div>
+          <div style="background:{{ s.detailTint }};border:1px solid {{ s.detailBd }};border-radius:22px;padding:26px;display:flex;flex-direction:column;align-items:center">
+            <div style="width:84px;height:84px;border-radius:42px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;color:{{ s.detailAccent }}"><svg viewBox="0 0 24 24" width="38" height="38" fill="currentColor"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg></div>
             <div style="font-size:26px;font-weight:700;margin-top:14px">pavlok-3</div>
-            <div style="font-size:14px;font-weight:600;letter-spacing:1.2px;color:#00E676;margin-top:6px">CONNECTED · 82%</div>
+            <div style="font-size:14px;font-weight:600;letter-spacing:1.2px;color:{{ s.detailAccent }};margin-top:6px;text-align:center">{{ s.detailLabel }}</div>
           </div>
           <div style="font-size:20px;font-weight:600;color:#8E8E93;margin:26px 4px 8px">Device</div>
           <div style="background:#1C1C1E;border-radius:18px;overflow:hidden">
@@ -252,13 +258,13 @@
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
             </div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px">
+            <div data-action="lab:ready" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;cursor:pointer">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h16"></path></svg>
               <span style="flex:1">Protocol lab</span>
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
             </div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px">
+            <div data-action="push:btLog" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;cursor:pointer">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
               <span style="flex:1">Bluetooth log</span>
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
@@ -270,11 +276,9 @@
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
             </div>
           </div>
-          <div style="background:#1C1C1E;border-radius:18px;overflow:hidden;margin-top:26px">
-            <div data-action="disconnect" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;color:#00E676;cursor:pointer">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>
-              <span>Disconnect</span>
-            </div>
+          <div data-action="disconnect" onClick="{{ tap }}" style="margin-top:26px;height:54px;border-radius:18px;background:rgba(255,69,58,0.12);border:1px solid rgba(255,69,58,0.5);color:#FF453A;display:flex;align-items:center;justify-content:center;gap:10px;font-size:17px;font-weight:600;cursor:pointer">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF453A" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>
+            <span>Disconnect</span>
           </div>
         </div>
         </sc-if>
@@ -326,8 +330,28 @@
             <div style="display:flex;justify-content:space-between;padding:15px 16px;font-size:17px"><span>Vibe</span><span style="color:#8E8E93">156E1002 · remap</span></div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
             <div style="display:flex;justify-content:space-between;padding:15px 16px;font-size:17px"><span>Beep</span><span style="color:#8E8E93">156E1003 · remap</span></div>
+            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+            <div data-action="banner:ok:Stimulus mapping reset to defaults" onClick="{{ tap }}" style="padding:15px 16px;font-size:17px;color:#FF453A;cursor:pointer">Reset to defaults</div>
           </div>
           <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">Remapping writes to a different characteristic. See docs/RE-FINDINGS.md before changing anything.</div>
+          <div style="font-size:20px;font-weight:600;color:#8E8E93;margin:26px 4px 8px">Live events</div>
+          <div style="background:#1C1C1E;border-radius:18px;overflow:hidden">
+            <div style="padding:14px 16px;display:flex;align-items:center;gap:14px">
+              <span style="flex:1;font-size:17px">Listen for device events</span>
+              <div data-action="toggle:listenEvents" onClick="{{ tap }}" style="width:51px;height:31px;border-radius:16px;background:{{ tg.listenEvents }};cursor:pointer;flex:0 0 auto;display:flex;align-items:center"><span style="width:27px;height:27px;border-radius:14px;background:#fff;display:block;margin-left:{{ tg.listenEventsX }}"></span></div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+            <div data-action="lab:instant" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;cursor:pointer">
+              <span style="flex:1;color:#00E676">Protocol lab</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+            <div data-action="push:btLog" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;cursor:pointer">
+              <span style="flex:1;color:#00E676">Bluetooth log</span>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+            </div>
+          </div>
+          <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">Listening subscribes to button presses and battery notifications. It drains the device faster. Protocol lab opens with the table already read here.</div>
         </div>
         </sc-if>
 
@@ -351,6 +375,152 @@
             <div style="display:flex;justify-content:space-between;padding:15px 16px;font-size:17px"><span>Find my phone</span><span style="color:#00E676">✓</span></div>
           </div>
           <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">Assignments are written to the device. Middle and Bottom buttons follow below.</div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sc.protocolLab }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="07 Remote — Protocol lab" style="background:#000;min-height:798px;padding:0 16px 150px">
+          <div style="height:60px;display:flex;align-items:center;position:relative">
+            <div data-action="back" onClick="{{ tap }}" style="width:44px;height:44px;border-radius:22px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+            <div style="position:absolute;left:0;right:0;text-align:center;font-size:17px;font-weight:600">Protocol lab</div>
+          </div>
+          <sc-if value="{{ sc.labLoading }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="07a Protocol lab — reading" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:120px">
+            <div style="width:34px;height:34px;border-radius:17px;border:3px solid rgba(255,255,255,0.14);border-top-color:#00E676;animation:jolt-spin 0.9s linear infinite"></div>
+            <div style="font-size:17px;color:#8E8E93">Reading GATT table…</div>
+          </div>
+          </sc-if>
+          <sc-if value="{{ sc.labError }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="07b Protocol lab — read failed" style="padding-top:60px">
+            <div style="background:rgba(255,69,58,0.12);border:1px solid rgba(255,69,58,0.5);border-radius:18px;padding:18px">
+              <div style="font-size:12px;font-weight:600;letter-spacing:1.2px;color:#FF453A">READ FAILED</div>
+              <div style="font-size:21px;font-weight:600;margin-top:6px">Couldn't read the GATT table</div>
+              <div style="font-size:16px;color:#8E8E93;margin-top:4px;text-wrap:pretty">The device dropped the connection during discovery. Protocol lab needs the table before it can write anything.</div>
+              <div data-action="lab:ready" onClick="{{ tap }}" style="margin-top:16px;height:50px;border-radius:25px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.16);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer">Retry read</div>
+            </div>
+          </div>
+          </sc-if>
+          <sc-if value="{{ sc.labReady }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:20px;font-weight:600;color:#8E8E93;margin:0 4px 8px">Write to characteristic</div>
+            <div style="background:#1C1C1E;border-radius:18px;overflow:hidden">
+              <div style="display:flex;justify-content:space-between;padding:15px 16px;font-size:17px"><span>Characteristic</span><span style="color:#8E8E93;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">156E1001</span></div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+              <div style="display:flex;justify-content:space-between;padding:15px 16px;font-size:17px"><span>Payload</span><span style="color:#8E8E93;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">01 0A 00 3C</span></div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+              <div style="display:flex;justify-content:space-between;padding:15px 16px;font-size:17px"><span>Mode</span><span style="color:#8E8E93">Write with response</span></div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+              <div data-action="banner:ok:Wrote 4 bytes to 156E1001" onClick="{{ tap }}" style="padding:15px 16px;font-size:17px;color:#00E676;cursor:pointer">Send payload</div>
+            </div>
+            <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">Raw writes bypass every cap and cooldown in the app. Keep the device off your wrist.</div>
+            <div style="font-size:20px;font-weight:600;color:#8E8E93;margin:26px 4px 8px">Last exchange</div>
+            <div style="background:#1C1C1E;border-radius:18px;padding:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;line-height:1.7;color:#C7C7CC">
+              <div>→ 156E1001 · 01 0A 00 3C</div>
+              <div style="color:#00E676">← ACK · 0 ms</div>
+              <div>→ 180F/2A19 read</div>
+              <div style="color:#00E676">← 52 (82%)</div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sc.btLog }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="08 Remote — Bluetooth log" style="background:#000;min-height:798px;padding:0 16px 150px">
+          <div style="height:60px;display:flex;align-items:center;position:relative">
+            <div data-action="back" onClick="{{ tap }}" style="width:44px;height:44px;border-radius:22px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div>
+            <div style="position:absolute;left:0;right:0;text-align:center;font-size:17px;font-weight:600">Bluetooth log</div>
+          </div>
+          <div style="background:#1C1C1E;border-radius:18px;padding:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.75;color:#C7C7CC">
+            <div><span style="color:#636366">07:41:02.118</span> central state poweredOn</div>
+            <div><span style="color:#636366">07:41:02.204</span> scan start · services 156E1000</div>
+            <div><span style="color:#636366">07:41:03.902</span> found pavlok-3 · rssi −54</div>
+            <div><span style="color:#636366">07:41:04.013</span> connect request</div>
+            <div style="color:#00E676"><span style="color:#636366">07:41:04.446</span> connected · mtu 185</div>
+            <div><span style="color:#636366">07:41:04.502</span> discover services · 3 found</div>
+            <div><span style="color:#636366">07:41:05.120</span> write 156E1001 · 01 14 00 3C</div>
+            <div style="color:#00E676"><span style="color:#636366">07:41:05.188</span> ack</div>
+            <div style="color:#FF9F0A"><span style="color:#636366">07:48:31.760</span> peripheral disconnected · timeout</div>
+            <div><span style="color:#636366">07:48:32.004</span> reconnect scheduled · 5 s</div>
+          </div>
+          <div style="background:#1C1C1E;border-radius:18px;overflow:hidden;margin-top:26px">
+            <div data-action="banner:ok:Log copied to the clipboard" onClick="{{ tap }}" style="padding:15px 16px;font-size:17px;color:#00E676;cursor:pointer">Copy log</div>
+            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+            <div data-action="banner:ok:Log cleared" onClick="{{ tap }}" style="padding:15px 16px;font-size:17px;color:#FF453A;cursor:pointer">Clear log</div>
+          </div>
+          <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">The log keeps the last 500 lines from this launch only.</div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sc.alarmActive }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="14 Alarm — Ringing" style="background:#0A0A0A;min-height:798px;padding:0 24px 40px;position:relative;display:flex;flex-direction:column;align-items:center">
+          <div style="height:104px"></div>
+          <div style="font-size:13px;font-weight:600;letter-spacing:1.6px;color:#00E676">ALARM · ZAP 60%</div>
+          <div style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:86px;font-weight:600;line-height:1;margin-top:12px">07:00</div>
+          <div style="font-size:19px;color:#8E8E93;margin-top:6px">Wake up</div>
+          <div style="width:148px;height:148px;border-radius:74px;border:1.5px solid rgba(0,230,118,0.45);background:rgba(0,230,118,0.10);display:flex;align-items:center;justify-content:center;color:#00E676;margin-top:44px;animation:jolt-pulse 1.4s ease-in-out infinite"><svg viewBox="0 0 24 24" width="58" height="58" fill="currentColor"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg></div>
+          <div style="font-size:16px;color:#8E8E93;margin-top:18px;text-align:center;text-wrap:pretty">Firing every 30 seconds until the challenge is done.</div>
+          <div style="position:absolute;left:24px;right:24px;bottom:48px;display:flex;flex-direction:column;gap:12px">
+            <div data-action="goto:chMath:alarms" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:#00E676;color:#000;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;cursor:pointer">Dismiss — solve a puzzle</div>
+            <div data-action="banner:ok:Snoozed for 9 minutes" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer">Snooze 9 min</div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sc.chMath }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="15 Challenge — Math puzzle" style="background:#0A0A0A;min-height:798px;padding:0 24px 40px;position:relative">
+          <div style="height:92px"></div>
+          <div style="font-size:13px;font-weight:600;letter-spacing:1.6px;color:#8E8E93">CHALLENGE 1 OF 1</div>
+          <div style="font-size:30px;font-weight:700;margin-top:10px">Solve to dismiss</div>
+          <div style="background:#1C1C1E;border-radius:22px;padding:34px;display:flex;align-items:center;justify-content:center;margin-top:28px">
+            <span style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:54px;font-weight:600">7 × 8</span>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:22px">
+            <div data-action="ch:wrong" onClick="{{ tap }}" style="flex:1;height:72px;border-radius:20px;background:#2C2C2E;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;cursor:pointer">54</div>
+            <div data-action="ch:done" onClick="{{ tap }}" style="flex:1;height:72px;border-radius:20px;background:#2C2C2E;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;cursor:pointer">56</div>
+            <div data-action="ch:wrong" onClick="{{ tap }}" style="flex:1;height:72px;border-radius:20px;background:#2C2C2E;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;cursor:pointer">63</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:26px">
+            <div data-action="goto:chJacks:alarms" onClick="{{ tap }}" style="font-size:17px;color:#00E676;cursor:pointer">Use jumping jacks instead</div>
+            <div data-action="goto:chQR:alarms" onClick="{{ tap }}" style="font-size:17px;color:#00E676;cursor:pointer">Use a QR code instead</div>
+          </div>
+          <div style="position:absolute;left:24px;right:24px;bottom:48px;font-size:15px;color:#8E8E93;text-wrap:pretty">The alarm keeps firing while the challenge is open.</div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sc.chJacks }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="16 Challenge — Jumping jacks" style="background:#0A0A0A;min-height:798px;padding:0 24px 40px;position:relative">
+          <div style="height:92px"></div>
+          <div style="font-size:13px;font-weight:600;letter-spacing:1.6px;color:#8E8E93">MOVEMENT CHALLENGE</div>
+          <div style="font-size:30px;font-weight:700;margin-top:10px">10 jumping jacks</div>
+          <div style="display:flex;flex-direction:column;align-items:center;margin-top:46px">
+            <div style="font-family:ui-rounded,'SF Pro Rounded',system-ui;font-size:78px;font-weight:600;line-height:1">{{ s.jacksLabel }}</div>
+            <div style="height:8px;border-radius:4px;background:#2C2C2E;align-self:stretch;margin-top:22px;overflow:hidden">
+              <div style="height:8px;border-radius:4px;background:#00E676;width:{{ s.jacksW }}"></div>
+            </div>
+            <div style="font-size:16px;color:#8E8E93;margin-top:16px;text-align:center;text-wrap:pretty">Counted from the accelerometer in your Pavlok. Keep the phone nearby.</div>
+          </div>
+          <div style="position:absolute;left:24px;right:24px;bottom:48px;display:flex;flex-direction:column;gap:12px">
+            <div data-action="ch:jack" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:#00E676;color:#000;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;cursor:pointer">Count one jack</div>
+            <div data-action="goto:chMath:alarms" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer">Switch challenge</div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ sc.chQR }}" hint-placeholder-val="{{ false }}">
+        <div data-screen-label="17 Challenge — QR scan" style="background:#0A0A0A;min-height:798px;padding:0 24px 40px;position:relative">
+          <div style="height:92px"></div>
+          <div style="font-size:13px;font-weight:600;letter-spacing:1.6px;color:#8E8E93">QR CHALLENGE</div>
+          <div style="font-size:30px;font-weight:700;margin-top:10px">Scan the code in your bathroom</div>
+          <div style="margin-top:30px;aspect-ratio:1;border-radius:26px;background:#141416;border:1px solid rgba(255,255,255,0.12);position:relative;display:flex;align-items:center;justify-content:center">
+            <div style="width:62%;height:62%;border-radius:14px;border:2px dashed rgba(255,255,255,0.28)"></div>
+            <div style="position:absolute;left:19%;right:19%;height:2px;background:#00E676;box-shadow:0 0 14px rgba(0,230,118,0.9);animation:jolt-pulse 1.2s ease-in-out infinite"></div>
+          </div>
+          <div style="font-size:16px;color:#8E8E93;margin-top:16px;text-wrap:pretty">Only the code you saved when you set the alarm will dismiss it.</div>
+          <div style="position:absolute;left:24px;right:24px;bottom:48px;display:flex;flex-direction:column;gap:12px">
+            <div data-action="ch:done" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:#00E676;color:#000;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;cursor:pointer">Simulate a scan</div>
+            <div data-action="goto:chMath:alarms" onClick="{{ tap }}" style="height:54px;border-radius:27px;background:rgba(118,118,128,0.24);display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer">Switch challenge</div>
+          </div>
         </div>
         </sc-if>
 
@@ -724,29 +894,24 @@
           <div style="font-size:34px;font-weight:700;letter-spacing:-0.5px;margin:0 4px 14px">Settings</div>
           <div style="font-size:20px;font-weight:600;color:#8E8E93;margin:0 4px 8px">Device</div>
           <div style="background:#1C1C1E;border-radius:18px;overflow:hidden">
-            <sc-if value="{{ sc.conn }}" hint-placeholder-val="{{ true }}">
             <div style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="#00E676"></circle><path d="M7.5 16.5a6.4 6.4 0 0 1 0-9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.5 19.5a10.6 10.6 0 0 1 0-15M19.5 4.5a10.6 10.6 0 0 1 0 15"></path></svg>
-              <span style="flex:1">Connected</span><span style="color:#8E8E93">pavlok-3</span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="{{ s.detailAccent }}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="{{ s.detailAccent }}"></circle><path d="M7.5 16.5a6.4 6.4 0 0 1 0-9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.5 19.5a10.6 10.6 0 0 1 0-15M19.5 4.5a10.6 10.6 0 0 1 0 15"></path></svg>
+              <span style="flex:1">{{ s.deviceRowLabel }}</span><span style="color:#8E8E93">{{ s.deviceRowValue }}</span>
             </div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div data-action="disconnect" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;color:#00E676;cursor:pointer">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>
-              <span>Disconnect</span>
+            <sc-if value="{{ sc.paired }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div data-action="disconnect" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;color:#00E676;cursor:pointer">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>
+                <span>Disconnect</span>
+              </div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+              <div data-action="forget" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;color:#FF453A;cursor:pointer">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FF453A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"></path><path d="M10 11v6M14 11v6"></path></svg>
+                <span>Forget device</span>
+              </div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
             </div>
-            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div data-action="disconnect" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;color:#FF453A;cursor:pointer">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"></path><path d="M10 11v6M14 11v6"></path></svg>
-              <span>Forget device</span>
-            </div>
-            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            </sc-if>
-            <sc-if value="{{ sc.noconn }}" hint-placeholder-val="{{ false }}">
-            <div style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.2" fill="#8E8E93"></circle><path d="M7.5 16.5a6.4 6.4 0 0 1 0-9M16.5 7.5a6.4 6.4 0 0 1 0 9"></path></svg>
-              <span style="flex:1">Device</span><span style="color:#8E8E93">None paired</span>
-            </div>
-            <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
             </sc-if>
             <div data-action="pair" onClick="{{ tap }}" style="display:flex;align-items:center;gap:14px;padding:15px 16px;font-size:17px;color:#00E676;cursor:pointer">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
@@ -943,12 +1108,13 @@
           </div>
           <div style="height:24px"></div>
           <div style="background:#1C1C1E;border-radius:18px;overflow:hidden">
-            <div style="padding:15px 16px;display:flex;justify-content:space-between;font-size:19px"><span>Zap</span><span style="display:flex;align-items:center;gap:6px;color:#8E8E93">Tap <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg></span></div>
+            <div data-action="mode:Zap" onClick="{{ tap }}" style="padding:15px 16px;display:flex;justify-content:space-between;font-size:19px;cursor:pointer"><span>Zap</span><span style="display:flex;align-items:center;gap:6px;color:#8E8E93">{{ s.zapMode }} <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg></span></div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div style="padding:15px 16px;display:flex;justify-content:space-between;font-size:19px"><span>Vibe</span><span style="display:flex;align-items:center;gap:6px;color:#8E8E93">Tap <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg></span></div>
+            <div data-action="mode:Vibe" onClick="{{ tap }}" style="padding:15px 16px;display:flex;justify-content:space-between;font-size:19px;cursor:pointer"><span>Vibe</span><span style="display:flex;align-items:center;gap:6px;color:#8E8E93">{{ s.vibeMode }} <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg></span></div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div style="padding:15px 16px;display:flex;justify-content:space-between;font-size:19px"><span>Beep</span><span style="display:flex;align-items:center;gap:6px;color:#8E8E93">Tap <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg></span></div>
+            <div data-action="mode:Beep" onClick="{{ tap }}" style="padding:15px 16px;display:flex;justify-content:space-between;font-size:19px;cursor:pointer"><span>Beep</span><span style="display:flex;align-items:center;gap:6px;color:#8E8E93">{{ s.beepMode }} <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"></path></svg></span></div>
           </div>
+          <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">Tap fires straight away. Hold needs a half-second press on the Remote button. Confirm asks first — and anything above 70% always asks, whatever the mode.</div>
         </div>
         </sc-if>
 
@@ -1006,7 +1172,22 @@
               <div data-action="toggle:testFire" onClick="{{ tap }}" style="width:51px;height:31px;border-radius:16px;background:{{ tg.testFire }};cursor:pointer;display:flex;align-items:center"><span style="width:27px;height:27px;border-radius:14px;background:#fff;display:block;margin-left:{{ tg.testFireX }}"></span></div>
             </div>
             <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
-            <div data-action="fire:Test notification" onClick="{{ tap }}" style="padding:15px 16px;font-size:19px;color:#00E676;cursor:pointer">Send test notification</div>
+            <div data-action="notiftest" onClick="{{ tap }}" style="padding:15px 16px;font-size:19px;color:#00E676;cursor:pointer">Send test notification</div>
+            <sc-if value="{{ s.notifRunning }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+              <div style="padding:15px 16px;display:flex;align-items:center;gap:12px;font-size:17px;color:#8E8E93">
+                <span style="width:18px;height:18px;border-radius:9px;border:2px solid rgba(255,255,255,0.14);border-top-color:#00E676;animation:jolt-spin 0.9s linear infinite;display:block"></span>
+                <span>Waiting for the push…</span>
+              </div>
+            </div>
+            </sc-if>
+            <sc-if value="{{ s.notifOk }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="height:1px;background:rgba(255,255,255,0.10);margin-left:16px"></div>
+              <div style="padding:15px 16px;display:flex;justify-content:space-between;font-size:17px"><span style="color:#00E676">Arrived in 1.2 s</span><span style="color:#8E8E93">07:41:06</span></div>
+            </div>
+            </sc-if>
           </div>
           <div style="font-size:15px;color:#8E8E93;margin:8px 8px 0;text-wrap:pretty">Sends a notification only. Nothing fires, so this works with no Pavlok nearby.</div>
         </div>
@@ -1098,6 +1279,23 @@
       <sc-if value="{{ s.toastOn }}" hint-placeholder-val="{{ false }}">
       <div style="position:absolute;left:24px;right:24px;bottom:100px;z-index:35;display:flex;justify-content:center">
         <div style="padding:12px 20px;border-radius:22px;background:rgba(58,58,60,0.95);border:1px solid rgba(255,255,255,0.14);font-size:15px;color:#fff">{{ s.toast }}</div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ sh.confirmOn }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="09 Remote — Confirm before firing" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:0 28px">
+        <div data-action="close" onClick="{{ tap }}" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.62)"></div>
+        <div style="position:relative;width:100%;background:#2C2C2E;border-radius:26px;padding:24px;text-align:center">
+          <sc-if value="{{ s.confirmHigh }}" hint-placeholder-val="{{ true }}">
+          <div style="display:inline-block;padding:4px 10px;border-radius:10px;background:rgba(255,69,58,0.18);border:1px solid rgba(255,69,58,0.5);color:#FF453A;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px">HIGH INTENSITY</div>
+          </sc-if>
+          <div style="font-size:23px;font-weight:700">{{ s.confirmTitle }}</div>
+          <div style="font-size:16px;color:#8E8E93;margin-top:6px;text-wrap:pretty">{{ s.confirmStim }} at {{ s.confirmInt }}% on pavlok-3.</div>
+          <div style="display:flex;gap:10px;margin-top:22px">
+            <div data-action="close" onClick="{{ tap }}" style="flex:1;height:50px;border-radius:25px;background:rgba(118,118,128,0.30);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer">Cancel</div>
+            <div data-action="{{ s.confirmAction }}" onClick="{{ tap }}" style="flex:1;height:50px;border-radius:25px;background:#FF453A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer">Fire</div>
+          </div>
+        </div>
       </div>
       </sc-if>
 
@@ -1361,7 +1559,75 @@
                 <div data-action="step:aliceReps:1" onClick="{{ tap }}" style="width:46px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 6v12M6 12h12"></path></svg></div>
               </div>
             </div>
+            <sc-if value="{{ s.qpIdle }}" hint-placeholder-val="{{ true }}">
             <div data-action="poke:alice" onClick="{{ tap }}" style="height:56px;border-radius:17px;background:#8F7BFF;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:#fff;margin-top:16px;cursor:pointer">Tap to poke Alice</div>
+            </sc-if>
+            <sc-if value="{{ s.qpSending }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="35a Composer — Sending" style="height:56px;border-radius:17px;background:rgba(143,123,255,0.35);display:flex;align-items:center;justify-content:center;gap:12px;font-size:17px;font-weight:600;color:#fff;margin-top:16px">
+              <span style="width:18px;height:18px;border-radius:9px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:jolt-spin 0.9s linear infinite;display:block"></span>
+              <span>Sending…</span>
+            </div>
+            </sc-if>
+            <sc-if value="{{ s.qpError }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="36 Composer — Server error" style="margin-top:16px;background:rgba(255,69,58,0.12);border:1px solid rgba(255,69,58,0.5);border-radius:18px;padding:16px">
+              <div style="font-size:12px;font-weight:600;letter-spacing:1.2px;color:#FF453A">COULDN'T REACH THE SERVER</div>
+              <div style="font-size:16px;color:#C7C7CC;margin-top:6px;text-wrap:pretty">The poke was not sent. Check your connection and try again.</div>
+              <div style="display:flex;gap:10px;margin-top:14px">
+                <div data-action="poke:alice" onClick="{{ tap }}" style="flex:1;height:48px;border-radius:24px;background:#8F7BFF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;cursor:pointer">Retry</div>
+                <div data-action="pokestate:none" onClick="{{ tap }}" style="flex:1;height:48px;border-radius:24px;background:rgba(118,118,128,0.30);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">Dismiss</div>
+              </div>
+            </div>
+            </sc-if>
+            <sc-if value="{{ s.qpNotFound }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="37 Composer — Friend not found" style="margin-top:16px;background:rgba(255,159,10,0.12);border:1px solid rgba(255,159,10,0.5);border-radius:18px;padding:16px">
+              <div style="font-size:12px;font-weight:600;letter-spacing:1.2px;color:#FF9F0A">FRIEND NOT FOUND</div>
+              <div style="font-size:16px;color:#C7C7CC;margin-top:6px;text-wrap:pretty">Alice is no longer on your friends list. Send a new request to poke her again.</div>
+              <div data-action="pokestate:none" onClick="{{ tap }}" style="margin-top:14px;height:48px;border-radius:24px;background:rgba(118,118,128,0.30);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">Close</div>
+            </div>
+            </sc-if>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ sh.pair }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="50 Pair device (sheet)" style="padding:0 16px 40px">
+            <div style="height:88px;display:flex;align-items:center;justify-content:space-between;position:relative">
+              <div data-action="close" onClick="{{ tap }}" style="padding:11px 22px;border-radius:22px;background:rgba(118,118,128,0.24);font-size:19px;cursor:pointer;z-index:2">Not now</div>
+              <div style="position:absolute;left:0;right:0;text-align:center;font-size:19px;font-weight:600">{{ s.pairTitle }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <div style="width:88px;height:88px;border-radius:44px;background:#00E676;display:flex;align-items:center;justify-content:center">
+                <svg viewBox="0 0 24 24" width="44" height="44" fill="#000"><path d="M13.6 2 5 13.4h5.1L9 22l8.7-11.6h-5.2z"></path></svg>
+              </div>
+              <div style="font-size:24px;font-weight:700;margin-top:18px">Find your Pavlok</div>
+              <div style="font-size:17px;color:#8E8E93;text-align:center;margin-top:8px;max-width:330px;text-wrap:pretty">Make sure your device is charged and nearby, then start scanning.</div>
+              <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;justify-content:center">
+                <div data-action="set:family:Pavlok 2" onClick="{{ tap }}" style="padding:11px 14px;border-radius:22px;background:{{ fam.Pavlok2Bg }};border:1px solid {{ fam.Pavlok2Bd }};color:{{ fam.Pavlok2Fg }};font-size:17px;cursor:pointer">Pavlok 2</div>
+                <div data-action="set:family:Pavlok 3" onClick="{{ tap }}" style="padding:11px 14px;border-radius:22px;background:{{ fam.Pavlok3Bg }};border:1px solid {{ fam.Pavlok3Bd }};color:{{ fam.Pavlok3Fg }};font-size:17px;cursor:pointer">Pavlok 3</div>
+                <div data-action="set:family:Shock Clock Max" onClick="{{ tap }}" style="padding:11px 14px;border-radius:22px;background:{{ fam.ShockClockMaxBg }};border:1px solid {{ fam.ShockClockMaxBd }};color:{{ fam.ShockClockMaxFg }};font-size:17px;cursor:pointer">Shock Clock Max</div>
+              </div>
+            </div>
+            <sc-if value="{{ s.scanSpin }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="51 Pairing — Scanning" style="margin-top:34px;display:flex;flex-direction:column;align-items:center;gap:12px">
+              <div style="width:34px;height:34px;border-radius:17px;border:3px solid rgba(255,255,255,0.14);border-top-color:#00E676;animation:jolt-spin 0.9s linear infinite"></div>
+              <div style="font-size:16px;color:#8E8E93">Scanning…</div>
+            </div>
+            </sc-if>
+            <sc-if value="{{ s.scanFound }}" hint-placeholder-val="{{ false }}">
+            <div data-screen-label="52 Pairing — Device found" style="margin-top:28px">
+              <div style="height:1px;background:rgba(255,255,255,0.14)"></div>
+              <div data-action="connect" onClick="{{ tap }}" style="padding:16px 0;display:flex;align-items:center;gap:12px;cursor:pointer">
+                <div style="flex:1">
+                  <div style="font-size:20px;font-weight:600">pavlok-3</div>
+                  <div style="font-size:16px;color:#8E8E93;margin-top:2px">Pavlok 3 · −54 dBm</div>
+                </div>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#636366" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+              </div>
+              <div style="height:1px;background:rgba(255,255,255,0.14)"></div>
+            </div>
+            </sc-if>
+            <div data-action="scan" onClick="{{ tap }}" style="display:flex;justify-content:center;margin-top:36px">
+              <div style="padding:15px 44px;border-radius:28px;background:#00E676;color:#000;font-size:19px;font-weight:500;cursor:pointer">{{ s.scanLabel }}</div>
+            </div>
           </div>
           </sc-if>
 
@@ -1376,14 +1642,21 @@
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;startConnected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;},&quot;signedIn&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;},&quot;quickPokeEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;},&quot;showIndex&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;startConnected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;},&quot;signedIn&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;},&quot;quickPokeEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;},&quot;showIndex&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype state&quot;}}">
 class Component extends DCLogic {
   state = {
     screen: 'remote', tab: 'remote', stack: [], sheet: null,
-    connected: this.props && this.props.startConnected === false ? false : true,
+    link: this.props && this.props.startConnected === false ? 'none' : 'connected',
+    family: 'Pavlok 3', scanFound: false,
+    banner: null, bannerKind: 'err',
+    sInt: { Zap: 20, Vibe: 60, Beep: 60 },
+    fm: { Zap: 'Tap', Vibe: 'Tap', Beep: 'Tap' },
+    confirm: null, holdStim: null, holdPct: 0,
+    notifTest: null, qpSend: null,
+    labLoad: 'ready', listenEvents: false, jacks: 0,
     signedIn: this.props && this.props.signedIn === false ? false : true,
     scanning: false,
-    qpOn: !!(this.props && this.props.quickPokeEnabled),
+    qpOn: this.props && this.props.quickPokeEnabled === false ? false : true,
     editStim: 'Zap', editInt: 20, editReps: 1,
     aliceStim: 'Vibe', aliceInt: 30, aliceReps: 1,
     permZap: false, permVibe: true, permBeep: true,
@@ -1409,6 +1682,53 @@ class Component extends DCLogic {
     this.toastTimer = setTimeout(() => this.setState({ toast: null }), 1600);
   }
 
+  banner(kind, text) {
+    if (this.bannerTimer) clearTimeout(this.bannerTimer);
+    this.setState({ banner: text, bannerKind: kind });
+    if (kind === 'ok') this.bannerTimer = setTimeout(() => this.setState({ banner: null }), 3200);
+  }
+
+  fire(stim, force) {
+    const st = this.state;
+    if (st.link !== 'connected') { this.banner('err', 'No device connected. Pair one to fire.'); return; }
+    const intensity = st.sInt[stim];
+    const mode = st.fm[stim];
+    if (!force) {
+      if (mode === 'Hold') return;
+      if (mode === 'Confirm' || intensity > 70) { this.setState({ confirm: stim }); return; }
+    }
+    this.setState({ confirm: null, holdStim: null, holdPct: 0 });
+    this.banner('ok', stim + ' fired at ' + intensity + '%');
+  }
+
+  holdStart = (e) => {
+    const stim = e.currentTarget.dataset.stim;
+    if (!stim || this.state.fm[stim] !== 'Hold') return;
+    if (this.state.link !== 'connected') { this.banner('err', 'No device connected. Pair one to fire.'); return; }
+    this.setState({ holdStim: stim, holdPct: 0 });
+    if (this.holdTimer) clearInterval(this.holdTimer);
+    this.holdTimer = setInterval(() => {
+      const pct = this.state.holdPct + 8;
+      if (pct >= 100) { clearInterval(this.holdTimer); this.fire(stim, true); }
+      else this.setState({ holdPct: pct });
+    }, 55);
+  };
+
+  holdEnd = () => {
+    if (this.holdTimer) clearInterval(this.holdTimer);
+    if (this.state.holdStim) this.setState({ holdStim: null, holdPct: 0 });
+  };
+
+  sendPoke() {
+    if (this.pokeTimer) clearTimeout(this.pokeTimer);
+    this.setState({ qpSend: 'sending' });
+    this.pokeTimer = setTimeout(() => this.setState({ qpSend: null }, () => this.banner('ok', 'Poke sent to Alice')), 1100);
+  }
+
+  dismissAlarm() {
+    this.setState({ jacks: 0, screen: 'alarms', tab: 'alarms', stack: [] }, () => { this.top(); this.banner('ok', 'Alarm dismissed'); });
+  }
+
   tabRoot(tab) {
     if (tab === 'friends') return this.state.signedIn ? 'friends' : 'friendsAuth';
     return tab;
@@ -1421,6 +1741,7 @@ class Component extends DCLogic {
     const p = raw.split(':');
     const kind = p[0], arg = p[1], arg2 = p[2];
     const st = this.state;
+    if (st.confirm && kind !== 'fire') this.setState({ confirm: null });
     if (kind === 'nav') {
       this.setState({ tab: arg, screen: this.tabRoot(arg), stack: [], sheet: null }, () => this.top());
     } else if (kind === 'push') {
@@ -1435,7 +1756,7 @@ class Component extends DCLogic {
         this.setState({ sheet: 'stim', editStim: arg2, editInt: def, editReps: 1 });
       } else this.setState({ sheet: arg });
     } else if (kind === 'close') {
-      this.setState({ sheet: null });
+      this.setState({ sheet: null, confirm: null });
     } else if (kind === 'goto') {
       this.setState({ tab: arg2 || 'remote', screen: arg, stack: [], sheet: null }, () => this.top());
     } else if (kind === 'sheetfrom') {
@@ -1455,22 +1776,79 @@ class Component extends DCLogic {
       const next = Math.max(lim[0], Math.min(lim[1], st[arg] + d));
       this.setState({ [arg]: next });
     } else if (kind === 'fire') {
-      if (!st.connected) this.flash('No device — pair one to fire');
-      else this.flash(arg + ' sent');
+      this.fire(arg, arg2 === 'force');
+    } else if (kind === 'mode') {
+      const order = ['Tap', 'Hold', 'Confirm'];
+      const fm = Object.assign({}, st.fm);
+      fm[arg] = order[(order.indexOf(fm[arg]) + 1) % 3];
+      this.setState({ fm: fm });
+    } else if (kind === 'savestim') {
+      const sInt = Object.assign({}, st.sInt);
+      sInt[st.editStim] = st.editInt;
+      this.setState({ sInt: sInt, sheet: null });
     } else if (kind === 'poke') {
-      this.flash('Poke sent to Alice');
+      this.sendPoke();
+    } else if (kind === 'pokestate') {
+      this.setState({ qpSend: arg === 'none' ? null : arg, sheet: 'qpComposer', screen: 'remote', tab: 'remote', stack: [] });
+    } else if (kind === 'notiftest') {
+      if (this.notifTimer) clearTimeout(this.notifTimer);
+      this.setState({ notifTest: 'running' });
+      this.notifTimer = setTimeout(() => this.setState({ notifTest: 'ok' }), 1300);
+    } else if (kind === 'lab') {
+      const go = { stack: st.stack.concat([st.screen]), screen: 'protocolLab', sheet: null };
+      if (arg === 'instant') { go.labLoad = 'ready'; this.setState(go, () => this.top()); }
+      else {
+        go.labLoad = 'loading';
+        this.setState(go, () => this.top());
+        if (this.labTimer) clearTimeout(this.labTimer);
+        this.labTimer = setTimeout(() => this.setState({ labLoad: arg }), 1100);
+      }
+    } else if (kind === 'ch') {
+      if (arg === 'jack') {
+        const n = st.jacks + 1;
+        if (n >= 10) this.dismissAlarm(); else this.setState({ jacks: n });
+      } else if (arg === 'wrong') this.banner('err', 'Wrong answer. Try again.');
+      else this.dismissAlarm();
+    } else if (kind === 'banner') {
+      this.banner(arg, arg2);
+    } else if (kind === 'dismissbanner') {
+      this.setState({ banner: null });
     } else if (kind === 'signin') {
       this.setState({ signedIn: true, screen: 'friends', tab: 'friends', stack: [] }, () => this.top());
     } else if (kind === 'signout') {
       this.setState({ signedIn: false, screen: 'friendsAuth', tab: 'friends', stack: [] }, () => this.top());
     } else if (kind === 'scan') {
-      this.setState({ scanning: !st.scanning });
+      const go = !st.scanning;
+      if (this.scanTimer) clearTimeout(this.scanTimer);
+      this.setState({ scanning: go, scanFound: false, banner: null });
+      if (go) this.scanTimer = setTimeout(() => this.setState({ scanFound: true }), 1400);
+    } else if (kind === 'scanfail') {
+      if (this.scanTimer) clearTimeout(this.scanTimer);
+      this.setState({ scanning: false, scanFound: false }, () => this.banner('err', "Couldn't connect to pavlok-3. Move closer and try again."));
     } else if (kind === 'connect') {
-      this.setState({ connected: true, scanning: false, screen: 'remote', tab: 'remote', stack: [] }, () => { this.top(); this.flash('pavlok-3 connected'); });
+      if (this.scanTimer) clearTimeout(this.scanTimer);
+      const first = st.screen === 'firstRun';
+      this.setState({
+        link: 'connected', scanning: false, scanFound: false, sheet: null,
+        screen: first ? 'remote' : st.screen, tab: first ? 'remote' : st.tab, stack: first ? [] : st.stack
+      }, () => { this.top(); this.banner('ok', 'pavlok-3 connected'); });
     } else if (kind === 'disconnect') {
-      this.setState({ connected: false, scanning: false, screen: 'remote', tab: 'remote', stack: [], sheet: null }, () => this.top());
+      this.setState({ link: 'offline', scanning: false, sheet: null, screen: 'remote', tab: 'remote', stack: [] }, () => this.top());
+    } else if (kind === 'forget') {
+      this.setState({ link: 'none', scanning: false, sheet: null, screen: 'remote', tab: 'remote', stack: [] }, () => this.top());
+    } else if (kind === 'link') {
+      const go = { link: arg, scanning: false, sheet: null, screen: 'remote', tab: 'remote', stack: [], banner: null };
+      this.setState(go, () => this.top());
+      if (arg === 'connecting') {
+        if (this.connTimer) clearTimeout(this.connTimer);
+        this.connTimer = setTimeout(() => this.setState({ link: 'failed' }), 2600);
+      }
     } else if (kind === 'pair') {
-      this.setState({ scanning: false, stack: st.stack.concat([st.screen]), screen: 'pair', sheet: null }, () => this.top());
+      this.setState({ sheet: 'pair', scanning: false, scanFound: false });
+    } else if (kind === 'firstrun') {
+      this.setState({ screen: 'firstRun', sheet: null, stack: [], scanning: false, scanFound: false }, () => this.top());
+    } else if (kind === 'skippair') {
+      this.setState({ screen: 'remote', tab: 'remote', stack: [], sheet: null, scanning: false }, () => this.top());
     }
   };
 
@@ -1490,11 +1868,13 @@ class Component extends DCLogic {
 
   renderVals() {
     const st = this.state;
-    const connected = st.connected;
+    const link = st.link;
+    const connected = link === 'connected';
+    const paired = link !== 'none';
     const screen = st.screen;
     const on = '#34C759', off = 'rgba(120,120,128,0.32)';
     const tg = {};
-    ['dnd', 'qpOn', 'ptOn', 'permZap', 'permVibe', 'permBeep', 'fbBanner', 'fbFlash', 'fbHaptic', 'fbSent', 'testFire', 'a0', 'a1'].forEach(k => {
+    ['dnd', 'qpOn', 'ptOn', 'permZap', 'permVibe', 'permBeep', 'fbBanner', 'fbFlash', 'fbHaptic', 'fbSent', 'testFire', 'a0', 'a1', 'listenEvents'].forEach(k => {
       tg[k] = st[k] ? on : off;
       tg[k + 'X'] = st[k] ? '22px' : '2px';
     });
@@ -1505,13 +1885,47 @@ class Component extends DCLogic {
     const tb = {};
     ['remote', 'alarms', 'friends', 'settings'].forEach(n => { const t = tab(n); tb[n + 'Bg'] = t.bg; tb[n + 'Fg'] = t.fg; });
     const sc = {};
-    ['remote', 'pair', 'deviceDetail', 'diagnostics', 'buttonConfig', 'alarms', 'friends', 'friendsAuth', 'activity', 'friendAlice', 'friendBob', 'permissions', 'profile', 'settings', 'qpSettings', 'pokeTrigger', 'firing', 'pokeFeedback', 'notifications', 'pavlokAccount', 'server', 'about'].forEach(n => sc[n] = screen === n);
-    sc.tabs = true;
+    ['remote', 'firstRun', 'deviceDetail', 'diagnostics', 'protocolLab', 'btLog', 'buttonConfig', 'alarms', 'alarmActive', 'chMath', 'chJacks', 'chQR', 'friends', 'friendsAuth', 'activity', 'friendAlice', 'friendBob', 'permissions', 'profile', 'settings', 'qpSettings', 'pokeTrigger', 'firing', 'pokeFeedback', 'notifications', 'pavlokAccount', 'server', 'about'].forEach(n => sc[n] = screen === n);
+    sc.tabs = ['firstRun', 'alarmActive', 'chMath', 'chJacks', 'chQR'].indexOf(screen) < 0;
     sc.conn = connected;
     sc.noconn = !connected;
+    sc.paired = paired;
+    sc.labLoading = st.labLoad === 'loading';
+    sc.labReady = st.labLoad === 'ready';
+    sc.labError = st.labLoad === 'error';
     const sh = {};
-    ['stim', 'customize', 'alarmEdit', 'alarmNew', 'addFriend', 'qpComposer'].forEach(n => sh[n] = st.sheet === n);
+    ['stim', 'customize', 'alarmEdit', 'alarmNew', 'addFriend', 'qpComposer', 'pair'].forEach(n => sh[n] = st.sheet === n);
     sh.any = !!st.sheet;
+    sh.confirmOn = !!st.confirm;
+    const famStyle = {};
+    ['Pavlok 2', 'Pavlok 3', 'Shock Clock Max'].forEach(f => {
+      const k = f.replace(/[^A-Za-z0-9]/g, '');
+      famStyle[k + 'Bg'] = st.family === f ? 'rgba(0,230,118,0.16)' : '#1C1C1E';
+      famStyle[k + 'Fg'] = st.family === f ? '#00E676' : '#8E8E93';
+      famStyle[k + 'Bd'] = st.family === f ? 'rgba(0,230,118,0.45)' : 'rgba(255,255,255,0.12)';
+    });
+    const linkMap = {
+      connected: { label: 'CONNECTED · 82%', title: 'pavlok-3', msg: 'Ready to fire.', accent: '#00E676', btn: 'Pair a different device' },
+      none: { label: 'NO DEVICE', title: 'Not connected', msg: 'Alarms, friends and pokes still work. Firing needs a paired Pavlok.', accent: '#8E8E93', btn: 'Pair a device' },
+      offline: { label: 'NOT CONNECTED · Out of range or switched off', title: 'pavlok-3', msg: 'Still paired. The app keeps trying to reconnect in the background.', accent: '#FF9F0A', btn: 'Pair a different device' },
+      connecting: { label: 'CONNECTING · Looking for your Pavlok', title: 'pavlok-3', msg: 'Keep the device close while it connects.', accent: '#0AD4E8', btn: 'Pair a different device' },
+      failed: { label: 'FAILED · Device did not respond', title: 'pavlok-3', msg: 'Connection dropped mid-handshake. Move closer, then retry.', accent: '#FF453A', btn: 'Pair a different device' }
+    };
+    const lk = linkMap[link] || linkMap.none;
+    const bannerMap = {
+      err: { bg: 'rgba(255,69,58,0.14)', bd: 'rgba(255,69,58,0.55)', fg: '#FF453A' },
+      ok: { bg: 'rgba(0,230,118,0.14)', bd: 'rgba(0,230,118,0.5)', fg: '#00E676' }
+    };
+    const bn = bannerMap[st.bannerKind] || bannerMap.err;
+    const modeHint = { Tap: 'tap to fire', Hold: 'hold to fire', Confirm: 'confirm to fire' };
+    const stimVals = {};
+    ['Zap', 'Vibe', 'Beep'].forEach(k => {
+      stimVals[k + 'Int'] = st.sInt[k];
+      stimVals[k + 'Hint'] = modeHint[st.fm[k]];
+      stimVals[k + 'High'] = st.sInt[k] > 70;
+      stimVals[k + 'Mode'] = st.fm[k];
+      stimVals[k + 'Ring'] = st.holdStim === k ? 'conic-gradient(#00E676 ' + (st.holdPct * 3.6) + 'deg, rgba(0,230,118,0.12) 0deg)' : 'rgba(0,230,118,0.10)';
+    });
     const stimColor = { Zap: '#FF9F0A', Vibe: '#5E5CE6', Beep: '#0AD4E8' }[st.editStim];
     const dayStyle = {};
     ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(d => {
@@ -1528,16 +1942,26 @@ class Component extends DCLogic {
     ['Zap', 'Vibe', 'Beep'].forEach(k => { const c = chip(k); chips[k + 'Bg'] = c.bg; chips[k + 'Bd'] = c.bd; chips[k + 'Fg'] = c.fg; });
 
     const index = [
+      ['00', 'First run — Find your Pavlok', 'firstrun'],
       ['01', 'Remote — Dashboard', 'nav:remote'],
-      ['01b', 'Remote — No device', 'disconnect'],
+      ['01b', 'Remote — No device paired', 'forget'],
+      ['01c', 'Remote — Paired, out of range', 'link:offline'],
+      ['01d', 'Remote — Connecting → failed', 'link:connecting'],
       ['02', 'Stimulus editor (sheet)', 'sheetfrom:stim:remote'],
       ['03', 'Customize home (sheet)', 'sheetfrom:customize:remote'],
       ['04', 'Device detail', 'goto:deviceDetail:remote'],
       ['05', 'Diagnostics', 'goto:diagnostics:remote'],
       ['06', 'Button configuration', 'goto:buttonConfig:remote'],
+      ['07', 'Protocol lab', 'lab:instant'],
+      ['07b', 'Protocol lab — read failed', 'lab:error'],
+      ['08', 'Bluetooth log', 'goto:btLog:remote'],
       ['10', 'Alarms — List', 'nav:alarms'],
       ['11', 'Alarm — Edit existing', 'sheetfrom:alarmEdit:alarms'],
       ['13', 'Alarm — New', 'sheetfrom:alarmNew:alarms'],
+      ['14', 'Alarm — Ringing', 'goto:alarmActive:alarms'],
+      ['15', 'Challenge — Math puzzle', 'goto:chMath:alarms'],
+      ['16', 'Challenge — Jumping jacks', 'goto:chJacks:alarms'],
+      ['17', 'Challenge — QR scan', 'goto:chQR:alarms'],
       ['20', 'Friends — Signed out', 'signout'],
       ['22', 'Friends — List', 'signin'],
       ['23', 'Add friend (sheet)', 'sheetfrom:addFriend:friends'],
@@ -1549,6 +1973,8 @@ class Component extends DCLogic {
       ['30', 'Settings — Quick poke', 'goto:qpSettings:settings'],
       ['32', 'Settings — Poke trigger', 'goto:pokeTrigger:settings'],
       ['35', 'Quick poke composer', 'sheetfrom:qpComposer:remote'],
+      ['36', 'Composer — Server error', 'pokestate:error'],
+      ['37', 'Composer — Friend not found', 'pokestate:notfound'],
       ['40', 'Settings', 'nav:settings'],
       ['42', 'Settings — Firing', 'goto:firing:settings'],
       ['43', 'Settings — Poke feedback', 'goto:pokeFeedback:settings'],
@@ -1556,7 +1982,8 @@ class Component extends DCLogic {
       ['45', 'Settings — Pavlok account', 'goto:pavlokAccount:settings'],
       ['46', 'Settings — Server', 'goto:server:settings'],
       ['47', 'Settings — About', 'goto:about:settings'],
-      ['50', 'Pair device', 'pair']
+      ['50', 'Pair device (sheet)', 'pair'],
+      ['50b', 'Pairing — Connect failed', 'scanfail']
     ].map(r => ({ n: r[0], t: r[1], a: r[2] }));
 
     const buttonActions = ['Find my phone', 'Stopwatch', 'Timer', 'Zap', 'Beep', 'Vibrate', 'Toggle candle', 'Next tune', 'Airplane mode', 'Do not disturb', 'Toggle sleep tracking', 'Off']
@@ -1596,16 +2023,43 @@ class Component extends DCLogic {
     return {
       showIndex: !(this.props && this.props.showIndex === false),
       tap: this.tap, slide: this.slide, scrollRef: this.scrollRef,
+      holdStart: this.holdStart, holdEnd: this.holdEnd, fam: famStyle,
       index: index, buttonActions: buttonActions, qr: qr, widgets: widgets,
       sc: sc, sh: sh, tb: tb, tg: tg, day: dayStyle, chips: chips,
       s: {
         qpOn: st.qpOn, ptOn: st.ptOn, scanning: st.scanning,
         fireOpacity: connected ? 1 : 0.4,
-        pairTitle: connected ? 'Pair a different device' : 'Pair device',
-        deviceFooter: connected
+        pairTitle: paired ? 'Pair a different device' : 'Pair device',
+        deviceFooter: paired
           ? 'Disconnect keeps this device paired — the app reconnects to it automatically next time. Forget removes the pairing entirely. Pairing a different device replaces the current one.'
           : 'No device is paired. Alarms, friends and pokes work without one; firing needs a paired Pavlok.',
+        deviceRowLabel: connected ? 'Connected' : (paired ? 'Device' : 'Device'),
+        deviceRowValue: connected ? 'pavlok-3' : (paired ? 'Not connected' : 'None paired'),
+        linkLabel: lk.label, linkTitle: lk.title, linkMsg: lk.msg, linkAccent: lk.accent, linkBtn: lk.btn,
+        linkDot: lk.accent, linkBtnBg: link === 'none' ? '#00E676' : 'rgba(255,255,255,0.10)',
+        linkBtnFg: link === 'none' ? '#000' : '#fff',
+        detailLabel: lk.label, detailAccent: lk.accent,
+        detailTint: connected ? 'rgba(0,230,118,0.10)' : 'rgba(255,255,255,0.05)',
+        detailBd: connected ? 'rgba(0,230,118,0.33)' : 'rgba(255,255,255,0.14)',
+        banner: st.banner, bannerOn: !!st.banner,
+        bannerBg: bn.bg, bannerBd: bn.bd, bannerFg: bn.fg,
+        scanFound: st.scanFound,
+        scanSpin: st.scanning && !st.scanFound,
         scanLabel: st.scanning ? 'Stop scanning' : 'Start scanning',
+        zapInt: stimVals.ZapInt, vibeInt: stimVals.VibeInt, beepInt: stimVals.BeepInt,
+        zapHint: stimVals.ZapHint, vibeHint: stimVals.VibeHint, beepHint: stimVals.BeepHint,
+        zapHigh: stimVals.ZapHigh, vibeHigh: stimVals.VibeHigh, beepHigh: stimVals.BeepHigh,
+        zapMode: stimVals.ZapMode, vibeMode: stimVals.VibeMode, beepMode: stimVals.BeepMode,
+        zapRing: stimVals.ZapRing, vibeRing: stimVals.VibeRing, beepRing: stimVals.BeepRing,
+        confirmStim: st.confirm, confirmInt: st.confirm ? st.sInt[st.confirm] : 0,
+        confirmAction: st.confirm ? 'fire:' + st.confirm + ':force' : 'close',
+        confirmHigh: st.confirm ? st.sInt[st.confirm] > 70 : false,
+        confirmTitle: st.confirm ? 'Fire ' + st.confirm + '?' : '',
+        notifIdle: !st.notifTest, notifRunning: st.notifTest === 'running', notifOk: st.notifTest === 'ok',
+        qpSending: st.qpSend === 'sending', qpError: st.qpSend === 'error', qpNotFound: st.qpSend === 'notfound',
+        qpIdle: !st.qpSend,
+        jacks: st.jacks, jacksLabel: st.jacks + ' / 10', jacksW: (st.jacks * 10) + '%',
+        family: st.family,
         toast: st.toast, toastOn: !!st.toast,
         editStim: st.editStim, editTitle: st.editStim + ' settings',
         editInt: st.editInt, editIntLabel: st.editInt + '%', editIntW: st.editInt + '%',

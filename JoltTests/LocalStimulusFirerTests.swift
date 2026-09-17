@@ -55,6 +55,8 @@ private final class CountingDeviceRepository: DeviceRepository {
     var connectionState: AsyncStream<DeviceConnectionState> { AsyncStream { $0.finish() } }
     var connectedDevice: AsyncStream<PavlokDevice?> { AsyncStream { $0.finish() } }
     let hasPairedDevice = true
+    let pairedDeviceName: String? = "Stub"
+    func reconnect() async {}
 
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice> { AsyncStream { $0.finish() } }
     func stopScan() {}
@@ -77,7 +79,7 @@ private final class CountingDeviceRepository: DeviceRepository {
     func saveStimulusConfig(_ config: StimulusConfig) async -> StimulusSyncState { .localOnly(reason: "unused") }
 
     func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump] { [] }
-    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {}
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode) async throws {}
     @discardableResult
     func startListeningForDeviceEvents() async throws -> Int { 0 }
     func stopListeningForDeviceEvents() {}

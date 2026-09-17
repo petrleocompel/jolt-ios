@@ -27,18 +27,23 @@ struct PavlokDevice: Identifiable, Codable, Equatable {
     var family: DeviceFamily
     var info: DeviceInfo
     var lastConnectedAt: Date?
+    /// Signal strength when found by a scan, in dBm. `nil` for devices that
+    /// came from anywhere else (already connected, restored, persisted).
+    var rssi: Int?
 
     init(
         peripheralIdentifier: UUID,
         name: String,
         family: DeviceFamily,
         info: DeviceInfo = DeviceInfo(),
-        lastConnectedAt: Date? = nil
+        lastConnectedAt: Date? = nil,
+        rssi: Int? = nil
     ) {
         self.peripheralIdentifier = peripheralIdentifier
         self.name = name
         self.family = family
         self.info = info
         self.lastConnectedAt = lastConnectedAt
+        self.rssi = rssi
     }
 }

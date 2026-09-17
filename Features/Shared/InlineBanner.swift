@@ -8,6 +8,12 @@ import SwiftUI
 /// when another screen is pushed on top (UIKit refuses with "view is not in
 /// the window hierarchy"), which silently swallowed errors, and they're
 /// unusable for an action the user repeats.
+///
+/// Pinned to the bottom edge (a safe-area inset) rather than the top, where
+/// the design draws it: an inset never moves content under a finger that is
+/// about to tap Fire again, it stays visible inside sheets, and it sits next
+/// to the controls that produced it. The look — tinted card, thin border,
+/// × — is the design's.
 struct InlineBanner: View {
     enum Style {
         case error
@@ -23,29 +29,53 @@ struct InlineBanner: View {
         var tint: Color {
             switch self {
             case .error: return .red
-            case .success: return .secondary
+            case .success: return .accentColor
             }
         }
     }
 
     let text: String
     var style: Style = .error
+    /// Shows a × when set. Errors stay until dismissed; success messages
+    /// clear themselves, so callers usually leave this `nil` for them.
+    var onDismiss: (() -> Void)?
 
     var body: some View {
-        Label {
-            Text(text).foregroundStyle(.primary)
-        } icon: {
-            Image(systemName: style.systemImage).foregroundStyle(style.tint)
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: style.systemImage)
+                .foregroundStyle(style.tint)
+                .accessibilityHidden(true)
+            Text(text)
+                .foregroundStyle(style.tint)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(.primary.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss")
+            }
         }
-        .font(.subheadline)
+        .font(.subheadline.weight(.medium))
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(.regularMaterial, in: Capsule())
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(style.tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(style.tint.opacity(0.5), lineWidth: 1)
+        )
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         // Announced, not just drawn: for an error this may be the only
         // indication the action failed.
+        .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.updatesFrequently)
     }
 }
@@ -55,10 +85,8 @@ extension View {
     func errorBanner(_ message: String?, onDismiss: @escaping () -> Void) -> some View {
         safeAreaInset(edge: .bottom) {
             if let message {
-                InlineBanner(text: message, style: .error)
-                    .onTapGesture(perform: onDismiss)
+                InlineBanner(text: message, style: .error, onDismiss: onDismiss)
                     .accessibilityIdentifier("errorFeedback")
-                    .accessibilityHint("Tap to dismiss")
             }
         }
         .animation(.snappy, value: message)

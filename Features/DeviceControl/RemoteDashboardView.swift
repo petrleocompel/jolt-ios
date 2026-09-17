@@ -32,7 +32,9 @@ struct RemoteDashboardView: View {
                     device: viewModel.connectedDevice,
                     connectionState: viewModel.connectionState,
                     hasPairedDevice: viewModel.hasPairedDevice,
-                    onPairDevice: { isShowingPairSheet = true }
+                    pairedDeviceName: viewModel.pairedDeviceName,
+                    onPairDevice: { isShowingPairSheet = true },
+                    onTryAgain: { viewModel.reconnect() }
                 )
 
                 ForEach(layout.visible) { kind in
@@ -44,7 +46,6 @@ struct RemoteDashboardView: View {
             .padding(16)
         }
         .background(RemoteTheme.background.ignoresSafeArea())
-        .preferredColorScheme(.dark)
         .navigationTitle("Remote")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("remoteControlScreen")
@@ -80,23 +81,31 @@ struct RemoteDashboardView: View {
             )
         }
         .sheet(item: $editingStimulus) { kind in
+            // Sheets from the always-dark Remote tab inherit its dark
+            // environment but not its presentation, so each one asks for
+            // dark itself — scoped to that sheet, it doesn't reach the window.
             StimulusIntensityEditorSheet(kind: kind, config: viewModel.stimulusSettings[kind]) { updated in
                 viewModel.saveStimulusConfig(updated)
             }
+            .preferredColorScheme(.dark)
         }
         .sheet(item: $editingAlarm) { alarm in
             AlarmEditView(alarm: alarm) { updated in
                 Task { await alarmsViewModel?.save(updated) }
             }
+            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $isShowingPairSheet) {
             PairDeviceSheet(viewModel: viewModel)
+                .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $isShowingQuickPokeComposer) {
             QuickPokeComposerSheet(
                 targetFriendID: dependencies.quickPokeService.settings.targetFriendID,
+                targetFriendName: dependencies.quickPokeService.settings.targetFriendName,
                 onClose: { isShowingQuickPokeComposer = false }
             )
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -109,9 +118,11 @@ struct RemoteDashboardView: View {
                     kind: stimulusKind,
                     config: viewModel.stimulusSettings[stimulusKind],
                     isEnabled: isConnected,
+                    deviceName: viewModel.connectedDevice?.name,
                     firingMode: firingModes[stimulusKind],
                     onEdit: { editingStimulus = stimulusKind },
-                    onFire: { viewModel.fire(viewModel.stimulusSettings[stimulusKind]) }
+                    onFire: { viewModel.fire(viewModel.stimulusSettings[stimulusKind]) },
+                    onUnavailable: { viewModel.fire(viewModel.stimulusSettings[stimulusKind]) }
                 )
                 // Dimmed, not hidden: the saved intensity stays visible and
                 // editable, it just can't fire until a device is back.
@@ -191,15 +202,11 @@ struct RemoteDashboardView: View {
     @ViewBuilder
     private var actionFeedback: some View {
         if let error = viewModel.lastError {
-            InlineBanner(text: error, style: .error)
-                .onTapGesture { viewModel.lastError = nil }
+            InlineBanner(text: error, style: .error) { viewModel.lastError = nil }
                 .accessibilityIdentifier("errorFeedback")
-                .accessibilityHint("Tap to dismiss")
         } else if let error = dependencies.quickPokeService.lastError {
-            InlineBanner(text: error, style: .error)
-                .onTapGesture { dependencies.quickPokeService.lastError = nil }
+            InlineBanner(text: error, style: .error) { dependencies.quickPokeService.lastError = nil }
                 .accessibilityIdentifier("errorFeedback")
-                .accessibilityHint("Tap to dismiss")
         } else if let message = viewModel.lastActionMessage {
             InlineBanner(text: message, style: .success)
                 .accessibilityIdentifier("actionFeedback")
@@ -222,6 +229,7 @@ struct RemoteDashboardView: View {
 /// friend present and the server healthy.
 private struct QuickPokeComposerSheet: View {
     let targetFriendID: Friend.ID?
+    let targetFriendName: String?
     let onClose: () -> Void
 
     @Environment(AppDependencies.self) private var dependencies
@@ -256,7 +264,7 @@ private struct QuickPokeComposerSheet: View {
         } else if friendsViewModel?.hasLoadedFriends != true {
             // Still loading: an empty/unresolved list here does not yet mean
             // the friend is missing.
-            QuickPokeLoadingState(friendsViewModel: friendsViewModel)
+            QuickPokeLoadingState(friendsViewModel: friendsViewModel, onClose: onClose)
         } else {
             notFound
         }
@@ -293,15 +301,24 @@ private struct QuickPokeComposerSheet: View {
     }
 
     /// The saved target ID genuinely matches nobody in the current friends
-    /// list — e.g. it was configured against a different account. Re-picking
-    /// in Quick Poke settings writes a fresh, valid ID.
+    /// list — e.g. they removed you, or it was configured against a different
+    /// account. Re-picking in Quick Poke settings writes a fresh, valid ID.
     private var notFound: some View {
-        NavigationStack {
-            ContentUnavailableView(
-                "Friend not found",
-                systemImage: "person.slash",
-                description: Text("Open Settings → Quick Poke and pick the friend again.")
-            )
+        let name = targetFriendName ?? "This friend"
+        return NavigationStack {
+            ScrollView {
+                StatusCard(
+                    tint: .orange,
+                    eyebrow: "FRIEND NOT FOUND",
+                    message: "\(name) is no longer on your friends list. Send a new request, "
+                        + "or pick someone else in Settings → Quick poke."
+                ) {
+                    StatusCardButton(title: "Close", action: onClose)
+                }
+                .padding()
+            }
+            .navigationTitle(targetFriendName.map { "Poke \($0)" } ?? "Quick poke")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close", action: onClose)
@@ -319,23 +336,26 @@ private struct QuickPokeComposerSheet: View {
 /// instead of leaving the sheet stuck.
 private struct QuickPokeLoadingState: View {
     let friendsViewModel: FriendsViewModel?
+    let onClose: () -> Void
 
     @State private var timedOut = false
 
     var body: some View {
         if timedOut {
-            VStack(spacing: 12) {
-                Image(systemName: "wifi.slash")
-                    .font(.largeTitle)
-                    .foregroundStyle(.secondary)
-                Text("Couldn't reach the server")
-                    .font(.headline)
-                Button("Retry") {
-                    timedOut = false
-                    Task { await friendsViewModel?.refresh() }
+            StatusCard(
+                tint: .red,
+                eyebrow: "COULDN'T REACH THE SERVER",
+                message: "Your friends list didn't load, so nothing can be sent yet. Check your connection and try again."
+            ) {
+                HStack(spacing: 10) {
+                    StatusCardButton(title: "Retry", fill: RemoteTheme.violet, ink: .white) {
+                        timedOut = false
+                        Task { await friendsViewModel?.refresh() }
+                    }
+                    StatusCardButton(title: "Close", action: onClose)
                 }
-                .buttonStyle(.borderedProminent)
             }
+            .padding()
         } else {
             ProgressView()
                 .accessibilityIdentifier("quickPokeComposerLoading")

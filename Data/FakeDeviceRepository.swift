@@ -21,7 +21,8 @@ final class FakeDeviceRepository: DeviceRepository {
             manufacturer: "Pavlok Inc.",
             batteryLevelPercent: 82
         ),
-        lastConnectedAt: .now
+        lastConnectedAt: .now,
+        rssi: -54
     )
 
     // Multi-consumer (device UI + poke trigger), seeded so every subscriber —
@@ -31,15 +32,31 @@ final class FakeDeviceRepository: DeviceRepository {
 
     private(set) var hasPairedDevice: Bool
 
+    var pairedDeviceName: String? { hasPairedDevice ? fakeDevice.name : nil }
+
+    func reconnect() async {
+        guard hasPairedDevice else { return }
+        connectionStateHub.yield(.connected)
+        connectedDeviceHub.yield(fakeDevice)
+    }
+
     /// - Parameter startsPaired: pass `false` (see
     ///   `AppEnvironment.startsWithoutDevice`) for a launch that has never
     ///   paired a wearable — the state a new user is in before, or instead
     ///   of, buying one. Lets the device-free path be exercised hermetically
     ///   rather than only on hardware.
-    init(startsPaired: Bool = true) {
+    /// - Parameter unreachableState: with `startsPaired`, start paired but
+    ///   *not* connected, in this state (`.disconnected` = out of range,
+    ///   `.connecting`, `.failed`) — see `AppEnvironment.fakeDeviceLinkState`.
+    init(startsPaired: Bool = true, unreachableState: DeviceConnectionState? = nil) {
         self.hasPairedDevice = startsPaired
-        connectionStateHub.yield(startsPaired ? .connected : .disconnected)
-        connectedDeviceHub.yield(startsPaired ? fakeDevice : nil)
+        if startsPaired, let unreachableState {
+            connectionStateHub.yield(unreachableState)
+            connectedDeviceHub.yield(nil)
+        } else {
+            connectionStateHub.yield(startsPaired ? .connected : .disconnected)
+            connectedDeviceHub.yield(startsPaired ? fakeDevice : nil)
+        }
     }
 
     var connectionState: AsyncStream<DeviceConnectionState> { connectionStateHub.stream() }
@@ -100,7 +117,15 @@ final class FakeDeviceRepository: DeviceRepository {
         ]
     }
 
-    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {}
+    /// Every raw write, in order, so tests can assert what the Protocol lab
+    /// actually asked for — including the write type, which is otherwise
+    /// invisible without hardware.
+    private(set) var rawWrites: [(data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode)] = []
+
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode) async throws {
+        guard hasPairedDevice else { throw FakeDeviceError.notConnected }
+        rawWrites.append((data, characteristicUUID, serviceUUID, mode))
+    }
 
     @discardableResult
     func startListeningForDeviceEvents() async throws -> Int { 0 }

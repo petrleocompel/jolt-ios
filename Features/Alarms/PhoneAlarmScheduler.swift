@@ -19,14 +19,7 @@ struct PhoneAlarmScheduler {
         try await cancel(alarm.id)
         guard alarm.isEnabled else { return }
 
-        let content = UNMutableNotificationContent()
-        content.title = alarm.label.isEmpty ? "Jolt Alarm" : alarm.label
-        content.body = alarm.dismissChallenge == .none
-            ? "Tap to dismiss."
-            : "Complete: \(alarm.dismissChallenge.displayName)"
-        content.sound = .defaultCritical
-        content.userInfo = ["alarmID": alarm.id.uuidString]
-
+        let content = Self.makeContent(for: alarm)
         let triggers = makeTriggers(for: alarm)
         for (index, trigger) in triggers.enumerated() {
             let request = UNNotificationRequest(
@@ -38,12 +31,58 @@ struct PhoneAlarmScheduler {
         }
     }
 
+    /// Rings `alarm` once more `snoozeInterval` from `now`, as a one-off
+    /// notification carrying the same content (and so the same `alarmID`),
+    /// so tapping it reopens the ringing screen for the same alarm.
+    func snooze(_ alarm: Alarm, now: Date = Date()) async throws {
+        try await center.add(Self.makeSnoozeRequest(for: alarm, now: now))
+    }
+
     func cancel(_ alarmID: Alarm.ID) async throws {
         let pending = await center.pendingNotificationRequests()
         let identifiers = pending
             .map(\.identifier)
             .filter { $0.hasPrefix(alarmID.uuidString) }
         center.removePendingNotificationRequests(withIdentifiers: identifiers)
+    }
+
+    /// The design's "Snooze 9 min" — the classic iOS/Android snooze length.
+    static let snoozeInterval: TimeInterval = 9 * 60
+
+    /// Built without touching `UNUserNotificationCenter`, so the snooze
+    /// schedule is unit-testable. The identifier keeps the `alarmID` prefix
+    /// `cancel(_:)` matches on: deleting, disabling or re-saving the alarm
+    /// also drops a pending snooze instead of leaving it to ring an alarm
+    /// that no longer exists.
+    static func makeSnoozeRequest(for alarm: Alarm, now: Date = Date()) -> UNNotificationRequest {
+        let fireDate = snoozeFireDate(from: now)
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: max(1, fireDate.timeIntervalSince(now)),
+            repeats: false
+        )
+        return UNNotificationRequest(
+            identifier: "\(alarm.id.uuidString)#snooze",
+            content: makeContent(for: alarm),
+            trigger: trigger
+        )
+    }
+
+    static func snoozeFireDate(from now: Date) -> Date {
+        now.addingTimeInterval(snoozeInterval)
+    }
+
+    /// Shared by scheduled and snoozed notifications. `alarmID` in
+    /// `userInfo` is what `AppNotificationDelegate` keys the full-screen
+    /// ringing flow off.
+    static func makeContent(for alarm: Alarm) -> UNNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = alarm.label.isEmpty ? "Jolt Alarm" : alarm.label
+        content.body = alarm.dismissChallenge == .none
+            ? "Tap to dismiss."
+            : "Complete: \(alarm.dismissChallenge.displayName)"
+        content.sound = .defaultCritical
+        content.userInfo = ["alarmID": alarm.id.uuidString]
+        return content
     }
 
     private func makeTriggers(for alarm: Alarm) -> [UNCalendarNotificationTrigger] {

@@ -19,6 +19,10 @@ struct Alarm: Identifiable, Codable, Equatable {
     var label: String
     var stimulus: StimulusConfig
     var dismissChallenge: DismissChallenge
+    /// Payload of the QR code the user scanned when setting up the alarm.
+    /// Optional so alarms saved before this existed (and their persisted
+    /// JSON / SwiftData rows) still load — those keep accepting any code.
+    var dismissQRCode: String?
 
     init(
         id: UUID = UUID(),
@@ -29,7 +33,8 @@ struct Alarm: Identifiable, Codable, Equatable {
         isEnabled: Bool = true,
         label: String = "",
         stimulus: StimulusConfig = StimulusConfig(kind: .beep),
-        dismissChallenge: DismissChallenge = .none
+        dismissChallenge: DismissChallenge = .none,
+        dismissQRCode: String? = nil
     ) {
         self.id = id
         self.location = location
@@ -40,6 +45,19 @@ struct Alarm: Identifiable, Codable, Equatable {
         self.label = label
         self.stimulus = stimulus
         self.dismissChallenge = dismissChallenge
+        self.dismissQRCode = dismissQRCode
+    }
+}
+
+extension Alarm {
+    /// Whether a scanned QR payload may dismiss this alarm. With a saved code
+    /// only that exact code counts — otherwise any QR code on the bedside
+    /// table would do. Alarms without one (created before codes were saved)
+    /// keep the original accept-anything behaviour rather than becoming
+    /// impossible to dismiss.
+    func acceptsDismissCode(_ scanned: String) -> Bool {
+        guard let dismissQRCode else { return true }
+        return scanned == dismissQRCode
     }
 }
 

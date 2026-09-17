@@ -8,7 +8,10 @@ struct DeviceHeroCard: View {
     /// Whether a wearable has ever been paired — decides between "pair one"
     /// and "we're working on getting yours back".
     let hasPairedDevice: Bool
+    /// Known even while the device is unreachable.
+    let pairedDeviceName: String?
     let onPairDevice: () -> Void
+    let onTryAgain: () -> Void
 
     private var isConnected: Bool { connectionState == .connected }
 
@@ -59,7 +62,8 @@ struct DeviceHeroCard: View {
     /// Firing a stimulus is the *only* thing a missing device costs you —
     /// pokes to friends, alarms and settings all carry on — so this says so
     /// rather than reading as a dead end, and makes the way out the card's
-    /// primary action.
+    /// primary action. A device that *is* paired but unreachable gets named
+    /// and gets "Try again" first: replacing it is rarely what you want.
     ///
     /// No `accessibilityIdentifier`s in here: the card-level `deviceStatusRow`
     /// identifier propagates down and overrides anything set on children, so
@@ -76,20 +80,35 @@ struct DeviceHeroCard: View {
                 .foregroundStyle(.white.opacity(0.55))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button(action: onPairDevice) {
-                Text(hasPairedDevice ? "Pair a different device" : "Pair a device")
-                    .font(.headline)
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background(Capsule().fill(Color.accentColor))
+            Group {
+                if link == .none {
+                    heroButton("Pair a device", prominent: true, action: onPairDevice)
+                } else {
+                    HStack(spacing: 10) {
+                        heroButton("Try again", prominent: true, action: onTryAgain)
+                        heroButton("Pair a different device", prominent: false, action: onPairDevice)
+                    }
+                }
             }
-            .buttonStyle(.plain)
             .padding(.top, 12)
         }
     }
 
+    private func heroButton(_ title: String, prominent: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(prominent ? .black : .white)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(Capsule().fill(prominent ? Color.accentColor : .white.opacity(0.10)))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var statusBadge: some View {
-        HStack(spacing: 7) {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
             Circle().fill(statusTint).frame(width: 7, height: 7)
             Text(statusLabel)
                 .font(.caption2.weight(.semibold))
@@ -98,46 +117,58 @@ struct DeviceHeroCard: View {
         }
     }
 
-    private var title: String {
+    /// The five things the card can be saying, collapsed from the connection
+    /// state plus whether anything is paired.
+    private enum Link: Equatable {
+        case connected, none, offline, connecting, failed(String)
+    }
+
+    private var link: Link {
         switch connectionState {
+        case .connected: return .connected
+        case .connecting: return .connecting
+        // A scan from the pair sheet isn't a reconnect attempt; with nothing
+        // paired it's still "no device".
+        case .scanning: return hasPairedDevice ? .connecting : .none
+        case .disconnected: return hasPairedDevice ? .offline : .none
+        case .failed(let reason): return .failed(reason)
+        }
+    }
+
+    private var title: String {
+        switch link {
         case .connected: return device?.name ?? "Connected"
-        case .connecting: return "Connecting…"
-        case .scanning: return "Scanning…"
-        case .disconnected: return "Not connected"
-        case .failed: return "Connection failed"
+        case .none: return "Not connected"
+        case .offline, .connecting, .failed: return pairedDeviceName ?? "Not connected"
         }
     }
 
     private var disconnectedMessage: String {
-        let stillWorks = "Alarms, friends and pokes still work."
-        switch connectionState {
-        case .disconnected where !hasPairedDevice:
-            return "\(stillWorks) Firing needs a paired Pavlok."
-        case .disconnected:
-            return "Out of range or switched off. \(stillWorks)"
-        case .connecting, .scanning:
-            return "Looking for your Pavlok. \(stillWorks)"
-        case .failed(let reason):
-            return "\(reason) \(stillWorks)"
-        case .connected:
-            return stillWorks
+        switch link {
+        case .connected: return "Ready to fire."
+        case .none: return "Alarms, friends and pokes still work. Firing needs a paired Pavlok."
+        case .offline: return "Still paired. The app keeps trying to reconnect in the background."
+        case .connecting: return "Keep the device close while it connects."
+        case .failed: return "The connection didn't go through. Move closer, then try again."
         }
     }
 
     private var statusLabel: String {
-        switch connectionState {
+        switch link {
         case .connected: return "CONNECTED"
-        case .connecting: return "CONNECTING"
-        case .scanning: return "SCANNING"
-        case .disconnected: return hasPairedDevice ? "NOT CONNECTED" : "NO DEVICE"
-        case .failed: return "FAILED"
+        case .none: return "NO DEVICE"
+        case .offline: return "NOT CONNECTED · Out of range or switched off"
+        case .connecting: return "CONNECTING · Looking for your Pavlok"
+        case .failed(let reason): return "FAILED · \(reason)"
         }
     }
 
     private var statusTint: Color {
-        switch connectionState {
-        case .connected, .connecting, .scanning: return .accentColor
-        case .disconnected: return .white.opacity(0.5)
+        switch link {
+        case .connected: return .accentColor
+        case .none: return .white.opacity(0.5)
+        case .offline: return .orange
+        case .connecting: return .cyan
         case .failed: return .red
         }
     }
@@ -177,9 +208,12 @@ struct StimulusRow: View {
     let kind: StimulusKind
     let config: StimulusConfig
     let isEnabled: Bool
+    let deviceName: String?
     let firingMode: FiringInteractionMode
     let onEdit: () -> Void
     let onFire: () -> Void
+    /// A tap while `isEnabled` is false — explains that there's no device.
+    let onUnavailable: () -> Void
 
     var body: some View {
         HStack(spacing: 16) {
@@ -222,7 +256,10 @@ struct StimulusRow: View {
             FireControl(
                 mode: firingMode,
                 isEnabled: isEnabled,
-                confirmTitle: "Send \(kind.displayName) at \(config.intensity)%?",
+                confirmTitle: "Fire \(kind.displayName)?",
+                confirmMessage: "\(kind.displayName) at \(config.intensity)%\(deviceName.map { " on \($0)" } ?? "").",
+                confirmActionTitle: "Fire",
+                onUnavailable: onUnavailable,
                 highIntensityPercent: config.intensity,
                 onFire: onFire,
                 label: { state in
@@ -233,7 +270,7 @@ struct StimulusRow: View {
             .accessibilityLabel("\(kind.displayName), \(config.intensity) percent")
             .accessibilityHint(isEnabled
                 ? "Fires a \(kind.displayName.lowercased())"
-                : "Unavailable while no device is connected")
+                : "No device connected — pair one to fire")
         }
         .remoteCard(.stimulus)
     }

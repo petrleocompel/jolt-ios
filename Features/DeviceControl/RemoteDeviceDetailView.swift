@@ -70,21 +70,33 @@ struct RemoteDeviceDetailView: View {
                 }
             }
 
-            Section {
-                Button(role: .destructive) {
-                    viewModel.disconnect()
-                } label: {
-                    Text("Disconnect").frame(maxWidth: .infinity)
+            if isConnected {
+                Section {
+                    Button(role: .destructive) {
+                        viewModel.disconnect()
+                    } label: {
+                        Label("Disconnect", systemImage: "xmark.circle")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, minHeight: 54)
+                            .background(Color.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .strokeBorder(Color.red.opacity(0.5))
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("disconnectButton")
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
                 }
-                .disabled(!isConnected)
-                .accessibilityIdentifier("disconnectButton")
             }
         }
-        .navigationTitle(device?.name ?? "Device")
+        .navigationTitle(device?.name ?? viewModel.pairedDeviceName ?? "Device")
         .navigationBarTitleDisplayMode(.inline)
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $isShowingPairSheet) {
             PairDeviceSheet(viewModel: viewModel)
+                .preferredColorScheme(.dark)
         }
         .task { await load() }
     }
@@ -92,19 +104,20 @@ struct RemoteDeviceDetailView: View {
     private var heroCard: some View {
         VStack(spacing: 12) {
             ZStack {
-                Circle().fill(Color.accentColor.opacity(0.16))
-                Image(systemName: "bolt.fill").font(.system(size: 36)).foregroundStyle(Color.accentColor)
+                Circle().fill(statusTint.opacity(0.16))
+                Image(systemName: "bolt.fill").font(.system(size: 36)).foregroundStyle(statusTint)
             }
             .frame(width: 84, height: 84)
 
             VStack(spacing: 6) {
-                Text(device?.name ?? "No device")
+                Text(device?.name ?? viewModel.pairedDeviceName ?? "No device")
                     .font(.remoteNumeral(26, weight: .bold))
                     .foregroundStyle(.white)
                 Text(statusLine)
                     .font(.subheadline.weight(.semibold))
                     .tracking(1.2)
-                    .foregroundStyle(isConnected ? Color.accentColor : .white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(statusTint)
             }
         }
         .frame(maxWidth: .infinity)
@@ -114,8 +127,15 @@ struct RemoteDeviceDetailView: View {
         .padding(.top, 8)
     }
 
+    private var statusTint: Color {
+        if isConnected { return .accentColor }
+        return viewModel.hasPairedDevice ? .orange : .white.opacity(0.5)
+    }
+
     private var statusLine: String {
-        guard isConnected else { return "NOT CONNECTED" }
+        guard isConnected else {
+            return viewModel.hasPairedDevice ? "NOT CONNECTED · Out of range or switched off" : "NO DEVICE"
+        }
         if let battery = info?.batteryLevelPercent ?? device?.info.batteryLevelPercent {
             return "CONNECTED · \(battery)%"
         }
@@ -128,33 +148,6 @@ struct RemoteDeviceDetailView: View {
             info = try await viewModel.readDeviceInfo()
         } catch {
             loadError = error.localizedDescription
-        }
-    }
-}
-
-/// Protocol lab needs the GATT table to offer writable characteristics.
-/// Diagnostics hands over the dump it already has; reached from here there
-/// is none yet, so read one (without values — only the table is needed).
-private struct GATTLoadingProtocolLab: View {
-    let viewModel: DeviceControlViewModel
-
-    @State private var gatt: [GATTCharacteristicDump]?
-    @State private var loadError: String?
-
-    var body: some View {
-        if let gatt {
-            ProtocolLabView(viewModel: viewModel, gatt: gatt)
-        } else if let loadError {
-            ContentUnavailableView("Couldn't read the device", systemImage: "exclamationmark.triangle", description: Text(loadError))
-        } else {
-            ProgressView()
-                .task {
-                    do {
-                        gatt = try await viewModel.dumpGATT(readingValues: false)
-                    } catch {
-                        loadError = error.localizedDescription
-                    }
-                }
         }
     }
 }

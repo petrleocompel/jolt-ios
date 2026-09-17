@@ -37,8 +37,13 @@ struct BLEEvent: Identifiable, Equatable {
     let message: String
 
     var formatted: String {
-        let time = BLEEvent.formatter.string(from: timestamp)
-        return "\(time)  [\(level.rawValue)] \(message)"
+        "\(time)  [\(level.rawValue)] \(message)"
+    }
+
+    /// `HH:mm:ss.SSS` — milliseconds matter when lining a write up with its
+    /// acknowledgement.
+    var time: String {
+        BLEEvent.formatter.string(from: timestamp)
     }
 
     private static let formatter: DateFormatter = {
@@ -50,28 +55,31 @@ struct BLEEvent: Identifiable, Equatable {
 
 /// Bounded so a long-running session can't grow without limit; 500 entries is
 /// several minutes of connect/scan/write chatter, far more than is needed to
-/// see why one button press did nothing.
+/// see why one button press did nothing. In memory only, so it covers the
+/// current launch and nothing before it.
 @MainActor
 @Observable
 final class BLEEventLog {
     static let shared = BLEEventLog()
 
     private(set) var events: [BLEEvent] = []
-    private let limit = 500
+    /// Exposed so the log screen can state the real retention instead of a
+    /// copy of the number that could drift.
+    static let limit = 500
 
     private init() {}
 
     func append(level: BLELog.Level, message: String) {
         events.append(BLEEvent(timestamp: .now, level: level, message: message))
-        if events.count > limit { events.removeFirst(events.count - limit) }
+        if events.count > Self.limit { events.removeFirst(events.count - Self.limit) }
     }
 
     func clear() { events.removeAll() }
 
-    /// Newest first — matches how the diagnostics list renders it, and how
-    /// someone reading a pasted log wants to see it.
+    /// Oldest first — matches the Bluetooth log screen, and reads as a
+    /// sequence (write, then its acknowledgement) when pasted into an issue.
     var transcript: String {
-        events.reversed().map(\.formatted).joined(separator: "\n")
+        events.map(\.formatted).joined(separator: "\n")
     }
 }
 

@@ -101,7 +101,8 @@ struct SettingsView: View {
                 Label {
                     Text("Device")
                 } icon: {
-                    Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(.secondary)
+                    Image(systemName: "dot.radiowaves.left.and.right")
+                        .foregroundStyle(deviceControlViewModel.hasPairedDevice ? Color.orange : .secondary)
                 }
             }
         }

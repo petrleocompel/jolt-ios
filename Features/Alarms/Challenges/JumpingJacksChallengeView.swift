@@ -1,40 +1,60 @@
 import SwiftUI
 
+/// Do jumping jacks to dismiss. Counted with the *phone's* accelerometer —
+/// the wearable's motion data isn't read by this app — so the copy tells the
+/// user to keep the phone on them rather than just nearby.
 struct JumpingJacksChallengeView: View {
+    static let target = 10
+
+    let alternatives: [DismissChallenge]
+    let onSwitch: (DismissChallenge) -> Void
     let onSolved: () -> Void
-    let target: Int = 10
 
     @State private var counter = JumpingJackCounter()
     @State private var count = 0
 
+    private var target: Int { Self.target }
+
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Do \(target) jumping jacks to dismiss")
-                .font(.title2.bold())
-                .multilineTextAlignment(.center)
+        VStack(alignment: .leading, spacing: 0) {
+            AlarmChallengeHeader(eyebrow: "Movement challenge", title: "\(target) jumping jacks")
 
-            ZStack {
-                Circle()
-                    .stroke(.secondary.opacity(0.2), lineWidth: 12)
-                Circle()
-                    .trim(from: 0, to: min(1, Double(count) / Double(target)))
-                    .stroke(.tint, style: StrokeStyle(lineWidth: 12, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                Text("\(count)/\(target)")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
+            VStack(spacing: 0) {
+                Text("\(count) / \(target)")
+                    .font(.remoteNumeral(78))
+                    .foregroundStyle(.white)
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .accessibilityLabel("\(count) of \(target) jumping jacks")
                     .accessibilityIdentifier("jumpingJacksCount")
-            }
-            .frame(width: 180, height: 180)
-            .padding()
 
-            Text("Hold your phone in your pocket or hand while you jump.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                ProgressBar(fraction: Double(count) / Double(target))
+                    .padding(.top, 22)
+
+                Text(counter.isAvailable
+                     ? "Counted with your phone's motion sensor — hold it in your hand or pocket while you jump."
+                     : "This phone has no motion sensor to count jumps. Switch to another challenge.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 16)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 46)
+
+            Spacer(minLength: 24)
+
+            SwitchChallengeButton(alternatives: alternatives, onSwitch: onSwitch)
         }
-        .padding()
+        .padding(.horizontal, AlarmScreenStyle.horizontalPadding)
+        .padding(.top, 32)
+        .padding(.bottom, 24)
         .onAppear {
-            counter.start { count = min(target, count + 1) }
+            counter.start {
+                withAnimation { count = min(target, count + 1) }
+            }
         }
         .onDisappear { counter.stop() }
         .onChange(of: count) { _, newValue in
@@ -43,6 +63,24 @@ struct JumpingJacksChallengeView: View {
                 onSolved()
             }
         }
+    }
+}
+
+/// The design's thin green bar under the counter.
+private struct ProgressBar: View {
+    let fraction: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(AlarmScreenStyle.raised)
+                Capsule()
+                    .fill(Color.accentColor)
+                    .frame(width: proxy.size.width * min(1, max(0, fraction)))
+            }
+        }
+        .frame(height: 8)
+        .accessibilityHidden(true)
     }
 }
 
@@ -56,6 +94,8 @@ private final class JumpingJackCounter {
     private var lastPeakAt = Date.distantPast
     private let threshold = 1.8
     private let debounce: TimeInterval = 0.6
+
+    var isAvailable: Bool { motionManager.isAccelerometerAvailable }
 
     func start(onJump: @escaping () -> Void) {
         guard motionManager.isAccelerometerAvailable else { return }

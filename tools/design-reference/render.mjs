@@ -26,21 +26,42 @@ const outDir = path.resolve(outArg > 0 ? process.argv[outArg + 1] : path.join(re
 // [screenshot name, actions…]. "scroll" / "scrollSheet" scroll to the bottom;
 // "wait" gives the scan list time to appear.
 const steps = [
+  ["00-FirstRun", "firstrun"],
   ["01-Remote-Dashboard", "nav:remote"],
+  ["01b-Remote-NoDevice", "forget"],
+  ["01c-Remote-OutOfRange", "link:offline"],
+  ["01d-Remote-Connecting", "link:connecting"],
+  ["01e-Remote-ConnectFailed", "link:failed"],
   ["02-Remote-StimulusEditor", "nav:remote", "sheet:stim:Zap"],
   ["03-Remote-Customize", "nav:remote", "sheet:customize"],
+  ["03b-Remote-Customize-Bottom", "nav:remote", "sheet:customize", "scrollSheet"],
   ["04-Remote-DeviceDetail", "goto:deviceDetail:remote"],
+  ["04b-Remote-DeviceDetail-Bottom", "goto:deviceDetail:remote", "scroll"],
+  ["04c-Remote-DeviceDetail-OutOfRange", "link:offline", "goto:deviceDetail:remote"],
   ["05-Remote-Diagnostics", "goto:diagnostics:remote"],
+  ["05b-Remote-Diagnostics-Bottom", "goto:diagnostics:remote", "scroll"],
   ["06-Remote-ButtonConfig", "goto:buttonConfig:remote"],
+  ["07-Remote-ProtocolLab", "goto:deviceDetail:remote", "lab:instant"],
+  ["07a-Remote-ProtocolLab-Reading", "goto:deviceDetail:remote", "lab:error", "wait:100"],
+  ["07b-Remote-ProtocolLab-ReadFailed", "goto:deviceDetail:remote", "lab:error", "wait:1400"],
+  ["08-Remote-BluetoothLog", "goto:btLog:remote"],
+  ["09-Remote-ConfirmFire", "nav:remote", "mode:Zap", "mode:Zap", "fire:Zap"],
+  ["09b-Remote-HoldMode", "nav:remote", "mode:Vibe"],
+  ["09c-Remote-NoDeviceFireBanner", "forget", "fire:Zap"],
   ["10-Alarms-List", "nav:alarms"],
   ["11-Alarms-EditExisting", "nav:alarms", "sheet:alarmEdit"],
   ["12-Alarms-EditExisting-Bottom", "nav:alarms", "sheet:alarmEdit", "scrollSheet"],
   ["13-Alarms-New", "nav:alarms", "sheet:alarmNew"],
+  ["14-Alarms-Ringing", "goto:alarmActive:alarms"],
+  ["15-Alarms-ChallengeMath", "goto:chMath:alarms"],
+  ["16-Alarms-ChallengeJacks", "goto:chJacks:alarms", "ch:jack", "ch:jack", "ch:jack"],
+  ["17-Alarms-ChallengeQR", "goto:chQR:alarms"],
   ["20-Friends-SignIn", "signout", "set:authMode:Log In"],
   ["21-Friends-SignUp", "signout", "set:authMode:Sign Up"],
   ["22-Friends-List", "signin"],
   ["23-Friends-AddFriend", "signin", "sheet:addFriend"],
   ["24-Friends-Profile", "goto:profile:friends"],
+  ["24b-Friends-Profile-Bottom", "goto:profile:friends", "scroll"],
   ["25-Friends-Activity", "goto:activity:friends"],
   ["26-Friends-Detail-NothingAllowed", "goto:friendBob:friends"],
   ["27-Friends-Detail-Composer", "goto:friendAlice:friends"],
@@ -51,23 +72,26 @@ const steps = [
   ["32-Settings-PokeTrigger", "goto:pokeTrigger:settings"],
   ["33-Settings-PokeTrigger-Bottom", "goto:pokeTrigger:settings", "scroll"],
   ["34-Remote-WithQuickPoke", "set:qpOn:1", "nav:remote", "scroll"],
-  ["35-Remote-QuickPokeComposer", "set:qpOn:1", "nav:remote", "sheet:qpComposer"],
-  ["40-Settings", "set:qpOn:0", "nav:settings"],
+  ["34b-Remote-WithoutQuickPoke", "set:qpOn:0", "nav:remote", "scroll"],
+  ["35-Remote-QuickPokeComposer", "set:qpOn:1", "pokestate:none"],
+  ["35a-Remote-QuickPokeComposer-Sending", "pokestate:sending"],
+  ["36-Remote-QuickPokeComposer-Error", "pokestate:error"],
+  ["37-Remote-QuickPokeComposer-NotFound", "pokestate:notfound"],
+  ["40-Settings", "nav:settings"],
   ["41-Settings-Bottom", "nav:settings", "scroll"],
   ["42-Settings-Firing", "goto:firing:settings"],
   ["43-Settings-PokeFeedback", "goto:pokeFeedback:settings"],
   ["44-Settings-Notifications", "goto:notifications:settings"],
+  ["44b-Settings-Notifications-Arrived", "goto:notifications:settings", "notiftest", "wait:1600"],
   ["45-Settings-PavlokAccount", "goto:pavlokAccount:settings"],
   ["46-Settings-Server", "goto:server:settings"],
   ["47-Settings-About", "goto:about:settings"],
-  // No device — kept last: "connect" would flash a toast into later shots.
-  // The prototype has no separate first-run screen: pairing is
-  // the same "Pair device" page wherever it's opened from.
-  ["01b-Remote-NoDevice", "disconnect"],
-  ["40b-Settings-NoDevice", "disconnect", "nav:settings"],
-  ["50-Onboarding", "disconnect", "pair"],
-  ["51-Onboarding-Scanning", "disconnect", "pair", "scan", "wait"],
-  ["52-PairDevice", "disconnect", "nav:settings", "pair"],
+  ["40b-Settings-NoDevice", "forget", "nav:settings"],
+  ["40c-Settings-OutOfRange", "link:offline", "nav:settings"],
+  ["52-PairDevice", "forget", "nav:settings", "pair"],
+  ["52b-PairDevice-Scanning", "forget", "nav:settings", "pair", "scan", "wait:300"],
+  ["52c-PairDevice-Found", "forget", "nav:settings", "pair", "scan", "wait:1700"],
+  ["52d-PairDevice-ConnectFailed", "forget", "nav:settings", "pair", "scanfail"],
 ];
 
 const server = http.createServer((req, res) => {
@@ -103,12 +127,14 @@ const scroll = (sheet) => page.evaluate((sheet) => {
 }, sheet);
 
 for (const [name, ...actions] of steps) {
-  await dispatch("nav:remote");
-  await dispatch("close");
+  // Fresh page per screen: the prototype runs timers (connecting → failed,
+  // banners, scans) that would otherwise leak into the next screenshot.
+  await page.goto(url);
+  await page.waitForSelector("aside [data-action]", { timeout: 60_000 });
   for (const action of actions) {
     if (action === "scroll") await scroll(false);
     else if (action === "scrollSheet") await scroll(true);
-    else if (action === "wait") await page.waitForTimeout(300);
+    else if (action.startsWith("wait:")) await page.waitForTimeout(Number(action.slice(5)));
     else await dispatch(action);
   }
   await page.waitForTimeout(250);

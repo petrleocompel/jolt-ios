@@ -98,33 +98,67 @@ struct PokeComposerCard: View {
                     .labelsHidden()
             }
 
-            FireControl(
-                mode: mode,
-                confirmTitle: "Poke \(friend.displayName)?",
-                confirmMessage: "\(kind.displayName) at \(Int(intensity))%.",
-                onFire: {
-                    let stimulus = StimulusConfig(kind: kind, intensity: Int(intensity), repetitions: repetitions)
-                    pokeViewModel.send(to: friend, stimulus: stimulus)
-                },
-                label: { state in
-                    HoldFillBar(
-                        isHolding: state.isHolding,
-                        progress: state.progress,
-                        idleLabel: "\(mode.actionVerb) to poke \(friend.displayName)",
-                        holdingLabel: "Keep holding…",
-                        tint: RemoteTheme.violet,
-                        ink: .white,
-                        isShowingSuccess: feedback.isShowingSuccessLabel,
-                        isFlashing: feedback.isFlashing
-                    )
-                }
-            )
-            .accessibilityIdentifier("sendPokeButton")
-
-            if let error = pokeViewModel.lastError {
-                Text(error).font(.footnote).foregroundStyle(.red)
+            if pokeViewModel.isSending {
+                sendingBar
+            } else if let error = pokeViewModel.lastError {
+                errorCard(error)
+            } else {
+                FireControl(
+                    mode: mode,
+                    confirmTitle: "Poke \(friend.displayName)?",
+                    confirmMessage: "\(kind.displayName) at \(Int(intensity))%.",
+                    onFire: {
+                        let stimulus = StimulusConfig(kind: kind, intensity: Int(intensity), repetitions: repetitions)
+                        pokeViewModel.send(to: friend, stimulus: stimulus)
+                    },
+                    label: { state in
+                        HoldFillBar(
+                            isHolding: state.isHolding,
+                            progress: state.progress,
+                            idleLabel: "\(mode.actionVerb) to poke \(friend.displayName)",
+                            holdingLabel: "Keep holding…",
+                            tint: RemoteTheme.violet,
+                            ink: .white,
+                            isShowingSuccess: feedback.isShowingSuccessLabel,
+                            isFlashing: feedback.isFlashing
+                        )
+                    }
+                )
+                .accessibilityIdentifier("sendPokeButton")
             }
         }
+    }
+
+    private var sendingBar: some View {
+        HStack(spacing: 12) {
+            ProgressView().tint(.white)
+            Text("Sending…").font(.remoteNumeral(16))
+        }
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity, minHeight: 56)
+        .background(RemoteTheme.violet.opacity(0.35), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("pokeSendingIndicator")
+    }
+
+    /// Replaces the send button rather than sitting under it: until the
+    /// failure is acknowledged, "send again" should be a deliberate Retry.
+    private func errorCard(_ message: String) -> some View {
+        StatusCard(
+            tint: .red,
+            eyebrow: pokeViewModel.lastErrorIsConnectivity ? "COULDN'T REACH THE SERVER" : "POKE NOT SENT",
+            message: pokeViewModel.lastErrorIsConnectivity
+                ? "The poke was not sent. Check your connection and try again."
+                : message
+        ) {
+            HStack(spacing: 10) {
+                StatusCardButton(title: "Retry", fill: RemoteTheme.violet, ink: .white) {
+                    pokeViewModel.retryLastSend()
+                }
+                StatusCardButton(title: "Dismiss") { pokeViewModel.dismissError() }
+            }
+        }
+        .accessibilityIdentifier("pokeErrorCard")
     }
 
     private func stimulusChip(_ kind: StimulusKind, isOn: Bool) -> some View {

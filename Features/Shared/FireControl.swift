@@ -75,6 +75,13 @@ struct FireControl<Label: View>: View {
     var holdDuration: Double = 0.85
     var confirmTitle: String
     var confirmMessage: String?
+    /// The confirming button in `.confirm` mode — "Fire" on your own device,
+    /// "Send" for a poke.
+    var confirmActionTitle: String = "Send"
+    /// Called instead of any gesture while `isEnabled` is false. With it the
+    /// control stays tappable and can explain *why* nothing fired (no device);
+    /// without it the control is simply disabled.
+    var onUnavailable: (() -> Void)?
     /// When both this and a percent above `highIntensityThreshold` are set,
     /// `.hold` mode routes the press through a second confirmation hold in a
     /// sheet instead of firing directly off the first one — the design's
@@ -95,6 +102,15 @@ struct FireControl<Label: View>: View {
     }
 
     var body: some View {
+        if !isEnabled, let onUnavailable {
+            Button(action: onUnavailable) { label(.idle) }
+                .buttonStyle(.plain)
+        } else {
+            gestureBody
+        }
+    }
+
+    private var gestureBody: some View {
         Group {
             switch mode {
             case .tap:
@@ -104,9 +120,12 @@ struct FireControl<Label: View>: View {
             case .confirm:
                 Button { isConfirmingTap = true } label: { label(.idle) }
                     .buttonStyle(.plain)
-                    .confirmationDialog(confirmTitle, isPresented: $isConfirmingTap, titleVisibility: .visible) {
-                        Button("Send") { fireIfEnabled() }
+                    // A centred alert rather than an action sheet: the one
+                    // question is "really fire?", and the destructive tint
+                    // on the confirming button is the point.
+                    .alert(confirmTitle, isPresented: $isConfirmingTap) {
                         Button("Cancel", role: .cancel) {}
+                        Button(confirmActionTitle, role: .destructive) { fireIfEnabled() }
                     } message: {
                         if let confirmMessage { Text(confirmMessage) }
                     }

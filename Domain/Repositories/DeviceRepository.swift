@@ -20,6 +20,12 @@ protocol DeviceRepository {
     /// pairing screen is still owed, rather than treating every disconnect
     /// as "unpaired".
     var hasPairedDevice: Bool { get }
+    /// Name of the paired device, known even while it's unreachable, so an
+    /// out-of-range wearable can still be called by name.
+    var pairedDeviceName: String? { get }
+    /// Tries the paired device again now instead of waiting for the next
+    /// automatic attempt — the "Try again" on a dropped connection.
+    func reconnect() async
 
     func startScan(for families: Set<DeviceFamily>) -> AsyncStream<PavlokDevice>
     func stopScan()
@@ -65,7 +71,12 @@ protocol DeviceRepository {
     func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump]
     /// Writes raw bytes to an arbitrary characteristic. Powers the Protocol
     /// lab. Not used by any normal app flow.
-    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws
+    ///
+    /// - Parameter mode: the CoreBluetooth write type to use. Explicit rather
+    ///   than inferred from the characteristic's properties (as every normal
+    ///   write is) because some firmware declares both and behaves
+    ///   differently per type — which is exactly what the lab is for finding.
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode) async throws
     /// Subscribes to every notifying characteristic and logs what arrives, so
     /// an action performed on the device itself (pressing its button) can be
     /// observed in the device's own encoding. Returns how many were
@@ -81,4 +92,33 @@ protocol DeviceRepository {
     /// `startListeningForDeviceEvents`, which only logs for the diagnostics
     /// screen.
     func deviceEventStream() async throws -> AsyncStream<DeviceEvent>
+}
+
+/// How the Protocol lab sends a raw write. Mirrors CoreBluetooth's
+/// `CBCharacteristicWriteType` without importing CoreBluetooth into the
+/// domain layer.
+enum RawWriteMode: String, CaseIterable, Identifiable, Sendable {
+    /// Waits for the device's acknowledgement; a rejected payload surfaces
+    /// as an error.
+    case withResponse
+    /// Fire and forget. The only way to reach a characteristic that declares
+    /// just `writeNoResp`, and never reports whether the device accepted it.
+    case withoutResponse
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .withResponse: "Write with response"
+        case .withoutResponse: "Write without response"
+        }
+    }
+
+    /// The `GATTCharacteristicDump.properties` label that permits this mode.
+    var requiredProperty: String {
+        switch self {
+        case .withResponse: "write"
+        case .withoutResponse: "writeNoResp"
+        }
+    }
 }

@@ -171,6 +171,8 @@ private final class StubDeviceRepository: DeviceRepository {
     var connectionState: AsyncStream<DeviceConnectionState> { AsyncStream { $0.finish() } }
     var connectedDevice: AsyncStream<PavlokDevice?> { connectionHub.stream() }
     let hasPairedDevice = true
+    let pairedDeviceName: String? = "Stub"
+    func reconnect() async {}
 
     func deviceEventStream() async throws -> AsyncStream<DeviceEvent> {
         eventStreamRequests += 1
@@ -208,7 +210,7 @@ private final class StubDeviceRepository: DeviceRepository {
     @discardableResult
     func saveStimulusConfig(_ config: StimulusConfig) async -> StimulusSyncState { .localOnly(reason: "unused") }
     func dumpGATT(readingValues: Bool) async throws -> [GATTCharacteristicDump] { [] }
-    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {}
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode) async throws {}
     @discardableResult
     func startListeningForDeviceEvents() async throws -> Int { 0 }
     func stopListeningForDeviceEvents() {}

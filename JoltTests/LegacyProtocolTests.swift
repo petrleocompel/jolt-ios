@@ -170,6 +170,61 @@ final class ProtocolLabHexParsingTests: XCTestCase {
         XCTAssertNil(ProtocolLabView.parseHex("14 0"))
         XCTAssertNil(ProtocolLabView.parseHex("zz"))
     }
+
+    func testFormatsAndShortensForTheExchangeLog() {
+        XCTAssertEqual(ProtocolLabView.formatHex([0x01, 0x0A, 0x00, 0x3C]), "01 0A 00 3C")
+        XCTAssertEqual(ProtocolLabView.shortUUID("156E1001-A300-4FEA-897B-86F698D74461"), "156E1001")
+        XCTAssertEqual(ProtocolLabView.shortUUID("2A19"), "2A19")
+    }
+
+    func testLabelQualifiesOnlyAmbiguousShortUUIDs() {
+        let a = GATTCharacteristicDump(serviceUUID: "156E1000-A300", uuid: "1001", properties: ["write"])
+        let b = GATTCharacteristicDump(serviceUUID: "180F", uuid: "1001", properties: ["write"])
+        let c = GATTCharacteristicDump(serviceUUID: "180F", uuid: "2A19", properties: ["write"])
+        XCTAssertEqual(ProtocolLabView.label(for: a, among: [a, b, c]), "156E1000/1001")
+        XCTAssertEqual(ProtocolLabView.label(for: c, among: [a, b, c]), "2A19")
+    }
+}
+
+/// The Protocol lab's Mode picker has to reach CoreBluetooth; a write type
+/// silently falling back to the inferred one would make the picker a lie.
+@MainActor
+final class RawWriteModeTests: XCTestCase {
+    func testFakeRepositoryRecordsRequestedMode() async throws {
+        let repository = FakeDeviceRepository()
+        let viewModel = DeviceControlViewModel(repository: repository)
+        try await viewModel.writeRaw(Data([0x01]), characteristicUUID: "1001", serviceUUID: "156E", mode: .withoutResponse)
+        try await viewModel.writeRaw(Data([0x02]), characteristicUUID: "1002", serviceUUID: "156E", mode: .withResponse)
+        XCTAssertEqual(repository.rawWrites.map(\.mode), [.withoutResponse, .withResponse])
+        XCTAssertEqual(repository.rawWrites.first?.data, Data([0x01]))
+    }
+
+    func testFakeRepositoryRefusesRawWriteWithoutDevice() async {
+        let repository = FakeDeviceRepository(startsPaired: false)
+        do {
+            try await repository.writeRaw(Data([0x01]), characteristicUUID: "1001", serviceUUID: "156E", mode: .withResponse)
+            XCTFail("Expected notConnected")
+        } catch {}
+        XCTAssertTrue(repository.rawWrites.isEmpty)
+    }
+
+    func testModeRequiresMatchingDeclaredProperty() {
+        XCTAssertEqual(RawWriteMode.withResponse.requiredProperty, "write")
+        XCTAssertEqual(RawWriteMode.withoutResponse.requiredProperty, "writeNoResp")
+    }
+
+    func testCentralHonoursRequestedWriteType() {
+        let both: CBCharacteristicProperties = [.write, .writeWithoutResponse]
+        XCTAssertEqual(BluetoothCentralManager.writeType(requested: nil, properties: both), .withResponse)
+        XCTAssertEqual(BluetoothCentralManager.writeType(requested: .withoutResponse, properties: both), .withoutResponse)
+        XCTAssertEqual(BluetoothCentralManager.writeType(requested: .withResponse, properties: both), .withResponse)
+        // A type the characteristic doesn't declare is refused, never
+        // silently swapped for the other one.
+        XCTAssertNil(BluetoothCentralManager.writeType(requested: .withoutResponse, properties: [.write]))
+        XCTAssertNil(BluetoothCentralManager.writeType(requested: .withResponse, properties: [.writeWithoutResponse]))
+        XCTAssertEqual(BluetoothCentralManager.writeType(requested: nil, properties: [.writeWithoutResponse]), .withoutResponse)
+        XCTAssertNil(BluetoothCentralManager.writeType(requested: nil, properties: [.read]))
+    }
 }
 
 final class CBUUIDCanonicalTests: XCTestCase {

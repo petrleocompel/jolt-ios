@@ -44,8 +44,13 @@ final class DeviceFreeUsageUITests: XCTestCase {
         // `deviceStatusRow` identifier propagates to all its children.
         XCTAssertTrue(app.staticTexts["Not connected"].exists)
         XCTAssertTrue(app.buttons["Pair a device"].exists)
-        // Firing at a device we haven't got is the one thing that's off.
-        XCTAssertFalse(app.buttons["fireButton_zap"].isEnabled)
+        // Firing at a device we haven't got is the one thing that's off — and
+        // a tap says so instead of doing nothing.
+        app.buttons["fireButton_zap"].tap()
+        XCTAssertTrue(
+            app.staticTexts["No device connected. Pair one to fire."].waitForExistence(timeout: 5),
+            "Tapping fire with no device should explain why nothing fired"
+        )
 
         // Every tab is reachable, not just Remote, and Settings can pair later.
         XCTAssertTrue(app.selectTab("Alarms"))

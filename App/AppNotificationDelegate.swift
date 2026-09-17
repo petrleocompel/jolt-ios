@@ -20,6 +20,13 @@ final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate 
         self.pushDiagnostics = pushDiagnostics
     }
 
+    /// Opens the ringing screen for `id` as if its notification had fired.
+    /// Only for snapshot runs (`AppEnvironment.ringsDemoAlarm`), where no
+    /// notification ever will.
+    func presentAlarm(_ id: UUID) {
+        activeAlarmID = id
+    }
+
     func clearActiveAlarm() {
         activeAlarmID = nil
     }

@@ -26,6 +26,9 @@ final class DeviceControlViewModel {
     /// itself isn't `@Observable`, so reading `repository.hasPairedDevice`
     /// straight from a `body` would never refresh when pairing changes.
     private(set) var hasPairedDevice: Bool
+    /// The paired device's name, kept even while it's unreachable. Mirrored
+    /// for the same reason as `hasPairedDevice`.
+    private(set) var pairedDeviceName: String?
 
     /// Per-kind stimulus defaults, mirrored from the repository so views can
     /// bind to them directly.
@@ -42,6 +45,7 @@ final class DeviceControlViewModel {
         self.repository = repository
         self.stimulusSettings = repository.stimulusSettings
         self.hasPairedDevice = repository.hasPairedDevice
+        self.pairedDeviceName = repository.pairedDeviceName
         observationTask = Task { [weak self] in
             guard let self else { return }
             for await state in repository.connectionState {
@@ -54,6 +58,7 @@ final class DeviceControlViewModel {
                 self.connectedDevice = device
                 // A successful connect is also what persists the pairing.
                 self.hasPairedDevice = repository.hasPairedDevice
+                self.pairedDeviceName = repository.pairedDeviceName
             }
         }
     }
@@ -88,7 +93,8 @@ final class DeviceControlViewModel {
             do {
                 try await repository.connect(to: device)
             } catch {
-                lastError = error.localizedDescription
+                BLELog.error("Connect to \(device.name) failed: \(error.localizedDescription)")
+                lastError = "Couldn't connect to \(device.name). Move closer and try again."
             }
         }
     }
@@ -102,10 +108,23 @@ final class DeviceControlViewModel {
             guard let self else { return }
             await repository.forgetPairedDevice()
             hasPairedDevice = repository.hasPairedDevice
+            pairedDeviceName = repository.pairedDeviceName
         }
     }
 
+    /// "Try again" on a dropped or failed connection.
+    func reconnect() {
+        lastError = nil
+        Task { await repository.reconnect() }
+    }
+
     func fire(_ stimulus: StimulusConfig) {
+        // Fire controls stay tappable without a device so the tap can say
+        // why nothing happened, rather than sitting there disabled.
+        guard connectedDevice != nil else {
+            lastError = Self.noDeviceMessage
+            return
+        }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -134,12 +153,19 @@ final class DeviceControlViewModel {
         }
     }
 
+    static let noDeviceMessage = "No device connected. Pair one to fire."
+
     func dumpGATT(readingValues: Bool = false) async throws -> [GATTCharacteristicDump] {
         try await repository.dumpGATT(readingValues: readingValues)
     }
 
-    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {
-        try await repository.writeRaw(data, characteristicUUID: characteristicUUID, serviceUUID: serviceUUID)
+    func writeRaw(
+        _ data: Data,
+        characteristicUUID: String,
+        serviceUUID: String,
+        mode: RawWriteMode = .withResponse
+    ) async throws {
+        try await repository.writeRaw(data, characteristicUUID: characteristicUUID, serviceUUID: serviceUUID, mode: mode)
     }
 
     @discardableResult

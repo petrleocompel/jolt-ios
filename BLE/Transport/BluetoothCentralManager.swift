@@ -237,11 +237,17 @@ final class BluetoothCentralManager: NSObject {
     /// notification to the device. That failure mode is invisible unless you
     /// check the properties first, which is why it is done here for every
     /// write rather than at the call sites.
+    ///
+    /// - Parameter type: forces a write type instead of choosing one. Only the
+    ///   Protocol lab passes it. A forced type the characteristic doesn't
+    ///   declare is refused with `characteristicNotWritable` rather than sent,
+    ///   for the same silent-discard reason as above.
     func write(
         _ data: Data,
         to characteristicUUID: CBUUID,
         serviceUUID: CBUUID,
         on peripheral: CBPeripheral,
+        type: CBCharacteristicWriteType? = nil,
         timeout: Duration = .seconds(10)
     ) async throws {
         guard peripheral.state == .connected else {
@@ -251,7 +257,9 @@ final class BluetoothCentralManager: NSObject {
         let characteristic = try await resolveCharacteristic(characteristicUUID, in: serviceUUID, on: peripheral)
         let hex = data.map { String(format: "%02X", $0) }.joined(separator: " ")
 
-        if characteristic.properties.contains(.write) {
+        let resolvedType = Self.writeType(requested: type, properties: characteristic.properties)
+
+        if resolvedType == .withResponse {
             BLELog.info("Write (with response) \(hex) → \(characteristicUUID.uuidString)")
             try await withTimeout(timeout, description: "write to \(characteristicUUID.uuidString)") {
                 try await withCheckedThrowingContinuation { continuation in
@@ -263,13 +271,37 @@ final class BluetoothCentralManager: NSObject {
                     .resume(throwing: BluetoothError.timedOut("write to \(characteristicUUID.uuidString)"))
             }
             BLELog.info("Write acknowledged by \(characteristicUUID.uuidString)")
-        } else if characteristic.properties.contains(.writeWithoutResponse) {
+        } else if resolvedType == .withoutResponse {
             BLELog.info("Write (no response) \(hex) → \(characteristicUUID.uuidString)")
             peripheral.writeValue(data, for: characteristic, type: .withoutResponse)
         } else {
             let properties = characteristic.properties.labels.joined(separator: ",")
-            BLELog.error("Characteristic \(characteristicUUID.uuidString) is not writable (properties: \(properties))")
+            let requested = type.map { $0 == .withResponse ? " with response" : " without response" } ?? ""
+            BLELog.error("Characteristic \(characteristicUUID.uuidString) is not writable\(requested) (properties: \(properties))")
             throw BluetoothError.characteristicNotWritable(characteristicUUID)
+        }
+    }
+
+    /// The write type `write` will actually use, or `nil` when the
+    /// characteristic can't take the write at all. With nothing requested,
+    /// with-response wins when both are declared: an acknowledgement is the
+    /// only proof a stimulus write landed.
+    nonisolated static func writeType(
+        requested: CBCharacteristicWriteType?,
+        properties: CBCharacteristicProperties
+    ) -> CBCharacteristicWriteType? {
+        let supportsWithResponse = properties.contains(.write)
+        let supportsWithoutResponse = properties.contains(.writeWithoutResponse)
+        switch requested {
+        case .withResponse?:
+            return supportsWithResponse ? .withResponse : nil
+        case .withoutResponse?:
+            return supportsWithoutResponse ? .withoutResponse : nil
+        case nil:
+            if supportsWithResponse { return .withResponse }
+            return supportsWithoutResponse ? .withoutResponse : nil
+        @unknown default:
+            return nil
         }
     }
 

@@ -1,91 +1,89 @@
 import SwiftUI
 
+/// Solve a small arithmetic problem to dismiss. Three answer buttons instead
+/// of a text field: a wrong tap costs a fresh problem, so guessing is slower
+/// than reading.
 struct MathPuzzleChallengeView: View {
+    /// The other challenges this alarm allows, offered as text links.
+    let alternatives: [DismissChallenge]
+    let onSwitch: (DismissChallenge) -> Void
     let onSolved: () -> Void
 
     @State private var problem = MathProblem.random()
-    @State private var answer = ""
     @State private var wasWrong = false
-    @FocusState private var isFocused: Bool
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Solve to dismiss")
-                .font(.title2.bold())
-            Text(problem.question)
-                .font(.system(size: 48, weight: .semibold, design: .rounded))
-                .accessibilityIdentifier("mathPuzzleQuestion")
+        VStack(alignment: .leading, spacing: 0) {
+            AlarmChallengeHeader(eyebrow: "Challenge 1 of 1", title: "Solve to dismiss")
 
-            TextField("Answer", text: $answer)
-                .keyboardType(.numbersAndPunctuation)
-                .multilineTextAlignment(.center)
-                .font(.title)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 160)
-                .focused($isFocused)
-                .accessibilityIdentifier("mathPuzzleAnswerField")
-                .onSubmit(submit)
+            Text(problem.question)
+                .font(.remoteNumeral(54))
+                .foregroundStyle(.white)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 34)
+                .padding(.horizontal, 16)
+                .background(AlarmScreenStyle.card, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .accessibilityLabel("What is \(problem.spokenQuestion)?")
+                .accessibilityIdentifier("mathPuzzleQuestion")
+                .padding(.top, 28)
+
+            HStack(spacing: 12) {
+                ForEach(Array(problem.choices.enumerated()), id: \.offset) { index, choice in
+                    Button { choose(choice) } label: {
+                        Text("\(choice)")
+                            .font(.remoteNumeral(26))
+                            .foregroundStyle(.white)
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, minHeight: 72)
+                            .background(AlarmScreenStyle.raised, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("mathPuzzleChoice_\(index)")
+                }
+            }
+            .padding(.top, 22)
 
             if wasWrong {
-                Text("Not quite — try again.")
+                Text("Wrong answer. Try again.")
+                    .font(.callout.weight(.medium))
                     .foregroundStyle(.red)
+                    .padding(.top, 16)
+                    .accessibilityIdentifier("mathPuzzleError")
             }
 
-            Button("Submit", action: submit)
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .accessibilityIdentifier("mathPuzzleSubmitButton")
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(alternatives) { challenge in
+                    Button(challenge.switchTitle) { onSwitch(challenge) }
+                        .font(.body)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(minHeight: 44)
+                }
+            }
+            .padding(.top, 20)
+
+            Spacer(minLength: 24)
+
+            Text("The alarm rang once and won't ring again on its own — this screen stays open until you solve it.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding()
-        .onAppear { isFocused = true }
+        .padding(.horizontal, AlarmScreenStyle.horizontalPadding)
+        .padding(.top, 32)
+        .padding(.bottom, 24)
     }
 
-    private func submit() {
-        if Int(answer.trimmingCharacters(in: .whitespaces)) == problem.answer {
+    private func choose(_ choice: Int) {
+        if choice == problem.answer {
             onSolved()
         } else {
             wasWrong = true
-            answer = ""
             problem = MathProblem.random()
+            UIAccessibility.post(notification: .announcement, argument: "Wrong answer. Try again.")
         }
-    }
-}
-
-private struct MathProblem {
-    let firstOperand: Int
-    let secondOperand: Int
-    let operation: Operation
-    var answer: Int { operation.apply(firstOperand, secondOperand) }
-    var question: String { "\(firstOperand) \(operation.symbol) \(secondOperand)" }
-
-    enum Operation: CaseIterable {
-        case add, subtract, multiply
-
-        var symbol: String {
-            switch self {
-            case .add: return "+"
-            case .subtract: return "−"
-            case .multiply: return "×"
-            }
-        }
-
-        func apply(_ lhs: Int, _ rhs: Int) -> Int {
-            switch self {
-            case .add: return lhs + rhs
-            case .subtract: return lhs - rhs
-            case .multiply: return lhs * rhs
-            }
-        }
-    }
-
-    static func random() -> MathProblem {
-        let operation = Operation.allCases.randomElement() ?? .add
-        let first = Int.random(in: 2...12)
-        let second = Int.random(in: 2...12)
-        return MathProblem(
-            firstOperand: max(first, second),
-            secondOperand: operation == .subtract ? min(first, second) : second,
-            operation: operation
-        )
     }
 }

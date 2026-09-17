@@ -72,6 +72,13 @@ final class CompositeDeviceRepository: DeviceRepository {
     /// powers up Bluetooth.
     var hasPairedDevice: Bool { store.load() != nil }
 
+    var pairedDeviceName: String? { store.load()?.name }
+
+    func reconnect() async {
+        startIfNeeded()
+        await attemptAutoReconnect()
+    }
+
     /// Wires up event observation and kicks off an initial reconnect
     /// attempt. Deferred to first access of either stream (rather than
     /// `init`) so nothing tries to reconnect before there's a subscriber; the
@@ -137,7 +144,8 @@ final class CompositeDeviceRepository: DeviceRepository {
                     continuation.yield(PavlokDevice(
                         peripheralIdentifier: discovery.peripheral.identifier,
                         name: name,
-                        family: family
+                        family: family,
+                        rssi: discovery.rssi
                     ))
                 }
                 continuation.finish()
@@ -307,13 +315,14 @@ extension CompositeDeviceRepository {
         return try await central.dumpGATT(on: peripheral, readingValues: readingValues)
     }
 
-    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String) async throws {
+    func writeRaw(_ data: Data, characteristicUUID: String, serviceUUID: String, mode: RawWriteMode) async throws {
         let (peripheral, _) = try requireConnection()
         try await central.write(
             data,
             to: CBUUID(string: characteristicUUID),
             serviceUUID: CBUUID(string: serviceUUID),
-            on: peripheral
+            on: peripheral,
+            type: mode == .withResponse ? .withResponse : .withoutResponse
         )
     }
 

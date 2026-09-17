@@ -4,6 +4,7 @@ struct AlarmEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var alarm: Alarm
     let onSave: (Alarm) -> Void
+    @State private var isScanningDismissCode = false
 
     init(alarm: Alarm, onSave: @escaping (Alarm) -> Void) {
         _alarm = State(initialValue: alarm)
@@ -73,11 +74,31 @@ struct AlarmEditView: View {
                     )
                 }
 
-                Section("Wake-up guarantee") {
+                Section {
                     Picker("Dismiss challenge", selection: $alarm.dismissChallenge) {
                         ForEach(DismissChallenge.allCases) { challenge in
                             Text(challenge.displayName).tag(challenge)
                         }
+                    }
+                    if alarm.dismissChallenge == .qrCodeScan {
+                        Button {
+                            isScanningDismissCode = true
+                        } label: {
+                            if alarm.dismissQRCode == nil {
+                                Label("Scan code to save", systemImage: "qrcode.viewfinder")
+                            } else {
+                                Label("Code saved · Rescan", systemImage: "checkmark.circle.fill")
+                            }
+                        }
+                        .accessibilityIdentifier("scanDismissCodeButton")
+                    }
+                } header: {
+                    Text("Wake-up guarantee")
+                } footer: {
+                    if alarm.dismissChallenge == .qrCodeScan {
+                        Text(alarm.dismissQRCode == nil
+                             ? "Print a QR code or pick one on something you own, and keep it away from your bed. Until you save one, any QR code dismisses this alarm."
+                             : "Only this code will dismiss the alarm — keep it somewhere away from your bed.")
                     }
                 }
 
@@ -86,6 +107,12 @@ struct AlarmEditView: View {
                 }
             }
             .navigationTitle(alarm.label.isEmpty ? "New alarm" : alarm.label)
+            .sheet(isPresented: $isScanningDismissCode) {
+                DismissCodeScannerSheet { code in
+                    alarm.dismissQRCode = code
+                    isScanningDismissCode = false
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -112,5 +139,37 @@ struct AlarmEditView: View {
                 alarm.minute = components.minute ?? 0
             }
         )
+    }
+}
+
+/// Scans the QR code an alarm's QR challenge will require. The code is kept
+/// even if the user later picks another challenge, so switching back (or
+/// switching to QR from the ringing flow) doesn't need a rescan.
+private struct DismissCodeScannerSheet: View {
+    let onScanned: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                QRScannerView(onCodeScanned: onScanned)
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                    .accessibilityLabel("Camera viewfinder")
+                Text("Point the camera at the QR code you'll scan to dismiss this alarm.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Save dismiss code")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
     }
 }
