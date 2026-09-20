@@ -248,9 +248,53 @@ final class CompositeDeviceRepository: DeviceRepository {
 
     // MARK: - Stimulus
 
+    /// How long `fire` waits for a dropped link to come back before giving
+    /// up. Sized for the silent push that carries an incoming poke: iOS
+    /// gives that wake-up a tight, unpredictable budget, and a stimulus that
+    /// lands ten seconds late is worse than one reported undelivered.
+    private static let reconnectBudgetForFiring: Duration = .seconds(4)
+
     func fire(_ stimulus: StimulusConfig) async throws {
-        let (peripheral, family) = try requireConnection()
+        let (peripheral, family) = try await connectionForFiring()
         try await controller(for: family).fire(stimulus, on: peripheral)
+    }
+
+    /// A stimulus is the one operation worth waiting on a reconnect for.
+    ///
+    /// The silent push carrying a poke routinely wakes the app before
+    /// CoreBluetooth has restored the link — and in that process
+    /// `startIfNeeded()` has usually never run at all, because no view
+    /// subscribed to a connection stream, so nothing has yet asked Bluetooth
+    /// for anything. Failing instantly there reports a wearable that is
+    /// sitting on the user's wrist as `deviceNotConnected`. Kick the same
+    /// auto-reconnect the UI would and give it a bounded moment to land.
+    ///
+    /// An unpaired phone still throws immediately: there is nothing to wait
+    /// for, and the device-free paths (sending a quick poke, receiving one
+    /// with no wearable) must stay instant.
+    private func connectionForFiring() async throws -> (CBPeripheral, DeviceFamily) {
+        if let peripheral = connectedPeripheral, let family = connectedFamily {
+            return (peripheral, family)
+        }
+        guard hasPairedDevice else { return try requireConnection() }
+
+        // Deliberately not awaited: `reconnect()` can spend its own
+        // power-on timeout before it even starts connecting, and the
+        // deadline below is meant to be the whole budget. The attempt
+        // outlives that budget either way — a poke that misses this window
+        // is retried by the alert half of its push (see
+        // `LocalStimulusFirer`), by which time this reconnect has usually
+        // landed.
+        Task { await self.reconnect() }
+
+        let deadline = ContinuousClock.now + Self.reconnectBudgetForFiring
+        while ContinuousClock.now < deadline, !Task.isCancelled {
+            try? await Task.sleep(for: .milliseconds(100))
+            if let peripheral = connectedPeripheral, let family = connectedFamily {
+                return (peripheral, family)
+            }
+        }
+        return try requireConnection()
     }
 
     @discardableResult
