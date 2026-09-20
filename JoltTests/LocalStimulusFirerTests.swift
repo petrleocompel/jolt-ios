@@ -33,6 +33,82 @@ final class LocalStimulusFirerTests: XCTestCase {
         XCTAssertEqual(device.fireCount, 2)
     }
 
+    /// The reported bug: the silent background push wakes the app before
+    /// CoreBluetooth has restored the link, so its attempt fails — and the
+    /// alert the user then taps, with the wearable plainly connected, must
+    /// still fire rather than replay the cached failure.
+    func testRetriesAfterAnAttemptThatFoundNoDevice() async {
+        let device = CountingDeviceRepository()
+        device.isConnected = false
+        let firer = LocalStimulusFirer(deviceRepository: device)
+        let id = UUID()
+        let stimulus = StimulusConfig(kind: .zap, intensity: 20, repetitions: 1)
+
+        let background = await firer.fire(id: id, stimulus: stimulus)
+        XCTAssertEqual(background, .deviceNotConnected)
+        XCTAssertEqual(device.fireCount, 0)
+
+        device.isConnected = true
+        let tap = await firer.fire(id: id, stimulus: stimulus)
+
+        XCTAssertEqual(tap, .fired, "a failed attempt must not poison the next delivery path")
+        XCTAssertEqual(device.fireCount, 1)
+    }
+
+    /// ...but once it has actually fired, the retry window closes again.
+    func testDoesNotFireAgainAfterAFailureThenASuccess() async {
+        let device = CountingDeviceRepository()
+        device.isConnected = false
+        let firer = LocalStimulusFirer(deviceRepository: device)
+        let id = UUID()
+        let stimulus = StimulusConfig(kind: .zap, intensity: 20, repetitions: 1)
+
+        _ = await firer.fire(id: id, stimulus: stimulus)
+        device.isConnected = true
+        _ = await firer.fire(id: id, stimulus: stimulus)
+        let third = await firer.fire(id: id, stimulus: stimulus)
+
+        XCTAssertEqual(third, .fired)
+        XCTAssertEqual(device.fireCount, 1)
+    }
+
+    /// Both pushes landing at once still means one shock: the second call
+    /// joins the in-flight attempt instead of starting its own.
+    func testConcurrentCallsForTheSameIDFireOnce() async {
+        let device = CountingDeviceRepository()
+        device.fireDelay = .milliseconds(50)
+        let firer = LocalStimulusFirer(deviceRepository: device)
+        let id = UUID()
+        let stimulus = StimulusConfig(kind: .zap, intensity: 20, repetitions: 1)
+
+        async let first = firer.fire(id: id, stimulus: stimulus)
+        async let second = firer.fire(id: id, stimulus: stimulus)
+        let results = await [first, second]
+
+        XCTAssertEqual(results, [.fired, .fired])
+        XCTAssertEqual(device.fireCount, 1, "two pushes arriving together must not shock twice")
+    }
+
+    /// DND is a decision, not a failure — a muted poke stays muted even if
+    /// the user turns DND off before the second delivery path arrives.
+    func testMutedPokeIsNotRetried() async {
+        UserDefaults.standard.set(true, forKey: PokeSettings.doNotDisturbKey)
+        defer { UserDefaults.standard.removeObject(forKey: PokeSettings.doNotDisturbKey) }
+
+        let device = CountingDeviceRepository()
+        let firer = LocalStimulusFirer(deviceRepository: device)
+        let id = UUID()
+        let stimulus = StimulusConfig(kind: .zap, intensity: 20, repetitions: 1)
+
+        let muted = await firer.fire(id: id, stimulus: stimulus)
+        XCTAssertEqual(muted, .muted)
+        UserDefaults.standard.set(false, forKey: PokeSettings.doNotDisturbKey)
+
+        let afterDNDOff = await firer.fire(id: id, stimulus: stimulus)
+        XCTAssertEqual(afterDNDOff, .muted)
+        XCTAssertEqual(device.fireCount, 0)
+    }
+
     func testRespectsDoNotDisturbWithoutFiring() async {
         UserDefaults.standard.set(true, forKey: PokeSettings.doNotDisturbKey)
         defer { UserDefaults.standard.removeObject(forKey: PokeSettings.doNotDisturbKey) }
@@ -51,6 +127,13 @@ final class LocalStimulusFirerTests: XCTestCase {
 @MainActor
 private final class CountingDeviceRepository: DeviceRepository {
     private(set) var fireCount = 0
+    /// Flipped mid-test to play the wearable coming back within the app's
+    /// lifetime — the situation the silent-push retry exists for.
+    var isConnected = true
+    /// Holds `fire` open long enough for a second call to race into it.
+    var fireDelay: Duration?
+
+    enum StubError: Error { case notConnected }
 
     var connectionState: AsyncStream<DeviceConnectionState> { AsyncStream { $0.finish() } }
     var connectedDevice: AsyncStream<PavlokDevice?> { AsyncStream { $0.finish() } }
@@ -65,6 +148,8 @@ private final class CountingDeviceRepository: DeviceRepository {
     func forgetPairedDevice() async {}
 
     func fire(_ stimulus: StimulusConfig) async throws {
+        if let fireDelay { try? await Task.sleep(for: fireDelay) }
+        guard isConnected else { throw StubError.notConnected }
         fireCount += 1
     }
 

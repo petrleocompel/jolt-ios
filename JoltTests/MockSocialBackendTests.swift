@@ -77,6 +77,32 @@ final class MockSocialBackendTests: XCTestCase {
         XCTAssertEqual(activity.filter { $0.id == payload.pokeID }.count, 1)
     }
 
+    /// The same retry the firer allows, seen through the activity log: the
+    /// silent push arrived with no wearable connected, the tap arrived with
+    /// one — the log must end up with a single `fired` entry, not a stuck
+    /// `deviceNotConnected` one and not two rows.
+    func testHandleIncomingPokeRetriesAfterTheDeviceComesBack() async throws {
+        let device = FakeDeviceRepository(startsPaired: false)
+        let backend = MockSocialBackend(deviceRepository: device)
+        let payload = PokePushPayload(
+            pokeID: UUID(), senderHandle: "alice", senderDisplayName: "Alice",
+            stimulus: StimulusConfig(kind: .zap, intensity: 20, repetitions: 1)
+        )
+
+        let background = await backend.handleIncomingPoke(payload)
+        XCTAssertEqual(background, .deviceNotConnected)
+
+        try await device.connect(to: PavlokDevice(peripheralIdentifier: UUID(), name: "pavlok-3", family: .pavlok3))
+        let tap = await backend.handleIncomingPoke(payload)
+        XCTAssertEqual(tap, .fired)
+
+        var iterator = backend.activity.makeAsyncIterator()
+        let activity = await iterator.next() ?? []
+        let logged = activity.filter { $0.id == payload.pokeID }
+        XCTAssertEqual(logged.count, 1)
+        XCTAssertEqual(logged.first?.status, .fired)
+    }
+
     func testHandleIncomingPokeRespectsDoNotDisturb() async {
         UserDefaults.standard.set(true, forKey: PokeSettings.doNotDisturbKey)
         defer { UserDefaults.standard.removeObject(forKey: PokeSettings.doNotDisturbKey) }

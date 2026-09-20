@@ -178,23 +178,29 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     @discardableResult
     func handleIncomingPoke(_ payload: PokePushPayload) async -> PokeDeliveryStatus {
-        // Idempotency check BEFORE firing: a poke can arrive via both a
-        // background silent push and a subsequent notification tap — must
-        // never fire the same poke twice.
-        if let existing = activityLog.first(where: { $0.id == payload.pokeID }) {
-            return existing.status
-        }
+        // Idempotency lives in `firer` — it owns the thing that must not
+        // happen twice, and it knows the difference between a poke that was
+        // delivered and one whose attempt merely failed for want of a BLE
+        // link. A second arrival of a failed poke is a retry, not a
+        // duplicate, so the log records the new outcome in place rather than
+        // short-circuiting on the old one.
         let status = await firer.fire(id: payload.pokeID, stimulus: payload.stimulus)
-        let event = PokeEvent(
-            id: payload.pokeID,
-            direction: .received,
-            friendHandle: payload.senderHandle,
-            friendDisplayName: payload.senderDisplayName,
-            stimulus: payload.stimulus,
-            status: status,
-            createdAt: .now
-        )
-        activityLog.insert(event, at: 0)
+        if let index = activityLog.firstIndex(where: { $0.id == payload.pokeID }) {
+            activityLog[index].status = status
+        } else {
+            activityLog.insert(
+                PokeEvent(
+                    id: payload.pokeID,
+                    direction: .received,
+                    friendHandle: payload.senderHandle,
+                    friendDisplayName: payload.senderDisplayName,
+                    stimulus: payload.stimulus,
+                    status: status,
+                    createdAt: .now
+                ),
+                at: 0
+            )
+        }
         activityHub.yield(activityLog)
         return status
     }
