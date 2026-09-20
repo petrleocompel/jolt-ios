@@ -273,28 +273,26 @@ final class CompositeDeviceRepository: DeviceRepository {
     /// for, and the device-free paths (sending a quick poke, receiving one
     /// with no wearable) must stay instant.
     private func connectionForFiring() async throws -> (CBPeripheral, DeviceFamily) {
-        if let peripheral = connectedPeripheral, let family = connectedFamily {
-            return (peripheral, family)
-        }
-        guard hasPairedDevice else { return try requireConnection() }
-
-        // Deliberately not awaited: `reconnect()` can spend its own
-        // power-on timeout before it even starts connecting, and the
-        // deadline below is meant to be the whole budget. The attempt
-        // outlives that budget either way — a poke that misses this window
-        // is retried by the alert half of its push (see
-        // `LocalStimulusFirer`), by which time this reconnect has usually
-        // landed.
-        Task { await self.reconnect() }
-
-        let deadline = ContinuousClock.now + Self.reconnectBudgetForFiring
-        while ContinuousClock.now < deadline, !Task.isCancelled {
-            try? await Task.sleep(for: .milliseconds(100))
-            if let peripheral = connectedPeripheral, let family = connectedFamily {
+        let waiter = ConnectionWaiter<(CBPeripheral, DeviceFamily)>(
+            budget: Self.reconnectBudgetForFiring,
+            isPaired: { [weak self] in self?.hasPairedDevice ?? false },
+            currentConnection: { [weak self] in
+                guard let self, let peripheral = connectedPeripheral, let family = connectedFamily else {
+                    return nil
+                }
                 return (peripheral, family)
-            }
-        }
-        return try requireConnection()
+            },
+            // Deliberately not awaited: `reconnect()` can spend its own
+            // power-on timeout before it even starts connecting, and the
+            // budget above is meant to cover the whole wait. The attempt
+            // outlives that budget either way — a poke that misses this
+            // window is retried by the alert half of its push (see
+            // `LocalStimulusFirer`), by which time this reconnect has
+            // usually landed.
+            startReconnect: { [weak self] in Task { await self?.reconnect() } }
+        )
+        guard let connection = await waiter.connection() else { return try requireConnection() }
+        return connection
     }
 
     @discardableResult

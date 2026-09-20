@@ -25,6 +25,7 @@
 		18EDD2B8884B03D5236A1388 /* MockSocialBackend+PushDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A72C61E08152D0A883DA3D /* MockSocialBackend+PushDiagnostics.swift */; };
 		18FBF1D0C00D357AF7A747D9 /* ESFValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6A8B311C6A28084B089F241 /* ESFValue.swift */; };
 		19905697928A1047B746F915 /* StimulusSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */; };
+		1C60EAB3E1BABB69ABA8CB91 /* ConnectionWaiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEB95C0787EAC3FCAA57064 /* ConnectionWaiter.swift */; };
 		1D3CFC3B94077B20FA440C10 /* DeviceFreeUsageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2451B80181EF10936C8BE39F /* DeviceFreeUsageTests.swift */; };
 		20341B53E581AC27219F5A40 /* ServerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE130A9829B4F98EB8B6DEBB /* ServerConfiguration.swift */; };
 		2088D9579DB4A4076737B96B /* ActiveAlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */; };
@@ -77,6 +78,7 @@
 		647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76CFA2F23E100D332D35DEB5 /* Assets.xcassets */; };
 		65A21194C06CE677CB313567 /* PokeTriggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28E129435EE9D10DA65AF4B /* PokeTriggerTests.swift */; };
 		68E6E86FF009CA9EF78ABE8F /* JoltApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */; };
+		6B73C6D9B87673900B8889A9 /* ConnectionWaiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD616365C34F4FFC52ABA7B /* ConnectionWaiterTests.swift */; };
 		6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */; };
 		6E632728CC4DE51C84E1B65E /* RemoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3A3F815504CC38F96F154C /* RemoteWidget.swift */; };
 		6E758741B4A32DC0A8FA40B9 /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0F6C7124F39EA5A1398305 /* AuthRepository.swift */; };
@@ -296,6 +298,7 @@
 		76CFA2F23E100D332D35DEB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInformationReader.swift; sourceTree = "<group>"; };
 		7A479CC6F92AA233BBA0CFCB /* RemoteDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDashboardView.swift; sourceTree = "<group>"; };
+		7AEB95C0787EAC3FCAA57064 /* ConnectionWaiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionWaiter.swift; sourceTree = "<group>"; };
 		7AEC536ADB82917F4A57AF77 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		7BAFCF0D4E0E1D455A6D9AF7 /* QuickPokeSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPokeSettingsView.swift; sourceTree = "<group>"; };
 		7D0E5B645869BFF4C8E1FCEE /* PokeTriggerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerSettingsView.swift; sourceTree = "<group>"; };
@@ -389,6 +392,7 @@
 		FA63F667AC24AA36DC49CF58 /* ProtocolLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolLabView.swift; sourceTree = "<group>"; };
 		FADBA37929D5C30DEFCE74B3 /* PokeActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeActivityView.swift; sourceTree = "<group>"; };
 		FB4C66C4A6EDE59641FC45E8 /* PokeRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeRepository.swift; sourceTree = "<group>"; };
+		FCD616365C34F4FFC52ABA7B /* ConnectionWaiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionWaiterTests.swift; sourceTree = "<group>"; };
 		FDC2E601733EB1B096020C7F /* FiringModeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiringModeService.swift; sourceTree = "<group>"; };
 		FDD0154A817E7BE315780729 /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 		FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDiagnosticsView.swift; sourceTree = "<group>"; };
@@ -564,6 +568,7 @@
 			children = (
 				622258DCCFFFC679A9BC97C1 /* BLELog.swift */,
 				96C7A7BC5B182B1DD46F2563 /* CBUUID+Canonical.swift */,
+				7AEB95C0787EAC3FCAA57064 /* ConnectionWaiter.swift */,
 				6FABADD5059216B0FFBB3073 /* DeviceController.swift */,
 			);
 			path = Support;
@@ -575,6 +580,7 @@
 				37D18F03D0F1DB6C5B0AFBCB /* AlarmDismissFlowTests.swift */,
 				CD1F6C24A7AF324973F87FFB /* ButtonConfigPayloadTests.swift */,
 				02F808F518CF2FC8A7E45CF1 /* ButtonConfigReportTests.swift */,
+				FCD616365C34F4FFC52ABA7B /* ConnectionWaiterTests.swift */,
 				C27CEABD71F97CB87FC062B7 /* DeviceFamilyMatchingTests.swift */,
 				2451B80181EF10936C8BE39F /* DeviceFreeUsageTests.swift */,
 				4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */,
@@ -923,6 +929,7 @@
 				9229C0BB7F05571F15C07BFF /* AlarmDismissFlowTests.swift in Sources */,
 				CA8DE45C857A5246649A1150 /* ButtonConfigPayloadTests.swift in Sources */,
 				40D77CD184D38308FF263535 /* ButtonConfigReportTests.swift in Sources */,
+				6B73C6D9B87673900B8889A9 /* ConnectionWaiterTests.swift in Sources */,
 				26CEBD9BADEDBD95EA0C2E25 /* DeviceFamilyMatchingTests.swift in Sources */,
 				1D3CFC3B94077B20FA440C10 /* DeviceFreeUsageTests.swift in Sources */,
 				FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */,
@@ -986,6 +993,7 @@
 				E962F1D5B029A9A1CD3B807E /* CompositeDeviceRepository+ButtonConfig.swift in Sources */,
 				9AF998457E5AC24F79D99472 /* CompositeDeviceRepository+Reliability.swift in Sources */,
 				8576F98F90F514A29E076544 /* CompositeDeviceRepository.swift in Sources */,
+				1C60EAB3E1BABB69ABA8CB91 /* ConnectionWaiter.swift in Sources */,
 				A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */,
 				95FCEFD9EB58E6ECA04F86C2 /* DeviceController.swift in Sources */,
 				D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */,
