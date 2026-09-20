@@ -18,16 +18,13 @@ extension BluetoothCentralManager {
             return characteristic
         }
 
-        try await discoverServices([serviceUUID], on: peripheral)
+        try await discoverServices(on: peripheral)
         guard let service = peripheral.services?.first(where: { $0.uuid.matches(serviceUUID) }) else {
             let present = peripheral.services?.map(\.uuid.uuidString).joined(separator: ",") ?? "none"
             BLELog.error("Service \(serviceUUID.uuidString) not found. Present: \(present)")
             throw BluetoothError.serviceNotFound(serviceUUID)
         }
-        // Discover *all* characteristics rather than only the one asked for:
-        // the extra ones cost nothing and make the "what's actually on this
-        // device" log line useful when a UUID guess turns out wrong.
-        try await discoverCharacteristics(nil, in: service, on: peripheral)
+        try await discoverCharacteristics(in: service, on: peripheral)
         guard let characteristic = service.characteristics?.first(where: { $0.uuid.matches(characteristicUUID) }) else {
             let present = service.characteristics?.map(\.uuid.uuidString).joined(separator: ",") ?? "none"
             BLELog.error("Characteristic \(characteristicUUID.uuidString) not found in \(serviceUUID.uuidString). Present: \(present)")
@@ -36,31 +33,48 @@ extension BluetoothCentralManager {
         return characteristic
     }
 
-    func discoverServices(_ uuids: [CBUUID]?, on peripheral: CBPeripheral, timeout: Duration = .seconds(10)) async throws {
+    /// Discovers *every* service, never a filtered subset.
+    ///
+    /// That is deliberate, and it is what makes sharing a discovery between
+    /// overlapping callers sound: CoreBluetooth reports one
+    /// `didDiscoverServices` per request with no way to tell which request
+    /// it answers, so a caller can be completed by somebody else's
+    /// discovery. Completing a "find 180F" wait with the result of a "find
+    /// 180A" discovery would report the service as absent. With every
+    /// discovery covering everything, any callback is a valid answer for
+    /// anyone waiting.
+    func discoverServices(on peripheral: CBPeripheral, timeout: Duration = .seconds(10)) async throws {
+        let peripheralID = peripheral.identifier
+        let token = WaiterRegistry<UUID, CheckedContinuation<Void, Error>>.Token()
         try await withTimeout(timeout, description: "discover services") {
             try await withCheckedThrowingContinuation { continuation in
-                self.discoverServicesContinuations[peripheral.identifier] = continuation
-                peripheral.discoverServices(uuids)
+                self.serviceDiscoveryWaiters.add(continuation, token: token, for: peripheralID)
+                peripheral.discoverServices(nil)
             }
         } onTimeout: { [weak self] in
-            self?.discoverServicesContinuations.removeValue(forKey: peripheral.identifier)?
+            self?.serviceDiscoveryWaiters.take(token, for: peripheralID)?
                 .resume(throwing: BluetoothError.timedOut("discover services"))
         }
     }
 
+    /// Discovers every characteristic in `service`, for the same reason
+    /// `discoverServices` takes no filter — and because the extra ones cost
+    /// nothing and make the "what's actually on this device" log line useful
+    /// when a UUID guess turns out wrong.
     func discoverCharacteristics(
-        _ uuids: [CBUUID]?,
         in service: CBService,
         on peripheral: CBPeripheral,
         timeout: Duration = .seconds(10)
     ) async throws {
+        let scope = ServiceScope(peripheralID: peripheral.identifier, serviceUUID: service.uuid.canonicalString)
+        let token = WaiterRegistry<ServiceScope, CheckedContinuation<Void, Error>>.Token()
         try await withTimeout(timeout, description: "discover characteristics") {
             try await withCheckedThrowingContinuation { continuation in
-                self.discoverCharacteristicsContinuations[peripheral.identifier, default: [:]][service.uuid.canonicalString] = continuation
-                peripheral.discoverCharacteristics(uuids, for: service)
+                self.characteristicDiscoveryWaiters.add(continuation, token: token, for: scope)
+                peripheral.discoverCharacteristics(nil, for: service)
             }
         } onTimeout: { [weak self] in
-            self?.discoverCharacteristicsContinuations[peripheral.identifier]?.removeValue(forKey: service.uuid.canonicalString)?
+            self?.characteristicDiscoveryWaiters.take(token, for: scope)?
                 .resume(throwing: BluetoothError.timedOut("discover characteristics"))
         }
     }
@@ -75,10 +89,10 @@ extension BluetoothCentralManager {
     ///   the value a characteristic already holds usually gives it away.
     func dumpGATT(on peripheral: CBPeripheral, readingValues: Bool = false) async throws -> [GATTCharacteristicDump] {
         guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
-        try await discoverServices(nil, on: peripheral)
+        try await discoverServices(on: peripheral)
         var dump: [GATTCharacteristicDump] = []
         for service in peripheral.services ?? [] {
-            try? await discoverCharacteristics(nil, in: service, on: peripheral)
+            try? await discoverCharacteristics(in: service, on: peripheral)
             for characteristic in service.characteristics ?? [] {
                 var value: String?
                 if readingValues, characteristic.properties.contains(.read) {
@@ -123,11 +137,11 @@ extension BluetoothCentralManager {
     func captureAllNotifications(on peripheral: CBPeripheral) async throws -> Int {
         guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
         stopNotificationCapture()
-        try await discoverServices(nil, on: peripheral)
+        try await discoverServices(on: peripheral)
 
         var subscribed = 0
         for service in peripheral.services ?? [] {
-            try? await discoverCharacteristics(nil, in: service, on: peripheral)
+            try? await discoverCharacteristics(in: service, on: peripheral)
             for characteristic in service.characteristics ?? [] {
                 guard characteristic.properties.contains(.notify)
                     || characteristic.properties.contains(.indicate) else { continue }
@@ -168,7 +182,7 @@ extension BluetoothCentralManager {
     func streamAllNotifications(on peripheral: CBPeripheral) async throws -> AsyncStream<DeviceEvent> {
         guard peripheral.state == .connected else { throw BluetoothError.bluetoothUnavailable }
         stopEventStream()
-        try await discoverServices(nil, on: peripheral)
+        try await discoverServices(on: peripheral)
 
         return AsyncStream { continuation in
             continuation.onTermination = { [weak self] _ in
@@ -177,7 +191,7 @@ extension BluetoothCentralManager {
             Task { @MainActor in
                 var subscribed = 0
                 for service in peripheral.services ?? [] {
-                    try? await self.discoverCharacteristics(nil, in: service, on: peripheral)
+                    try? await self.discoverCharacteristics(in: service, on: peripheral)
                     for characteristic in service.characteristics ?? [] {
                         guard characteristic.properties.contains(.notify)
                             || characteristic.properties.contains(.indicate) else { continue }
@@ -218,9 +232,9 @@ extension BluetoothCentralManager {
         in serviceUUID: CBUUID,
         on peripheral: CBPeripheral
     ) async -> CBUUID? {
-        try? await discoverServices([serviceUUID], on: peripheral)
+        try? await discoverServices(on: peripheral)
         guard let service = peripheral.services?.first(where: { $0.uuid.matches(serviceUUID) }) else { return nil }
-        try? await discoverCharacteristics(nil, in: service, on: peripheral)
+        try? await discoverCharacteristics(in: service, on: peripheral)
         for candidate in candidates {
             if let match = service.characteristics?.first(where: { $0.uuid.matches(candidate) }),
                match.properties.contains(.write) || match.properties.contains(.writeWithoutResponse) {

@@ -43,6 +43,7 @@
 		328B15622249309CA7DDEC58 /* PokeFeedbackSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5677A43DA311141C36544CCA /* PokeFeedbackSettings.swift */; };
 		32F2B048CA156DAC2775D6F8 /* StreamHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC84FE5522BBC7EAB468867B /* StreamHub.swift */; };
 		34359AD510570C687E8C7DE9 /* InlineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EF7569653C9B4BE647886FF /* InlineBanner.swift */; };
+		36B4AE3677796E4A9C1F16CF /* WaiterRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8756D0DDC39B4053D99E79CF /* WaiterRegistryTests.swift */; };
 		388B114FD98AEF3635AF0A0F /* PokeActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FADBA37929D5C30DEFCE74B3 /* PokeActivityView.swift */; };
 		3A6E6690932B1B8AAF96643A /* ButtonConfigReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 054E4A4B48F68D0A0B2BE2A3 /* ButtonConfigReport.swift */; };
 		3C01F079734972A68CC8A62B /* MockSocialBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96552544D49CCD4D3F287C29 /* MockSocialBackend.swift */; };
@@ -127,6 +128,7 @@
 		A5CD51F537C20D9DBDCB6078 /* QuickPokeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A203663ED2E6C54D999C6 /* QuickPokeService.swift */; };
 		A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9EF092B259B55847C7549D /* RemoteControlView.swift */; };
 		A9502C9B2BE1F8C56014FF7A /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B8896F658741B48ABE9882 /* AboutView.swift */; };
+		AC3C15EE93C4AF92AD0140DB /* CompositeDeviceRepository+DeviceInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A562F19A0F25DCA25703C8 /* CompositeDeviceRepository+DeviceInfo.swift */; };
 		AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */; };
 		AD9CA846C73D8B3C3A01C8A9 /* BluetoothCentralManager+Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */; };
 		ADE18696232BDE8C4016133B /* HTTPSocialBackend+PushDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */; };
@@ -157,6 +159,7 @@
 		D1DB6E5108E6321A1A715191 /* QuickPokeSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADFBD4B73B40566FF620785 /* QuickPokeSettingsTests.swift */; };
 		D35F09968F502E009E5C5120 /* PokeRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB4C66C4A6EDE59641FC45E8 /* PokeRepository.swift */; };
 		D39EFE87CA5857EC4251F744 /* QuickPokeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211ECBBA9F2A7DC0C6C767AE /* QuickPokeSettings.swift */; };
+		D4C53CE3902C219AF906460B /* WaiterRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B71236334EAF269D921011 /* WaiterRegistry.swift */; };
 		D576369E89AF107885426854 /* RemoteCustomizeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 398AF09AEA7456E719A3BE60 /* RemoteCustomizeView.swift */; };
 		D6E3DF9C9565AAE50599C7AB /* DeviceDiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE02DBE24221AE733ABB667C /* DeviceDiagnosticsView.swift */; };
 		D98D963DFF03B0C15FCE48CA /* LocalStimulusFirer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */; };
@@ -214,6 +217,7 @@
 /* Begin PBXFileReference section */
 		005F907E84DDB3B357B7C0D9 /* Jolt.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Jolt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		02F808F518CF2FC8A7E45CF1 /* ButtonConfigReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfigReportTests.swift; sourceTree = "<group>"; };
+		04A562F19A0F25DCA25703C8 /* CompositeDeviceRepository+DeviceInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CompositeDeviceRepository+DeviceInfo.swift"; sourceTree = "<group>"; };
 		054E4A4B48F68D0A0B2BE2A3 /* ButtonConfigReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfigReport.swift; sourceTree = "<group>"; };
 		0620C2FBA2833B67D7C987D1 /* ServerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSettingsView.swift; sourceTree = "<group>"; };
 		06D562BFD4BFBF009E3829FF /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -309,9 +313,11 @@
 		7F3A3F815504CC38F96F154C /* RemoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteWidget.swift; sourceTree = "<group>"; };
 		7F953DC81C35A18E75FFD98F /* BluetoothLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothLogView.swift; sourceTree = "<group>"; };
 		805E27A53B607DB735ECDCD8 /* SCMaxGATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxGATT.swift; sourceTree = "<group>"; };
+		81B71236334EAF269D921011 /* WaiterRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaiterRegistry.swift; sourceTree = "<group>"; };
 		85386829606830BE54311E62 /* PokeTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTrigger.swift; sourceTree = "<group>"; };
 		85AB6BDC42BB67C1DD5DC49D /* PermissionEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionEditView.swift; sourceTree = "<group>"; };
 		85CF7B6973503393E2FA669A /* PokeDeliveryStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeDeliveryStatusTests.swift; sourceTree = "<group>"; };
+		8756D0DDC39B4053D99E79CF /* WaiterRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaiterRegistryTests.swift; sourceTree = "<group>"; };
 		8BE2FD5123762F32D9224DBB /* PushDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushDiagnostics.swift; sourceTree = "<group>"; };
 		8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPSocialBackendTests.swift; sourceTree = "<group>"; };
 		8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsViewModel.swift; sourceTree = "<group>"; };
@@ -502,6 +508,7 @@
 				4D8AFF78623AD0961505FBB5 /* AuthTokenStore.swift */,
 				48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */,
 				94ECC070890709E943D845F6 /* CompositeDeviceRepository+ButtonConfig.swift */,
+				04A562F19A0F25DCA25703C8 /* CompositeDeviceRepository+DeviceInfo.swift */,
 				CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */,
 				3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */,
 				35E26F9100A78C2752864BEA /* FiringInteractionSettingsStore.swift */,
@@ -570,6 +577,7 @@
 				96C7A7BC5B182B1DD46F2563 /* CBUUID+Canonical.swift */,
 				7AEB95C0787EAC3FCAA57064 /* ConnectionWaiter.swift */,
 				6FABADD5059216B0FFBB3073 /* DeviceController.swift */,
+				81B71236334EAF269D921011 /* WaiterRegistry.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -604,6 +612,7 @@
 				D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */,
 				301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */,
 				07AE7384436BE969756EBE54 /* TestPushPayloadTests.swift */,
+				8756D0DDC39B4053D99E79CF /* WaiterRegistryTests.swift */,
 			);
 			path = JoltTests;
 			sourceTree = "<group>";
@@ -953,6 +962,7 @@
 				1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */,
 				19905697928A1047B746F915 /* StimulusSettingsTests.swift in Sources */,
 				999AD2717052CAD40572966B /* TestPushPayloadTests.swift in Sources */,
+				36B4AE3677796E4A9C1F16CF /* WaiterRegistryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -991,6 +1001,7 @@
 				C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */,
 				0ACB79F06C389DCEFFD749BA /* CBUUID+Canonical.swift in Sources */,
 				E962F1D5B029A9A1CD3B807E /* CompositeDeviceRepository+ButtonConfig.swift in Sources */,
+				AC3C15EE93C4AF92AD0140DB /* CompositeDeviceRepository+DeviceInfo.swift in Sources */,
 				9AF998457E5AC24F79D99472 /* CompositeDeviceRepository+Reliability.swift in Sources */,
 				8576F98F90F514A29E076544 /* CompositeDeviceRepository.swift in Sources */,
 				1C60EAB3E1BABB69ABA8CB91 /* ConnectionWaiter.swift in Sources */,
@@ -1109,6 +1120,7 @@
 				8A938625795098D44B05D78D /* SwiftDataAlarmRepository.swift in Sources */,
 				72BF10A36CFDA988B7D456EE /* TestPushPayload.swift in Sources */,
 				07557DCAD160B1BCC498222C /* User.swift in Sources */,
+				D4C53CE3902C219AF906460B /* WaiterRegistry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

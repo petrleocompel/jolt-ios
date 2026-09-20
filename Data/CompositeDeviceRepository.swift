@@ -194,7 +194,7 @@ final class CompositeDeviceRepository: DeviceRepository {
         store.save(peripheralIdentifier: peripheral.identifier, name: name, family: family)
         connectionStateHub.yield(.connected)
 
-        var device = PavlokDevice(
+        let device = PavlokDevice(
             peripheralIdentifier: peripheral.identifier,
             name: name,
             family: family,
@@ -209,17 +209,7 @@ final class CompositeDeviceRepository: DeviceRepository {
             // nothing" and "the zap went to a characteristic this device
             // doesn't have".
             _ = try? await dumpGATT(readingValues: false)
-
-            // Then fill in model/firmware/battery and re-publish. Without
-            // this the connected device's `info` stays at its empty default
-            // for the whole session, so the battery indicator on the remote
-            // never appears no matter what the hardware reports.
-            guard let info = try? await deviceInfoReader.read(from: peripheral),
-                  connectedPeripheral?.identifier == peripheral.identifier else { return }
-            device.info = info
-            let battery = info.batteryLevelPercent.map(String.init) ?? "?"
-            BLELog.info("Device info: model=\(info.modelNumber ?? "?") fw=\(info.firmwareRevision ?? "?") battery=\(battery)")
-            connectedDeviceHub.yield(device)
+            await publishDeviceInfo(for: peripheral, of: device)
         }
     }
 
@@ -313,11 +303,6 @@ final class CompositeDeviceRepository: DeviceRepository {
     }
 
     // MARK: - Everything else
-
-    func readDeviceInfo() async throws -> DeviceInfo {
-        let (peripheral, _) = try requireConnection()
-        return try await deviceInfoReader.read(from: peripheral)
-    }
 
     func syncDeviceAlarm(_ alarm: Alarm) async throws {
         let (peripheral, family) = try requireConnection()

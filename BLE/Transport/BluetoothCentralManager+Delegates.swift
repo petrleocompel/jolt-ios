@@ -74,9 +74,9 @@ extension BluetoothCentralManager: CBCentralManagerDelegate {
             .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
         writeContinuations.removeValue(forKey: peripheralID)?.values
             .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
-        discoverServicesContinuations.removeValue(forKey: peripheralID)?
-            .resume(throwing: BluetoothError.bluetoothUnavailable)
-        discoverCharacteristicsContinuations.removeValue(forKey: peripheralID)?.values
+        serviceDiscoveryWaiters.takeAll(for: peripheralID)
+            .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
+        characteristicDiscoveryWaiters.takeAll { $0.peripheralID == peripheralID }
             .forEach { $0.resume(throwing: BluetoothError.bluetoothUnavailable) }
     }
 }
@@ -84,29 +84,38 @@ extension BluetoothCentralManager: CBCentralManagerDelegate {
 extension BluetoothCentralManager: CBPeripheralDelegate {
     nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         Task { @MainActor in
-            guard let continuation = discoverServicesContinuations.removeValue(forKey: peripheral.identifier) else { return }
+            // Everyone waiting on this peripheral is answered, not just the
+            // most recent caller: discovery covers every service, so one
+            // callback settles every outstanding wait. Resuming only one of
+            // them is what used to strand the device-info read.
+            let waiters = serviceDiscoveryWaiters.takeAll(for: peripheral.identifier)
+            guard !waiters.isEmpty else { return }
             if let error {
-                continuation.resume(throwing: BluetoothError.readFailed(error))
+                waiters.forEach { $0.resume(throwing: BluetoothError.readFailed(error)) }
             } else {
                 let services = peripheral.services?.map(\.uuid.uuidString).joined(separator: ",") ?? "none"
                 BLELog.debug("Services on \(peripheral.identifier): \(services)")
-                continuation.resume()
+                waiters.forEach { $0.resume() }
             }
         }
     }
 
     nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         Task { @MainActor in
-            guard let continuation = discoverCharacteristicsContinuations[peripheral.identifier]?
-                .removeValue(forKey: service.uuid.canonicalString) else { return }
+            let scope = ServiceScope(
+                peripheralID: peripheral.identifier,
+                serviceUUID: service.uuid.canonicalString
+            )
+            let waiters = characteristicDiscoveryWaiters.takeAll(for: scope)
+            guard !waiters.isEmpty else { return }
             if let error {
-                continuation.resume(throwing: BluetoothError.readFailed(error))
+                waiters.forEach { $0.resume(throwing: BluetoothError.readFailed(error)) }
             } else {
                 let found = service.characteristics?
                     .map { "\($0.uuid.uuidString)[\($0.properties.labels.joined(separator: "|"))]" }
                     .joined(separator: ",") ?? "none"
                 BLELog.debug("Characteristics in \(service.uuid.uuidString): \(found)")
-                continuation.resume()
+                waiters.forEach { $0.resume() }
             }
         }
     }

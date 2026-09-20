@@ -100,11 +100,25 @@ final class BluetoothCentralManager: NSObject {
     var readContinuations: [UUID: [String: CheckedContinuation<Data, Error>]] = [:]
     var writeContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
 
-    /// Keyed by peripheral, so two peripherals discovering at once can't
-    /// steal each other's completion (the previous single-slot version
-    /// dropped one of them and hung forever).
-    var discoverServicesContinuations: [UUID: CheckedContinuation<Void, Error>] = [:]
-    var discoverCharacteristicsContinuations: [UUID: [String: CheckedContinuation<Void, Error>]] = [:]
+    /// Everyone currently awaiting a discovery, keyed by peripheral and (for
+    /// characteristics) service.
+    ///
+    /// A registry rather than one continuation per key because discovery is
+    /// shared: the connect-time device-info read, the GATT dump and the poke
+    /// trigger's subscription all discover the same peripheral within a
+    /// moment of each other. A single slot meant the last one in replaced
+    /// the others, whose tasks then hung forever. See `WaiterRegistry`.
+    var serviceDiscoveryWaiters = WaiterRegistry<UUID, CheckedContinuation<Void, Error>>()
+    var characteristicDiscoveryWaiters = WaiterRegistry<ServiceScope, CheckedContinuation<Void, Error>>()
+
+    /// One service on one peripheral — the scope a characteristic discovery
+    /// completes.
+    struct ServiceScope: Hashable {
+        let peripheralID: UUID
+        /// Canonical, so a 16-bit short form and its full Bluetooth-base
+        /// expansion are the same scope. See `CBUUID+Canonical.swift`.
+        let serviceUUID: String
+    }
 
     var stateContinuation: AsyncStream<CBManagerState>.Continuation?
     var disconnectionContinuation: AsyncStream<(peripheralID: UUID, error: Error?)>.Continuation?
