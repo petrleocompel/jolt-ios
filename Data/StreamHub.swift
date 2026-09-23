@@ -17,6 +17,13 @@ final class StreamHub<Element> {
     private var last: Element?
     private let replaysLast: Bool
 
+    /// The value subscribers were last given, or `nil` if nothing has been
+    /// yielded yet. For a producer that needs to amend what it already
+    /// published — the battery monitor moves one field of the connected
+    /// device and yields it back — rather than for observers, who should
+    /// take a `stream()`.
+    var latest: Element? { last }
+
     init(replaysLast: Bool = true) {
         self.replaysLast = replaysLast
     }

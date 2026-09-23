@@ -8,7 +8,7 @@ import Foundation
 /// device/no-device split to simulate.
 @MainActor
 final class FakeDeviceRepository: DeviceRepository {
-    private let fakeDevice = PavlokDevice(
+    private var fakeDevice = PavlokDevice(
         peripheralIdentifier: UUID(),
         name: "pavlok-3",
         family: .pavlok3,
@@ -143,7 +143,29 @@ final class FakeDeviceRepository: DeviceRepository {
         AsyncStream { $0.finish() }
     }
 
-    func readDeviceInfo() async throws -> DeviceInfo { fakeDevice.info }
+    /// Publishes as well as returns, exactly as `CompositeDeviceRepository`
+    /// does — a refresh on one screen is how every other one finds out.
+    func readDeviceInfo() async throws -> DeviceInfo {
+        if isConnected { connectedDeviceHub.yield(fakeDevice) }
+        return fakeDevice.info
+    }
+
+    /// Moves the stand-in wearable's battery the way the hardware would.
+    ///
+    /// - Parameter notifying: `true` models a device whose 0x2A19 notifies —
+    ///   the new level reaches subscribers by itself. `false` models one
+    ///   that has to be asked (the poll / foreground-refresh path): the
+    ///   hardware has moved but nothing is published until something calls
+    ///   `readDeviceInfo()`.
+    func simulateBatteryLevel(_ percent: Int, notifying: Bool = true) {
+        fakeDevice.info.batteryLevelPercent = percent
+        guard notifying, isConnected else { return }
+        connectedDeviceHub.yield(fakeDevice)
+    }
+
+    /// What subscribers currently believe, which is not the same question as
+    /// `hasPairedDevice` — a paired wearable can be out of range.
+    private var isConnected: Bool { (connectedDeviceHub.latest ?? nil) != nil }
 
     func setButtonConfig(_ config: ButtonConfig) async throws {}
 

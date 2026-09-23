@@ -35,6 +35,11 @@ protocol DeviceRepository {
     /// app stops auto-reconnecting to it.
     func forgetPairedDevice() async
     func fire(_ stimulus: StimulusConfig) async throws
+    /// Reads model / firmware / battery from the wearable now, *and*
+    /// republishes the connected device with what came back, so every screen
+    /// observing `connectedDevice` moves with it. A screen that refreshes
+    /// must not end up the only one holding the current battery percentage —
+    /// that is how the dashboard card and the detail screen came to disagree.
     func readDeviceInfo() async throws -> DeviceInfo
     func setButtonConfig(_ config: ButtonConfig) async throws
     /// What every button is currently set to, straight from the device.

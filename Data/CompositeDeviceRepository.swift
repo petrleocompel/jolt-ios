@@ -37,7 +37,11 @@ final class CompositeDeviceRepository: DeviceRepository {
     nonisolated(unsafe) private var stateTask: Task<Void, Never>?
     nonisolated(unsafe) private var disconnectionTask: Task<Void, Never>?
     nonisolated(unsafe) private var restoreTask: Task<Void, Never>?
+    nonisolated(unsafe) private var foregroundTask: Task<Void, Never>?
     nonisolated(unsafe) var reconnectTask: Task<Void, Never>?
+    /// The live subscription (or slow poll) on the battery characteristic.
+    /// One per connection — see `startBatteryMonitoring`.
+    nonisolated(unsafe) var batteryMonitorTask: Task<Void, Never>?
 
     init(
         store: PairedDeviceStore = PairedDeviceStore(),
@@ -54,7 +58,9 @@ final class CompositeDeviceRepository: DeviceRepository {
         stateTask?.cancel()
         disconnectionTask?.cancel()
         restoreTask?.cancel()
+        foregroundTask?.cancel()
         reconnectTask?.cancel()
+        batteryMonitorTask?.cancel()
     }
 
     var connectionState: AsyncStream<DeviceConnectionState> {
@@ -103,6 +109,11 @@ final class CompositeDeviceRepository: DeviceRepository {
             guard let self else { return }
             for await peripherals in central.restoredPeripherals {
                 adoptRestoredPeripherals(peripherals)
+            }
+        }
+        foregroundTask = Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(named: Self.willEnterForeground) {
+                await self?.refreshDeviceInfoIfConnected()
             }
         }
         Task { [weak self] in
@@ -209,12 +220,15 @@ final class CompositeDeviceRepository: DeviceRepository {
             // nothing" and "the zap went to a characteristic this device
             // doesn't have".
             _ = try? await dumpGATT(readingValues: false)
-            await publishDeviceInfo(for: peripheral, of: device)
+            await publishDeviceInfo(for: peripheral)
+            guard connectedPeripheral?.identifier == peripheral.identifier else { return }
+            startBatteryMonitoring(for: peripheral)
         }
     }
 
     func disconnect() async {
         reconnectTask?.cancel()
+        stopBatteryMonitoring()
         if let peripheral = connectedPeripheral {
             central.disconnect(peripheral)
         }
@@ -226,6 +240,7 @@ final class CompositeDeviceRepository: DeviceRepository {
 
     func forgetPairedDevice() async {
         reconnectTask?.cancel()
+        stopBatteryMonitoring()
         if let peripheral = connectedPeripheral {
             central.disconnect(peripheral)
         }

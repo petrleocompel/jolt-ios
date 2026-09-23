@@ -115,6 +115,7 @@
 		9229C0BB7F05571F15C07BFF /* AlarmDismissFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D18F03D0F1DB6C5B0AFBCB /* AlarmDismissFlowTests.swift */; };
 		95D85FD27D05E8321068585F /* AppNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC2545F27AFC5797E640ADA /* AppNotificationDelegate.swift */; };
 		95FCEFD9EB58E6ECA04F86C2 /* DeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FABADD5059216B0FFBB3073 /* DeviceController.swift */; };
+		97FC3CBE861E933C79E4A170 /* CompositeDeviceRepository+BatteryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 407FE1338D733EA878FA85F5 /* CompositeDeviceRepository+BatteryMonitor.swift */; };
 		98AB92482B7F00441483EA08 /* BluetoothCentralManager+GATT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E1D8EC13A8ED08C29DCF8D /* BluetoothCentralManager+GATT.swift */; };
 		999AD2717052CAD40572966B /* TestPushPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07AE7384436BE969756EBE54 /* TestPushPayloadTests.swift */; };
 		9AF998457E5AC24F79D99472 /* CompositeDeviceRepository+Reliability.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */; };
@@ -189,6 +190,7 @@
 		F290A76E43B763F6743332DD /* DeviceFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */; };
 		F6BF0DC5DFCF0191B00436C9 /* QuickPokeComposerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AEB4D2935604E2CCA19F24 /* QuickPokeComposerUITests.swift */; };
 		F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73676EE1B7477970179576C5 /* Stimulus.swift */; };
+		F8E1BFA151C7D358F6FB95CF /* DeviceBatteryRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC2FAA53439162035799D86 /* DeviceBatteryRefreshTests.swift */; };
 		FB68389C147A45679D03E4F9 /* ESFCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */; };
 		FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */; };
 		FC3A4120D7FADA17AB573B1B /* MathPuzzleChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */; };
@@ -230,6 +232,7 @@
 		10E0D95DC8893E320AA05E38 /* NotificationTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTestView.swift; sourceTree = "<group>"; };
 		154DB290EEF9F8DC1D4B01B7 /* PokePushPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokePushPayload.swift; sourceTree = "<group>"; };
 		19DCDC72F43CB8947131C023 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		1AC2FAA53439162035799D86 /* DeviceBatteryRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceBatteryRefreshTests.swift; sourceTree = "<group>"; };
 		1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmEntity.swift; sourceTree = "<group>"; };
 		1C62A92E9A5EEDFA07CC3D81 /* FiringInteractionSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiringInteractionSettings.swift; sourceTree = "<group>"; };
 		1F25BFA54F117FB8911D6D84 /* RemoteTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteTheme.swift; sourceTree = "<group>"; };
@@ -257,6 +260,7 @@
 		3DA32B3C5568B56532FDB126 /* FiringInteractionMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiringInteractionMode.swift; sourceTree = "<group>"; };
 		3ED2121BD0EF6642C97D055D /* AlarmEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmEditView.swift; sourceTree = "<group>"; };
 		400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataAlarmRepository.swift; sourceTree = "<group>"; };
+		407FE1338D733EA878FA85F5 /* CompositeDeviceRepository+BatteryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CompositeDeviceRepository+BatteryMonitor.swift"; sourceTree = "<group>"; };
 		40AE89D4B1C57490DDBAEB04 /* NotificationTestViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTestViewModel.swift; sourceTree = "<group>"; };
 		40AE988AF1F2845FA5280393 /* Alarm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Alarm.swift; sourceTree = "<group>"; };
 		4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodecTests.swift; sourceTree = "<group>"; };
@@ -507,6 +511,7 @@
 				1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */,
 				4D8AFF78623AD0961505FBB5 /* AuthTokenStore.swift */,
 				48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */,
+				407FE1338D733EA878FA85F5 /* CompositeDeviceRepository+BatteryMonitor.swift */,
 				94ECC070890709E943D845F6 /* CompositeDeviceRepository+ButtonConfig.swift */,
 				04A562F19A0F25DCA25703C8 /* CompositeDeviceRepository+DeviceInfo.swift */,
 				CBC4FEF8ED88B6692607CFC6 /* CompositeDeviceRepository+Reliability.swift */,
@@ -589,6 +594,7 @@
 				CD1F6C24A7AF324973F87FFB /* ButtonConfigPayloadTests.swift */,
 				02F808F518CF2FC8A7E45CF1 /* ButtonConfigReportTests.swift */,
 				FCD616365C34F4FFC52ABA7B /* ConnectionWaiterTests.swift */,
+				1AC2FAA53439162035799D86 /* DeviceBatteryRefreshTests.swift */,
 				C27CEABD71F97CB87FC062B7 /* DeviceFamilyMatchingTests.swift */,
 				2451B80181EF10936C8BE39F /* DeviceFreeUsageTests.swift */,
 				4627DFA782FEF15A2BAE5BDE /* ESFCodecTests.swift */,
@@ -939,6 +945,7 @@
 				CA8DE45C857A5246649A1150 /* ButtonConfigPayloadTests.swift in Sources */,
 				40D77CD184D38308FF263535 /* ButtonConfigReportTests.swift in Sources */,
 				6B73C6D9B87673900B8889A9 /* ConnectionWaiterTests.swift in Sources */,
+				F8E1BFA151C7D358F6FB95CF /* DeviceBatteryRefreshTests.swift in Sources */,
 				26CEBD9BADEDBD95EA0C2E25 /* DeviceFamilyMatchingTests.swift in Sources */,
 				1D3CFC3B94077B20FA440C10 /* DeviceFreeUsageTests.swift in Sources */,
 				FB9DF167EC31CA725762F33A /* ESFCodecTests.swift in Sources */,
@@ -1000,6 +1007,7 @@
 				3A6E6690932B1B8AAF96643A /* ButtonConfigReport.swift in Sources */,
 				C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */,
 				0ACB79F06C389DCEFFD749BA /* CBUUID+Canonical.swift in Sources */,
+				97FC3CBE861E933C79E4A170 /* CompositeDeviceRepository+BatteryMonitor.swift in Sources */,
 				E962F1D5B029A9A1CD3B807E /* CompositeDeviceRepository+ButtonConfig.swift in Sources */,
 				AC3C15EE93C4AF92AD0140DB /* CompositeDeviceRepository+DeviceInfo.swift in Sources */,
 				9AF998457E5AC24F79D99472 /* CompositeDeviceRepository+Reliability.swift in Sources */,

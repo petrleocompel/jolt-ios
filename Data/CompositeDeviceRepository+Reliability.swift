@@ -65,6 +65,7 @@ extension CompositeDeviceRepository {
             }
         case .poweredOff:
             reconnectTask?.cancel()
+            stopBatteryMonitoring()
             connectedPeripheral = nil
             connectionStateHub.yield(.failed("Bluetooth is off"))
             connectedDeviceHub.yield(nil)
@@ -88,6 +89,7 @@ extension CompositeDeviceRepository {
     func handleUnexpectedDisconnection(_ event: (peripheralID: UUID, error: Error?)) {
         guard let peripheral = connectedPeripheral, let family = connectedFamily,
               peripheral.identifier == event.peripheralID else { return }
+        stopBatteryMonitoring()
         connectedPeripheral = nil
         connectionStateHub.yield(.disconnected)
         connectedDeviceHub.yield(nil)

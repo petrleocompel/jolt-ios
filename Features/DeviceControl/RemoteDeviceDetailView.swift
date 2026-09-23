@@ -7,12 +7,15 @@ import SwiftUI
 struct RemoteDeviceDetailView: View {
     let viewModel: DeviceControlViewModel
 
-    @State private var info: DeviceInfo?
     @State private var loadError: String?
     @State private var isShowingPairSheet = false
 
     private var device: PavlokDevice? { viewModel.connectedDevice }
     private var isConnected: Bool { device != nil }
+    /// Straight off the published device rather than a local copy of what
+    /// this screen happened to read: `readDeviceInfo()` republishes, so this
+    /// and the dashboard card cannot drift apart.
+    private var info: DeviceInfo? { device?.info }
 
     var body: some View {
         List {
@@ -28,8 +31,7 @@ struct RemoteDeviceDetailView: View {
                 LabeledContent("Firmware", value: info?.firmwareRevision ?? "—")
                 LabeledContent("Hardware", value: info?.hardwareRevision ?? "—")
                 LabeledContent("Manufacturer", value: info?.manufacturer ?? "—")
-                LabeledContent("Battery", value: info?.batteryLevelPercent.map { "\($0)%" }
-                    ?? device?.info.batteryLevelPercent.map { "\($0)%" } ?? "—")
+                LabeledContent("Battery", value: info?.batteryLevelPercent.map { "\($0)%" } ?? "—")
                 if let loadError {
                     Text(loadError).font(.footnote).foregroundStyle(.red)
                 }
@@ -99,6 +101,7 @@ struct RemoteDeviceDetailView: View {
                 .preferredColorScheme(.dark)
         }
         .task { await load() }
+        .refreshable { await load() }
     }
 
     private var heroCard: some View {
@@ -136,16 +139,19 @@ struct RemoteDeviceDetailView: View {
         guard isConnected else {
             return viewModel.hasPairedDevice ? "NOT CONNECTED · Out of range or switched off" : "NO DEVICE"
         }
-        if let battery = info?.batteryLevelPercent ?? device?.info.batteryLevelPercent {
+        if let battery = info?.batteryLevelPercent {
             return "CONNECTED · \(battery)%"
         }
         return "CONNECTED"
     }
 
+    /// The read publishes what it finds, so there is nothing to keep here —
+    /// the values above come back through `viewModel.connectedDevice`.
     private func load() async {
         guard isConnected else { return }
         do {
-            info = try await viewModel.readDeviceInfo()
+            _ = try await viewModel.readDeviceInfo()
+            loadError = nil
         } catch {
             loadError = error.localizedDescription
         }

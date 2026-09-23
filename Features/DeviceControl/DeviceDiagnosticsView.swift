@@ -4,7 +4,6 @@ import UIKit
 struct DeviceDiagnosticsView: View {
     let viewModel: DeviceControlViewModel
 
-    @State private var info: DeviceInfo?
     @State private var gatt: [GATTCharacteristicDump] = []
     @State private var isLoading = false
     @State private var isReadingValues = false
@@ -22,6 +21,11 @@ struct DeviceDiagnosticsView: View {
     @State private var isStartingListening = false
     @State private var subscribedCount = 0
     @State private var listenError: String?
+
+    /// Read off the published device rather than kept locally: the refresh
+    /// below republishes what it read, so this screen and the dashboard card
+    /// always show the same battery percentage.
+    private var info: DeviceInfo? { viewModel.connectedDevice?.info }
 
     /// False once this screen is popped, as opposed to merely covered by a
     /// pushed child — see `onDisappear`.
@@ -60,7 +64,7 @@ struct DeviceDiagnosticsView: View {
 
     private var deviceSection: some View {
         Section("Device") {
-            if isLoading && info == nil {
+            if isLoading && info?.modelNumber == nil {
                 ProgressView().frame(maxWidth: .infinity)
             }
             LabeledContent("Model", value: info?.modelNumber ?? "—")
@@ -259,7 +263,7 @@ struct DeviceDiagnosticsView: View {
             isReadingValues = false
         }
         do {
-            info = try await viewModel.readDeviceInfo()
+            _ = try await viewModel.readDeviceInfo()
             gatt = try await viewModel.dumpGATT(readingValues: readingValues)
             didCopyGATT = false
         } catch {
