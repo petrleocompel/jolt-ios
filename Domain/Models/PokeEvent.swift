@@ -32,4 +32,19 @@ struct PokeEvent: Identifiable, Codable, Equatable {
     var stimulus: StimulusConfig
     var status: PokeDeliveryStatus
     var createdAt: Date
+    /// When the recipient's device reported back — i.e. when `status` stopped
+    /// being `pending`. Nil until then, and possibly forever: iOS guarantees
+    /// no delivery for the silent push.
+    ///
+    /// Optional rather than required so a build pointed at a server that
+    /// predates the field still decodes its activity feed.
+    var ackedAt: Date?
+}
+
+extension PokeEvent {
+    /// How long the poke took to be confirmed. Nil while nothing has acked.
+    var timeToAck: TimeInterval? {
+        guard let ackedAt else { return nil }
+        return ackedAt.timeIntervalSince(createdAt)
+    }
 }

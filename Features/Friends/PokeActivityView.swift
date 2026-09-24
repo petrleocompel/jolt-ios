@@ -5,15 +5,10 @@ struct PokeActivityView: View {
 
     var body: some View {
         List(pokeViewModel.activity) { event in
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(title(for: event)).font(.subheadline)
-                    Text(event.createdAt, style: .relative)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                statusIcon(for: event.status)
+            NavigationLink {
+                PokeDetailView(event: event)
+            } label: {
+                row(for: event)
             }
         }
         .accessibilityIdentifier("pokeActivityList")
@@ -25,28 +20,32 @@ struct PokeActivityView: View {
         }
     }
 
+    private func row(for event: PokeEvent) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title(for: event)).font(.subheadline)
+                // Deliberately not `Text(_:style: .relative)`: that ticks once
+                // a second, so a screenful of pokes becomes a screenful of
+                // counters. The exact time is one tap away in the detail.
+                Text(
+                    "\(RelativeTime.string(for: event.createdAt)) · "
+                        + "\(event.stimulus.kind.displayName) \(event.stimulus.intensity)%"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            Spacer()
+            PokeStatusIcon(status: event.status)
+        }
+        .accessibilityIdentifier("pokeActivityRow")
+    }
+
     private func title(for event: PokeEvent) -> String {
         switch event.direction {
         case .sent:
             return "You \(event.stimulus.kind.pastTenseVerb) \(event.friendDisplayName)"
         case .received:
             return "\(event.friendDisplayName) \(event.stimulus.kind.pastTenseVerb) you"
-        }
-    }
-
-    @ViewBuilder
-    private func statusIcon(for status: PokeDeliveryStatus) -> some View {
-        switch status {
-        case .pending:
-            Image(systemName: "clock").foregroundStyle(.secondary)
-        case .fired:
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-        case .deviceNotConnected:
-            Image(systemName: "antenna.radiowaves.left.and.right.slash").foregroundStyle(.orange)
-        case .notAllowed:
-            Image(systemName: "hand.raised.fill").foregroundStyle(.red)
-        case .muted:
-            Image(systemName: "bell.slash.fill").foregroundStyle(.secondary)
         }
     }
 }

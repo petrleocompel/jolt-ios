@@ -61,7 +61,10 @@ struct RecentActivityCard: View {
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.82))
                     Spacer(minLength: 8)
-                    Text(event.createdAt, style: .relative)
+                    // A fixed string, not `style: .relative`: two rows of
+                    // counters ticking out of step read as activity on a
+                    // dashboard that is otherwise still.
+                    Text(RelativeTime.string(for: event.createdAt))
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.38))
                 }

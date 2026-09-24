@@ -18,6 +18,7 @@
 		0B02F2792CB1D29B9B74242E /* AlarmRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E17268D8924C74C31F94055 /* AlarmRepository.swift */; };
 		0BF481DB1EBDD6396CB3FBF3 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4593DB54C3694E3E6816A45 /* OnboardingView.swift */; };
 		0EB50DCF7486C9A800213E7C /* PokeComposerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54FF2B0D3F9A017A99969642 /* PokeComposerCard.swift */; };
+		0EC8D9104A58C01434734177 /* IncomingPokeRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C5405C4E8E79BA7D4A8AD1 /* IncomingPokeRoutingTests.swift */; };
 		11672FD896442C7D399887FB /* NotificationTestViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F947011453C822510A2EE4C1 /* NotificationTestViewModelTests.swift */; };
 		137FDC16BA7C62A58E07D3D1 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3E451DCDF0BB34E4EAA1D0 /* AuthViewModel.swift */; };
 		1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */; };
@@ -30,6 +31,7 @@
 		20341B53E581AC27219F5A40 /* ServerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE130A9829B4F98EB8B6DEBB /* ServerConfiguration.swift */; };
 		2088D9579DB4A4076737B96B /* ActiveAlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */; };
 		2139B77ED2381FF082F8F040 /* TabNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21BF2C419580EB45CDCE26 /* TabNavigation.swift */; };
+		22B1578F17D1B18E2F3418FF /* HTTPSocialBackend+Pokes.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC9C6A7FBA9767E72D7B473E /* HTTPSocialBackend+Pokes.swift */; };
 		23FF51D42A5EB65AA37FD2BB /* FriendsFlowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3669760429200CD7A7ABB56F /* FriendsFlowUITests.swift */; };
 		244EA14EEEB12B5F90C67D95 /* PavlokAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4033FE8651C29F4BF50A61 /* PavlokAPIClient.swift */; };
 		26CEBD9BADEDBD95EA0C2E25 /* DeviceFamilyMatchingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27CEABD71F97CB87FC062B7 /* DeviceFamilyMatchingTests.swift */; };
@@ -74,6 +76,7 @@
 		5CE3F9BD22878110F967EED4 /* AlarmEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */; };
 		5E67136275B8B41FCAE82E54 /* FiringModeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC2E601733EB1B096020C7F /* FiringModeService.swift */; };
 		5EA5563F29DA59A22B35B3AC /* PokePushPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3357B2E1D4E2799275C2B9A /* PokePushPayloadTests.swift */; };
+		5FE1D4B376234FBF779FD7DF /* RelativeTimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4B3623CC73ADF1369B22F9 /* RelativeTimeTests.swift */; };
 		5FE7217D03B8299037E52843 /* SCMaxDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */; };
 		630C3F6670597C348781F4FE /* DeviceEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C498535C2A5F56C44BF11A /* DeviceEvent.swift */; };
 		647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76CFA2F23E100D332D35DEB5 /* Assets.xcassets */; };
@@ -134,9 +137,11 @@
 		AD9CA846C73D8B3C3A01C8A9 /* BluetoothCentralManager+Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */; };
 		ADE18696232BDE8C4016133B /* HTTPSocialBackend+PushDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */; };
 		AEF1FA1F3EA2B656B054289A /* DeviceFreeUsageUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26C4FBE48E390505C317ED53 /* DeviceFreeUsageUITests.swift */; };
+		B217CBF47B2BC1483241C04B /* PokeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A5AEA892F2E53172B23C65 /* PokeDetailView.swift */; };
 		B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */; };
 		B98B18DD7650C7484A19F1A9 /* DeviceEventCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */; };
 		B98E874CD49AE9A5CD89769B /* BluetoothCentralManager+Timeouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4786788351C2A665216D4C62 /* BluetoothCentralManager+Timeouts.swift */; };
+		BBC1106544B9A4E31CEAEE29 /* RelativeTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FCDD7A416FEBCEE8B48CD7 /* RelativeTime.swift */; };
 		BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */; };
 		BC5B23F9A2EFB12239494BF3 /* FiringInteractionSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C62A92E9A5EEDFA07CC3D81 /* FiringInteractionSettings.swift */; };
 		BC622AC928943A575F9D99FE /* BluetoothLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F953DC81C35A18E75FFD98F /* BluetoothLogView.swift */; };
@@ -304,6 +309,7 @@
 		73676EE1B7477970179576C5 /* Stimulus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stimulus.swift; sourceTree = "<group>"; };
 		73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodec.swift; sourceTree = "<group>"; };
 		76CFA2F23E100D332D35DEB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		79FCDD7A416FEBCEE8B48CD7 /* RelativeTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelativeTime.swift; sourceTree = "<group>"; };
 		7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInformationReader.swift; sourceTree = "<group>"; };
 		7A479CC6F92AA233BBA0CFCB /* RemoteDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDashboardView.swift; sourceTree = "<group>"; };
 		7AEB95C0787EAC3FCAA57064 /* ConnectionWaiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionWaiter.swift; sourceTree = "<group>"; };
@@ -351,6 +357,7 @@
 		A93A203663ED2E6C54D999C6 /* QuickPokeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPokeService.swift; sourceTree = "<group>"; };
 		ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAlarmView.swift; sourceTree = "<group>"; };
 		B4593DB54C3694E3E6816A45 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B6C5405C4E8E79BA7D4A8AD1 /* IncomingPokeRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomingPokeRoutingTests.swift; sourceTree = "<group>"; };
 		B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStimulusFirer.swift; sourceTree = "<group>"; };
 		BB63BE3829CCCBE5C11951BF /* PavlokAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokAccount.swift; sourceTree = "<group>"; };
 		BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCentralManager.swift; sourceTree = "<group>"; };
@@ -375,6 +382,7 @@
 		D32159D4F64FD75C1B07F26C /* Friend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
 		D4F21E816DBBA8096BFAA0A9 /* AuthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthView.swift; sourceTree = "<group>"; };
 		D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFamily.swift; sourceTree = "<group>"; };
+		D7A5AEA892F2E53172B23C65 /* PokeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeDetailView.swift; sourceTree = "<group>"; };
 		DAE8C422049139E8FB078F61 /* SCMaxDeviceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxDeviceController.swift; sourceTree = "<group>"; };
 		DB5963F9DF3C89426BCAD0B4 /* FriendPokeDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendPokeDraft.swift; sourceTree = "<group>"; };
 		DC84FE5522BBC7EAB468867B /* StreamHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamHub.swift; sourceTree = "<group>"; };
@@ -388,6 +396,7 @@
 		E8471D33515278BAA59DB0C0 /* FriendsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsRootView.swift; sourceTree = "<group>"; };
 		E857EC1C8D109393A3DCD76B /* StimulusSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettingsStore.swift; sourceTree = "<group>"; };
 		EA1EC1C1C3C72F053AD1D651 /* PokeFeedbackSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeFeedbackSettingsStore.swift; sourceTree = "<group>"; };
+		EB4B3623CC73ADF1369B22F9 /* RelativeTimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelativeTimeTests.swift; sourceTree = "<group>"; };
 		EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigurationTests.swift; sourceTree = "<group>"; };
 		EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Delegates.swift"; sourceTree = "<group>"; };
 		ED177E123C49A2F9DEA54E05 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -402,6 +411,7 @@
 		FA63F667AC24AA36DC49CF58 /* ProtocolLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolLabView.swift; sourceTree = "<group>"; };
 		FADBA37929D5C30DEFCE74B3 /* PokeActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeActivityView.swift; sourceTree = "<group>"; };
 		FB4C66C4A6EDE59641FC45E8 /* PokeRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeRepository.swift; sourceTree = "<group>"; };
+		FC9C6A7FBA9767E72D7B473E /* HTTPSocialBackend+Pokes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPSocialBackend+Pokes.swift"; sourceTree = "<group>"; };
 		FCD616365C34F4FFC52ABA7B /* ConnectionWaiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionWaiterTests.swift; sourceTree = "<group>"; };
 		FDC2E601733EB1B096020C7F /* FiringModeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiringModeService.swift; sourceTree = "<group>"; };
 		FDD0154A817E7BE315780729 /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
@@ -499,6 +509,7 @@
 				0EF7569653C9B4BE647886FF /* InlineBanner.swift */,
 				63647B93B0F11DBAC3B97FC0 /* QRCodeView.swift */,
 				3728532FBB4B6DFA4BB80060 /* QRScannerView.swift */,
+				79FCDD7A416FEBCEE8B48CD7 /* RelativeTime.swift */,
 				1F25BFA54F117FB8911D6D84 /* RemoteTheme.swift */,
 				F49811747B5975FDC50CE91C /* StatusCard.swift */,
 			);
@@ -519,6 +530,7 @@
 				35E26F9100A78C2752864BEA /* FiringInteractionSettingsStore.swift */,
 				910E2135246DB5575B328B9D /* FriendPokeDraftStore.swift */,
 				C3B35D9983EA32CBC9307B82 /* HTTPSocialBackend.swift */,
+				FC9C6A7FBA9767E72D7B473E /* HTTPSocialBackend+Pokes.swift */,
 				5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */,
 				F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */,
 				DED8E3672CD1D399D5DD3B7C /* LegacyProtocolStore.swift */,
@@ -567,6 +579,7 @@
 				85AB6BDC42BB67C1DD5DC49D /* PermissionEditView.swift */,
 				FADBA37929D5C30DEFCE74B3 /* PokeActivityView.swift */,
 				54FF2B0D3F9A017A99969642 /* PokeComposerCard.swift */,
+				D7A5AEA892F2E53172B23C65 /* PokeDetailView.swift */,
 				5267143FEA552BB62FAFBDEB /* PokeTriggerService.swift */,
 				C318232E11E62CFE3DE6443D /* PokeViewModel.swift */,
 				06D562BFD4BFBF009E3829FF /* ProfileView.swift */,
@@ -601,6 +614,7 @@
 				4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */,
 				F044A6D9143077ABC9E6548D /* FriendsViewModelTests.swift */,
 				8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */,
+				B6C5405C4E8E79BA7D4A8AD1 /* IncomingPokeRoutingTests.swift */,
 				4CDE3689785C9FDAEF5ADE6C /* LEB128Tests.swift */,
 				4785053BD701DF87FCE5A72D /* LegacyProtocolTests.swift */,
 				EF8F8AD6A08A6AD3B7F0D74E /* LocalStimulusFirerTests.swift */,
@@ -614,6 +628,7 @@
 				5795740F619EA74D0128DA35 /* PokeTriggerServiceTests.swift */,
 				C28E129435EE9D10DA65AF4B /* PokeTriggerTests.swift */,
 				4ADFBD4B73B40566FF620785 /* QuickPokeSettingsTests.swift */,
+				EB4B3623CC73ADF1369B22F9 /* RelativeTimeTests.swift */,
 				EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */,
 				D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */,
 				301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */,
@@ -952,6 +967,7 @@
 				F18868631569AE1FA033DF17 /* FriendPermissionSetTests.swift in Sources */,
 				FCD181385D75F62964D5F16C /* FriendsViewModelTests.swift in Sources */,
 				536B5F857A1740AEACC99E0A /* HTTPSocialBackendTests.swift in Sources */,
+				0EC8D9104A58C01434734177 /* IncomingPokeRoutingTests.swift in Sources */,
 				F0FF866C00905EAF5E5F2B37 /* LEB128Tests.swift in Sources */,
 				54C0CA907EF2B0D41BF6A3A2 /* LegacyProtocolTests.swift in Sources */,
 				CD7A18C56FB08842F222A257 /* LocalStimulusFirerTests.swift in Sources */,
@@ -965,6 +981,7 @@
 				8C9DE227C12CF3BC19F1C0E7 /* PokeTriggerServiceTests.swift in Sources */,
 				65A21194C06CE677CB313567 /* PokeTriggerTests.swift in Sources */,
 				D1DB6E5108E6321A1A715191 /* QuickPokeSettingsTests.swift in Sources */,
+				5FE1D4B376234FBF779FD7DF /* RelativeTimeTests.swift in Sources */,
 				540633BA86E7AD838EF4F1E8 /* ServerConfigurationTests.swift in Sources */,
 				1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */,
 				19905697928A1047B746F915 /* StimulusSettingsTests.swift in Sources */,
@@ -1044,6 +1061,7 @@
 				ED86F44FF8BBA8DCB9AEDB48 /* FriendsRootView.swift in Sources */,
 				FEAD4FC7C821408535A62250 /* FriendsViewModel.swift in Sources */,
 				2B8C77D5B7218CBAAF731099 /* GATTDump.swift in Sources */,
+				22B1578F17D1B18E2F3418FF /* HTTPSocialBackend+Pokes.swift in Sources */,
 				ADE18696232BDE8C4016133B /* HTTPSocialBackend+PushDiagnostics.swift in Sources */,
 				BE07FB79112D1FF4525F3B01 /* HTTPSocialBackend.swift in Sources */,
 				34359AD510570C687E8C7DE9 /* InlineBanner.swift in Sources */,
@@ -1075,6 +1093,7 @@
 				9BD33171E530E1939245CB7B /* PhoneAlarmScheduler.swift in Sources */,
 				388B114FD98AEF3635AF0A0F /* PokeActivityView.swift in Sources */,
 				0EB50DCF7486C9A800213E7C /* PokeComposerCard.swift in Sources */,
+				B217CBF47B2BC1483241C04B /* PokeDetailView.swift in Sources */,
 				8C2C7A536FA1C7D5715580F2 /* PokeEvent.swift in Sources */,
 				3FEDB3A9E8C3532F9F102BA1 /* PokeFeedbackService.swift in Sources */,
 				328B15622249309CA7DDEC58 /* PokeFeedbackSettings.swift in Sources */,
@@ -1100,6 +1119,7 @@
 				D39EFE87CA5857EC4251F744 /* QuickPokeSettings.swift in Sources */,
 				560B7122CE69D797D73F6656 /* QuickPokeSettingsStore.swift in Sources */,
 				C679C74DB39A8CD27A743115 /* QuickPokeSettingsView.swift in Sources */,
+				BBC1106544B9A4E31CEAEE29 /* RelativeTime.swift in Sources */,
 				A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */,
 				D576369E89AF107885426854 /* RemoteCustomizeView.swift in Sources */,
 				4244D97D3C7532425C33A1A8 /* RemoteDashboardCards.swift in Sources */,

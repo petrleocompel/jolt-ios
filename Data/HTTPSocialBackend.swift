@@ -27,13 +27,22 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     private var user: User?
     private var inviteCode = ""
-    private var friendsList: [Friend] = []
+    /// Not `private`: `HTTPSocialBackend+Pokes.swift` is the same type in
+    /// another file, and Swift's `private` is file-scoped.
+    var friendsList: [Friend] = []
     private var incoming: [FriendRequest] = []
     private var outgoing: [FriendRequest] = []
     private var activityLog: [PokeEvent] = []
-    /// Held until the account is known — a token arriving before
-    /// `registerPushToken` has an account to attach it to would 401.
-    private var pendingPushToken: String?
+    /// The last APNs token Apple handed us this launch, signed in or not.
+    ///
+    /// Kept for the whole process lifetime rather than only until it is first
+    /// registered: the server binds a token to exactly one account, so every
+    /// change of identity — sign-in, session restore, sign-out — has to say
+    /// so, or the binding is whatever it happened to be last time. It used to
+    /// be cleared on first use, which meant a second account signing in on
+    /// the same launch never registered at all and kept firing pokes at the
+    /// first one's wrist.
+    private var lastPushToken: String?
     /// Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` fires test
     /// pushes through the same firer, for the same idempotency reason.
     let firer: LocalStimulusFirer
@@ -177,10 +186,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         user = response.user.asUser
         inviteCode = response.user.inviteCode
         userHub.yield(user)
-        if let pendingPushToken {
-            self.pendingPushToken = nil
-            await registerPushToken(pendingPushToken)
-        }
+        await registerLastPushToken()
         await refreshAll()
     }
 
@@ -188,6 +194,19 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         // Best effort: a failed logout call must not leave the app stuck in a
         // signed-in state it can't get out of, so local state is cleared
         // either way.
+        //
+        // Both calls go through `client` rather than the `sendIgnoringResponse`
+        // wrapper above, which logs out on 401 — from in here that recurses.
+        if let lastPushToken, user != nil {
+            // Unbind this phone before the session goes: the registration
+            // outlives it otherwise, and the account keeps this device as a
+            // poke target until something re-registers the token. A friend
+            // poking *them* would fire on this wrist.
+            try? await client.sendIgnoringResponse(
+                "DELETE", "devices/push-token",
+                body: ForgetPushTokenBody(token: lastPushToken)
+            )
+        }
         try? await client.sendIgnoringResponse("POST", "auth/logout")
         tokenStore.clear(for: configuration)
         await client.setToken(nil)
@@ -211,6 +230,11 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             user = profile.asUser
             inviteCode = profile.inviteCode
             userHub.yield(user)
+            // Apple hands the token over within milliseconds of launch, well
+            // before this round-trip finishes, so on a restored session it is
+            // almost always still waiting here. Registering only on an
+            // explicit sign-in left it unsent for the whole run.
+            await registerLastPushToken()
             await refreshAll()
         } catch JoltAPIClient.APIError.unauthorized {
             // Token was rejected — expired, revoked, or from a server we no
@@ -227,12 +251,29 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         let platform = "ios"
     }
 
+    struct ForgetPushTokenBody: Encodable {
+        let token: String
+    }
+
     func registerPushToken(_ token: String) async {
-        guard user != nil else {
-            pendingPushToken = token
-            return
-        }
+        lastPushToken = token
+        // Nothing to attach it to yet; whoever signs in (or the session
+        // restore) sends it. Remembered either way — see `lastPushToken`.
+        guard user != nil else { return }
         try? await sendIgnoringResponse("POST", "devices/push-token", body: PushTokenBody(token: token))
+    }
+
+    /// Re-asserts this phone's registration for whoever is signed in now.
+    /// Idempotent server-side (the token is the conflict target), so calling
+    /// it on every identity change costs one request and buys the guarantee
+    /// that the binding matches the session.
+    ///
+    /// Not `private`: a poke arriving for the wrong account is the clearest
+    /// evidence the registration is stale, and that is handled in
+    /// `HTTPSocialBackend+Pokes.swift`.
+    func registerLastPushToken() async {
+        guard let lastPushToken else { return }
+        await registerPushToken(lastPushToken)
     }
 
     // MARK: - Friends
@@ -286,51 +327,6 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         )
         await refreshFriends()
     }
-
-    // MARK: - Pokes
-
-    private struct SendPokeBody: Encodable {
-        let friendId: String
-        let stimulus: StimulusConfig
-    }
-
-    private struct AckBody: Encodable {
-        let status: PokeDeliveryStatus
-    }
-
-    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
-        let _: PokeEvent = try await send(
-            "POST", "pokes",
-            body: SendPokeBody(friendId: friendID.apiString, stimulus: stimulus)
-        )
-        await refreshActivity()
-    }
-
-    @discardableResult
-    func handleIncomingPoke(_ payload: PokePushPayload) async -> PokeDeliveryStatus {
-        // `firer` guards against the same poke arriving via both a background
-        // silent push and a subsequent notification tap — never fires twice.
-        let status = await firer.fire(id: payload.pokeID, stimulus: payload.stimulus)
-        // Tell the server what actually happened. Idempotent server-side, so
-        // an alert push and a silent push for the same poke are both safe to
-        // ack.
-        try? await sendIgnoringResponse(
-            "POST", "pokes/\(payload.pokeID.apiString)/ack",
-            body: AckBody(status: status)
-        )
-        await refreshActivity()
-        return status
-    }
-
-    func simulateIncomingPoke(from friendID: Friend.ID, stimulus: StimulusConfig) async {
-        guard let friend = friendsList.first(where: { $0.id == friendID }) else { return }
-        await handleIncomingPoke(PokePushPayload(
-            pokeID: UUID(),
-            senderHandle: friend.handle,
-            senderDisplayName: friend.displayName,
-            stimulus: stimulus
-        ))
-    }
 }
 
 /// Re-fetching. The contract has no websocket, so the app's view of the
@@ -361,7 +357,9 @@ extension HTTPSocialBackend {
         outgoingHub.yield(outgoing)
     }
 
-    private func refreshActivity() async {
+    // Not `private`: `HTTPSocialBackend+Pokes.swift` sends and acks pokes,
+    // and every one of them changes the activity log.
+    func refreshActivity() async {
         guard let events: [PokeEvent] = try? await send("GET", "pokes") else { return }
         activityLog = events
         activityHub.yield(events)

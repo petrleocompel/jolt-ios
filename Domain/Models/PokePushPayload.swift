@@ -9,6 +9,19 @@ struct PokePushPayload: Codable, Equatable {
     var pokeID: UUID
     var senderHandle: String
     var senderDisplayName: String
+    /// Who the poke is addressed to.
+    ///
+    /// A device is registered to exactly one account at a time, but a stale
+    /// registration (signed in as someone else, signed out, token never
+    /// re-registered) used to be invisible here: the push arrived, the
+    /// wearable fired, and the only trace was an ack the server 404'd. With a
+    /// handle to compare against, a poke meant for somebody else can be
+    /// dropped instead of fired.
+    ///
+    /// Optional: a server that predates the field sends nothing, and an
+    /// absent addressee means "can't tell", which must never be read as
+    /// "not mine".
+    var recipientHandle: String?
     var stimulus: StimulusConfig
 }
 
