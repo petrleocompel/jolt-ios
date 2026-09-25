@@ -157,13 +157,15 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     // MARK: - Pokes
 
-    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
+    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig, pokeID: UUID) async throws {
+        // A retry of a poke already on record — same contract as the server.
+        guard !activityLog.contains(where: { $0.id == pokeID }) else { return }
         guard let friend = friendsList.first(where: { $0.id == friendID }) else { return }
         let permission = friend.permissionsGrantedToMe[stimulus.kind]
         let isAllowed = permission.isAllowed && stimulus.intensity <= permission.maxIntensity
         try await Task.sleep(for: .milliseconds(300))
         let event = PokeEvent(
-            id: UUID(),
+            id: pokeID,
             direction: .sent,
             friendHandle: friend.handle,
             friendDisplayName: friend.displayName,

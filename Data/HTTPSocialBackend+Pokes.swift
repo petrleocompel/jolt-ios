@@ -11,18 +11,41 @@ extension HTTPSocialBackend {
     fileprivate struct SendPokeBody: Encodable {
         let friendId: String
         let stimulus: StimulusConfig
+        /// Makes a resend of the same poke a retry the server answers from
+        /// its records, rather than a second poke.
+        let pokeId: String
     }
 
     fileprivate struct AckBody: Encodable {
         let status: PokeDeliveryStatus
     }
 
-    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
-        let _: PokeEvent = try await send(
-            "POST", "pokes",
-            body: SendPokeBody(friendId: friendID.apiString, stimulus: stimulus)
-        )
+    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig, pokeID: UUID) async throws {
+        let body = SendPokeBody(friendId: friendID.apiString, stimulus: stimulus, pokeId: pokeID.apiString)
+        do {
+            let _: PokeEvent = try await BackgroundActivity.run("Send poke") {
+                try await send("POST", "pokes", body: body)
+            }
+        } catch JoltAPIClient.APIError.transport {
+            // The connection dropped — most often the screen locking right
+            // after the tap. The request may well have arrived before the
+            // answer was lost, so ask the feed instead of guessing: reporting
+            // "not sent" for a poke that landed is what used to invite a
+            // second one.
+            switch await isRecorded(pokeID) {
+            case true?: break
+            case false?: throw PokeSendError.notSent
+            case nil: throw PokeSendError.unconfirmed
+            }
+        }
         await refreshActivity()
+    }
+
+    /// Whether the server holds a poke with this id. Nil when it can't be
+    /// asked either — still offline, most likely.
+    private func isRecorded(_ pokeID: UUID) async -> Bool? {
+        guard let events: [PokeEvent] = try? await send("GET", "pokes") else { return nil }
+        return events.contains { $0.id == pokeID }
     }
 
     @discardableResult
@@ -50,10 +73,15 @@ extension HTTPSocialBackend {
         // an alert push and a silent push for the same poke are both safe to
         // ack.
         do {
-            try await sendIgnoringResponse(
-                "POST", "pokes/\(payload.pokeID.apiString)/ack",
-                body: AckBody(status: status)
-            )
+            // A silent push wakes the app for seconds at most; without asking
+            // for more, iOS can freeze it halfway through telling the sender
+            // what happened.
+            try await BackgroundActivity.run("Ack poke") {
+                try await sendIgnoringResponse(
+                    "POST", "pokes/\(payload.pokeID.apiString)/ack",
+                    body: AckBody(status: status)
+                )
+            }
         } catch JoltAPIClient.APIError.server(404, _) {
             // The server only accepts an ack from the poke's recipient, so a
             // 404 means this device fired something addressed to another

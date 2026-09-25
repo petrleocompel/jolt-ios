@@ -135,7 +135,7 @@ private final class SpyPokeRepository: PokeRepository {
 
     var activity: AsyncStream<[PokeEvent]> { AsyncStream { $0.finish() } }
 
-    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
+    func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig, pokeID: UUID) async throws {
         sentCount += 1
     }
 

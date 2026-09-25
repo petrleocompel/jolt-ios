@@ -129,6 +129,14 @@ struct PokeComposerCard: View {
         }
     }
 
+    private var eyebrow: String {
+        switch pokeViewModel.lastFailure {
+        case .unconfirmed: return "NOT CONFIRMED"
+        case .notSent: return "COULDN'T REACH THE SERVER"
+        case .refused, nil: return "POKE NOT SENT"
+        }
+    }
+
     private var sendingBar: some View {
         HStack(spacing: 12) {
             ProgressView().tint(.white)
@@ -143,13 +151,15 @@ struct PokeComposerCard: View {
 
     /// Replaces the send button rather than sitting under it: until the
     /// failure is acknowledged, "send again" should be a deliberate Retry.
+    ///
+    /// Retry is offered for every kind of failure, including the one where the
+    /// poke may already have landed: it resends under the same poke id, so
+    /// the server answers a poke it already has instead of sending another.
     private func errorCard(_ message: String) -> some View {
         StatusCard(
-            tint: .red,
-            eyebrow: pokeViewModel.lastErrorIsConnectivity ? "COULDN'T REACH THE SERVER" : "POKE NOT SENT",
-            message: pokeViewModel.lastErrorIsConnectivity
-                ? "The poke was not sent. Check your connection and try again."
-                : message
+            tint: pokeViewModel.lastFailure == .unconfirmed ? .orange : .red,
+            eyebrow: eyebrow,
+            message: message
         ) {
             HStack(spacing: 10) {
                 StatusCardButton(title: "Retry", fill: RemoteTheme.violet, ink: .white) {

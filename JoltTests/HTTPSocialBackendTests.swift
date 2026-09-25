@@ -73,7 +73,12 @@ final class HTTPSocialBackendTests: XCTestCase {
 
 /// Stubs every request `HTTPSocialBackend`'s `URLSession` makes, so tests can
 /// simulate specific server responses (here, a 401) without a real server.
+///
+/// A handler returning `StubURLProtocol.connectionLost` as the status fails
+/// the request the way a locked phone does: no response at all.
 final class StubURLProtocol: URLProtocol {
+    static let connectionLost = -1
+
     nonisolated(unsafe) static var handler: (@Sendable (URLRequest) -> (Int, Data))?
 
     override static func canInit(with request: URLRequest) -> Bool { true }
@@ -85,6 +90,10 @@ final class StubURLProtocol: URLProtocol {
             return
         }
         let (status, data) = handler(request)
+        if status == Self.connectionLost {
+            client?.urlProtocol(self, didFailWithError: URLError(.networkConnectionLost))
+            return
+        }
         guard let response = HTTPURLResponse(
             url: url, statusCode: status, httpVersion: nil,
             headerFields: ["Content-Type": "application/json"]
