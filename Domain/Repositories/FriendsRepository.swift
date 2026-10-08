@@ -19,7 +19,15 @@ protocol FriendsRepository {
     func acceptRequest(_ id: FriendRequest.ID) async throws
     func rejectRequest(_ id: FriendRequest.ID) async throws
     func removeFriend(_ id: Friend.ID) async throws
+    /// Overwrites the grant — allowed, cap, cooldown — and leaves the
+    /// automation answer exactly as it was.
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws
+    /// Answers "may this friend's scripts send me `kind`?"; nil hands the
+    /// question back to the server's default. The PUT always overwrites the
+    /// grant as well, so `permission` carries the one currently shown.
+    func updateAutomationConsent(
+        for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission, allowed: Bool?
+    ) async throws
 
     /// Re-attempts the one-time fetch that normally only runs at launch (via
     /// session restore) or after a mutation. Callers that subscribe to

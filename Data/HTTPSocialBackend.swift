@@ -330,9 +330,20 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     }
 
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws {
+        try await putPermission(StimulusPermissionUpdate(permission), for: friendID, kind: kind)
+    }
+
+    func updateAutomationConsent(
+        for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission, allowed: Bool?
+    ) async throws {
+        let update = StimulusPermissionUpdate(permission, automation: .init(answer: allowed))
+        try await putPermission(update, for: friendID, kind: kind)
+    }
+
+    private func putPermission(_ update: StimulusPermissionUpdate, for friendID: Friend.ID, kind: StimulusKind) async throws {
         let _: StimulusPermission = try await send(
             "PUT", "friends/\(friendID.apiString)/permissions/\(kind.rawValue)",
-            body: permission
+            body: update
         )
         await refreshFriends()
     }

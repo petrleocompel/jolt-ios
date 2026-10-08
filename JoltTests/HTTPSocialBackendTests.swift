@@ -85,6 +85,39 @@ final class HTTPSocialBackendTests: XCTestCase {
         XCTAssertEqual(backend.myHandle, "me")
     }
 
+    /// What actually goes over the wire: a slider edit leaves the
+    /// automation answer out entirely; a consent change sends it, and a
+    /// reset sends an explicit null. Neither echoes the read-only key.
+    func testOnlyAConsentChangeSendsTheAutomationAnswer() async throws {
+        let recorder = RequestRecorder()
+        let backend = try await signedInBackend(
+            profileExtras: "",
+            recorder: recorder,
+            otherResponse: """
+            {"isAllowed":true,"maxIntensity":30,"cooldownSeconds":60,\
+            "automationAllowed":false,"automationAllowedEffective":false}
+            """
+        )
+        var permission = StimulusPermission.allowed(maxIntensity: 30, cooldownSeconds: 60)
+        permission.automationAllowed = false
+        permission.automationAllowedEffective = false
+        let friendID = UUID()
+
+        try await backend.updatePermission(for: friendID, kind: .zap, permission: permission)
+        try await backend.updateAutomationConsent(for: friendID, kind: .zap, permission: permission, allowed: true)
+        try await backend.updateAutomationConsent(for: friendID, kind: .zap, permission: permission, allowed: nil)
+
+        let bodies = try recorder.paths.map { body in
+            try XCTUnwrap(JSONSerialization.jsonObject(with: Data(body.utf8)) as? [String: Any])
+        }
+        XCTAssertEqual(bodies.count, 3)
+        XCTAssertFalse(bodies[0].keys.contains("automationAllowed"))
+        XCTAssertEqual(bodies[0]["maxIntensity"] as? Int, 30)
+        XCTAssertEqual(bodies[1]["automationAllowed"] as? Bool, true)
+        XCTAssertTrue(bodies[2]["automationAllowed"] is NSNull)
+        XCTAssertTrue(bodies.allSatisfy { !$0.keys.contains("automationAllowedEffective") })
+    }
+
     // MARK: - Helpers
 
     /// A backend signed in through `restoreSession` against a stub server

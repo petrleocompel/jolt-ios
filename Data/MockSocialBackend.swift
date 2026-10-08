@@ -155,6 +155,18 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         friendsHub.yield(friendsList)
     }
 
+    func updateAutomationConsent(
+        for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission, allowed: Bool?
+    ) async throws {
+        try await Task.sleep(for: .milliseconds(200))
+        guard let index = friendsList.firstIndex(where: { $0.id == friendID }) else { return }
+        var updated = permission
+        updated.automationAllowed = allowed
+        updated.automationAllowedEffective = allowed ?? serverPolicies?.automationAllowedByDefault
+        friendsList[index].permissionsIGranted[kind] = updated
+        friendsHub.yield(friendsList)
+    }
+
     func refreshFriends() async {
         friendsHub.yield(friendsList)
     }

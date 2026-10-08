@@ -58,6 +58,7 @@
 		47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E384B1B21237F275A6BFD96D /* SettingsView.swift */; };
 		49785568B7E8A160EB7EE7B8 /* FiringInteractionSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E26F9100A78C2752864BEA /* FiringInteractionSettingsStore.swift */; };
 		4D175A78EEFABD16FEF00C79 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98791DA8F2EF88057FB41B93 /* AddFriendView.swift */; };
+		5065F04BC6014B3C0AE66187 /* StimulusPermissionUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8AE79E7057B34B0E850ABA8 /* StimulusPermissionUpdate.swift */; };
 		526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */; };
 		535EBA6E39EE0CD08FCE8971 /* ServerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620C2FBA2833B67D7C987D1 /* ServerSettingsView.swift */; };
 		536B5F857A1740AEACC99E0A /* HTTPSocialBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */; };
@@ -181,6 +182,7 @@
 		DCDC3F5E6C3BD3C9DEC99C44 /* FriendsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8BB6D098B53F00B1F19518 /* FriendsListView.swift */; };
 		DE0802A3E6852A2334D1A6A9 /* RemoteTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F25BFA54F117FB8911D6D84 /* RemoteTheme.swift */; };
 		DECE51CCCDD89B34A39C297D /* PushDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE2FD5123762F32D9224DBB /* PushDiagnostics.swift */; };
+		DF4A955EFEA722898C3EE23E /* StimulusPermissionUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC110078C07FB650415021B /* StimulusPermissionUpdateTests.swift */; };
 		E465DF506896C81016586C83 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3728532FBB4B6DFA4BB80060 /* QRScannerView.swift */; };
 		E479AE3BB629C829A2A8B781 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEC536ADB82917F4A57AF77 /* SplashView.swift */; };
 		E51216EC1387F8A478306FF9 /* Alarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE988AF1F2845FA5280393 /* Alarm.swift */; };
@@ -296,6 +298,7 @@
 		5795740F619EA74D0128DA35 /* PokeTriggerServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerServiceTests.swift; sourceTree = "<group>"; };
 		588FAE7735095AC95BC66251 /* RemoteDashboardLayoutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDashboardLayoutService.swift; sourceTree = "<group>"; };
 		5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPSocialBackend+PushDiagnostics.swift"; sourceTree = "<group>"; };
+		5AC110078C07FB650415021B /* StimulusPermissionUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusPermissionUpdateTests.swift; sourceTree = "<group>"; };
 		5BFBFF7CBA11D17D7CC2558A /* RemoteDeviceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDeviceDetailView.swift; sourceTree = "<group>"; };
 		5CDD6310E7A33FCD613E30C4 /* ServerPolicies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerPolicies.swift; sourceTree = "<group>"; };
 		5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokDevice.swift; sourceTree = "<group>"; };
@@ -416,6 +419,7 @@
 		F49811747B5975FDC50CE91C /* StatusCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusCard.swift; sourceTree = "<group>"; };
 		F53E65E840CC710CB50B918B /* PairDeviceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairDeviceSheet.swift; sourceTree = "<group>"; };
 		F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoltAPIClient.swift; sourceTree = "<group>"; };
+		F8AE79E7057B34B0E850ABA8 /* StimulusPermissionUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusPermissionUpdate.swift; sourceTree = "<group>"; };
 		F947011453C822510A2EE4C1 /* NotificationTestViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTestViewModelTests.swift; sourceTree = "<group>"; };
 		FA3E451DCDF0BB34E4EAA1D0 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		FA63F667AC24AA36DC49CF58 /* ProtocolLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolLabView.swift; sourceTree = "<group>"; };
@@ -556,6 +560,7 @@
 				62615824717B2EC9115D3184 /* QuickPokeSettingsStore.swift */,
 				FE54C683DA891EC13865B978 /* RemoteDashboardLayoutStore.swift */,
 				5493D70BE56B44901102A4A0 /* ServerSettingsStore.swift */,
+				F8AE79E7057B34B0E850ABA8 /* StimulusPermissionUpdate.swift */,
 				E857EC1C8D109393A3DCD76B /* StimulusSettingsStore.swift */,
 				DC84FE5522BBC7EAB468867B /* StreamHub.swift */,
 				400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */,
@@ -645,6 +650,7 @@
 				EB4B3623CC73ADF1369B22F9 /* RelativeTimeTests.swift */,
 				EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */,
 				D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */,
+				5AC110078C07FB650415021B /* StimulusPermissionUpdateTests.swift */,
 				301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */,
 				07AE7384436BE969756EBE54 /* TestPushPayloadTests.swift */,
 				8756D0DDC39B4053D99E79CF /* WaiterRegistryTests.swift */,
@@ -1002,6 +1008,7 @@
 				5FE1D4B376234FBF779FD7DF /* RelativeTimeTests.swift in Sources */,
 				540633BA86E7AD838EF4F1E8 /* ServerConfigurationTests.swift in Sources */,
 				1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */,
+				DF4A955EFEA722898C3EE23E /* StimulusPermissionUpdateTests.swift in Sources */,
 				19905697928A1047B746F915 /* StimulusSettingsTests.swift in Sources */,
 				999AD2717052CAD40572966B /* TestPushPayloadTests.swift in Sources */,
 				36B4AE3677796E4A9C1F16CF /* WaiterRegistryTests.swift in Sources */,
@@ -1162,6 +1169,7 @@
 				F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */,
 				8E8D9925E5BCADB692E3422D /* StimulusCard.swift in Sources */,
 				5B35D4FB573976A76ACA63C8 /* StimulusPermission.swift in Sources */,
+				5065F04BC6014B3C0AE66187 /* StimulusPermissionUpdate.swift in Sources */,
 				C99083BAADD85698006D3EAC /* StimulusSettings.swift in Sources */,
 				28EE40110BF3CA0A2002BC32 /* StimulusSettingsStore.swift in Sources */,
 				32F2B048CA156DAC2775D6F8 /* StreamHub.swift in Sources */,
