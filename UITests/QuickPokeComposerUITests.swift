@@ -172,6 +172,10 @@ final class QuickPokeComposerUITests: XCTestCase {
     @MainActor
     private func configureQuickPoke(_ app: XCUIApplication, friendName: String) throws {
         XCTAssertTrue(app.selectTab("Settings", timeout: 10), "Could not select the Settings tab")
+        XCTAssertTrue(
+            app.navigationBars["Settings"].waitForExistence(timeout: 10),
+            "Settings screen never appeared"
+        )
         let link = app.descendants(matching: .any)["quickPokeSettingsLink"].firstMatch
         XCTAssertTrue(scrollToElement(link, in: app), "Quick poke settings link never became reachable")
         link.tap()
@@ -197,18 +201,25 @@ final class QuickPokeComposerUITests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()
     }
 
-    /// Waits for `element`, swiping up if it hasn't rendered yet — list rows
-    /// below the fold don't exist in the hierarchy until scrolled near.
+    /// Waits for `element`, scrolling until it exists and is hittable. List
+    /// rows below the fold aren't in the hierarchy until near; swiping only
+    /// up can also overshoot — recover by scrolling back down, same as the
+    /// design-reference UI helpers.
     @MainActor
     private func scrollToElement(
         _ element: XCUIElement,
         in app: XCUIApplication,
         maxSwipes: Int = 6
     ) -> Bool {
-        if element.waitForExistence(timeout: 5), element.isHittable { return true }
-        for _ in 0..<maxSwipes {
-            if element.exists, element.isHittable { return true }
+        _ = element.waitForExistence(timeout: 5)
+        var swipes = 0
+        while !(element.exists && element.isHittable) && swipes < maxSwipes {
             app.swipeUp()
+            swipes += 1
+        }
+        while !(element.exists && element.isHittable) && swipes < maxSwipes * 3 {
+            app.swipeDown()
+            swipes += 1
         }
         return element.exists && element.isHittable
     }
