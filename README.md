@@ -22,6 +22,15 @@ wearable connected. The phone acks it back, so "Arrived in 1.2s" means it
 genuinely got there rather than that Apple accepted it. The same test lives on
 the server's web dashboard under Devices.
 
+Friends can also poke you from scripts, with API tokens minted on the
+server's web dashboard (the app has no token UI). Whether a friend's scripts
+may send you a given stimulus is a separate answer under **Friends → friend →
+Permissions → Automated pokes**: Default, Allow or Block, where Default
+follows the server's policy and says what that currently is. Presets and
+slider edits never change it. Pokes a script sent are marked with a gearshape
+in the activity log and on the dashboard. Against a server too old to know
+about any of this, the setting is simply not shown.
+
 `MockSocialBackend` still implements the same repository protocols
 in-memory and is what snapshot/screenshot runs use, so the UI can be exercised
 without a server.
