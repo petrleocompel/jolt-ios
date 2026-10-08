@@ -89,6 +89,14 @@ struct PokeComposerCard: View {
                 Text("\(friend.displayName)'s cap: \(cap)%")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                // Pokes from here are in person and unaffected; this is for
+                // whoever also pokes from scripts and wonders why one failed.
+                if friend.permissionsGrantedToMe[kind].automationAllowedEffective == false {
+                    Label("Your scripts can't send \(friend.displayName) \(kind.displayName.lowercased())s", systemImage: "gearshape.2")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("pokeAutomationBlockedNote")
+                }
             }
 
             HStack {

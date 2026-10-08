@@ -30,7 +30,10 @@ struct PermissionEditView: View {
                 } header: {
                     Text("Quick setup")
                 } footer: {
-                    Text("Applies to all three stimuli at once. Fine-tune any of them below.")
+                    Text(
+                        "Applies to all three stimuli at once. Fine-tune any of them below."
+                            + (supportsAutomationConsent(friend) ? " Automated-poke choices stay as they are." : "")
+                    )
                 }
 
                 ForEach(StimulusKind.allCases) { kind in
@@ -56,16 +59,74 @@ struct PermissionEditView: View {
                                 accessibilityID: "\(kind.rawValue)Cooldown",
                                 focusedField: $focusedField
                             )
+                            // An automated poke needs the grant first, so the
+                            // question only makes sense while it's on. The
+                            // answer itself is kept either way.
+                            if permission.supportsAutomationConsent {
+                                automationPicker(friend: friend, kind: kind, permission: permission)
+                            }
                         }
                     } header: {
                         Label(kind.displayName, systemImage: kind.symbolName)
                             .foregroundStyle(kind.tint)
+                    } footer: {
+                        if permission.isAllowed && permission.supportsAutomationConsent {
+                            Text(automationFooter(for: friend))
+                        }
                     }
                 }
             }
         }
         .navigationTitle("Permissions")
         .errorBanner(viewModel.lastError) { viewModel.lastError = nil }
+    }
+
+    /// Hidden entirely against a server that predates automation consent,
+    /// rather than shown in a state the app would have to make up.
+    private func supportsAutomationConsent(_ friend: Friend) -> Bool {
+        StimulusKind.allCases.contains { friend.permissionsIGranted[$0].supportsAutomationConsent }
+    }
+
+    private func automationPicker(friend: Friend, kind: StimulusKind, permission: StimulusPermission) -> some View {
+        Picker("Automated pokes", selection: automationBinding(friend: friend, kind: kind, permission: permission)) {
+            Text(defaultChoiceTitle(for: permission)).tag(AutomationChoice.serverDefault)
+            Text("Allow").tag(AutomationChoice.allow)
+            Text("Block").tag(AutomationChoice.block)
+        }
+        .accessibilityIdentifier("\(kind.rawValue)AutomationPicker")
+    }
+
+    /// Says what "Default" means today, since the server can change it: from
+    /// the server's own answer while it applies, otherwise from its policy.
+    private func defaultChoiceTitle(for permission: StimulusPermission) -> String {
+        let byDefault = permission.automationAllowed == nil
+            ? permission.automationAllowedEffective
+            : viewModel.serverPolicies?.automationAllowedByDefault
+        switch byDefault {
+        case true?: return "Default (allowed)"
+        case false?: return "Default (blocked)"
+        case nil: return "Default"
+        }
+    }
+
+    private func automationFooter(for friend: Friend) -> String {
+        let source = "Automated pokes come from \(friend.displayName)'s scripts (their API tokens), "
+            + "not from \(friend.displayName) in person."
+        switch viewModel.serverPolicies?.automationConsentRequired {
+        case false?: return source + " Default: allowed unless you block them."
+        case true?: return source + " Default: blocked until you allow them."
+        case nil: return source
+        }
+    }
+
+    private func automationBinding(friend: Friend, kind: StimulusKind, permission: StimulusPermission) -> Binding<AutomationChoice> {
+        Binding(
+            get: { AutomationChoice(answer: permission.automationAllowed) },
+            set: { choice in
+                guard choice.answer != permission.automationAllowed else { return }
+                viewModel.updateAutomationConsent(for: friend, kind: kind, allowed: choice.answer)
+            }
+        )
     }
 
     private func apply(_ preset: PermissionPreset, to friend: Friend) {
@@ -105,6 +166,30 @@ struct PermissionEditView: View {
                 viewModel.updatePermission(for: friend, kind: kind, permission: updated)
             }
         )
+    }
+}
+
+/// The three answers to "may their scripts send me this?" — `automationAllowed`
+/// as a picker selection, since `Bool?` reads poorly as a tag.
+private enum AutomationChoice: Hashable {
+    case serverDefault
+    case allow
+    case block
+
+    init(answer: Bool?) {
+        switch answer {
+        case true?: self = .allow
+        case false?: self = .block
+        case nil: self = .serverDefault
+        }
+    }
+
+    var answer: Bool? {
+        switch self {
+        case .serverDefault: return nil
+        case .allow: return true
+        case .block: return false
+        }
     }
 }
 

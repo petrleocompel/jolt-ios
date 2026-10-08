@@ -144,6 +144,36 @@ final class FriendsFlowUITests: XCTestCase {
         wait(for: [valueUpdated], timeout: 8)
     }
 
+    /// The automation question sits with each allowed stimulus, says what
+    /// "Default" currently means, and takes an explicit answer.
+    @MainActor
+    func testAutomationConsentCanBeAnsweredPerStimulus() {
+        let app = launchApp()
+        app.selectTab("Friends")
+        signUp(app)
+
+        app.staticTexts["Alice"].tap()
+        app.staticTexts["Permissions you've granted Alice"].tap()
+
+        // Seed data: vibe is allowed for Alice, zap is not — only vibe asks.
+        // Below the fold, and a `Form` only builds rows it shows.
+        XCTAssertTrue(app.switches.element(boundBy: 0).waitForExistence(timeout: 8))
+        app.swipeUp()
+        let vibePicker = app.buttons["vibeAutomationPicker"]
+        XCTAssertTrue(vibePicker.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["zapAutomationPicker"].exists)
+        XCTAssertTrue(vibePicker.label.contains("Default (allowed)"), vibePicker.label)
+
+        vibePicker.tap()
+        app.buttons["Block"].tap()
+
+        let blocked = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label CONTAINS %@", "Block"),
+            object: vibePicker
+        )
+        wait(for: [blocked], timeout: 8)
+    }
+
     @MainActor
     private func signUp(_ app: XCUIApplication) {
         let emailField = app.textFields["emailField"]
