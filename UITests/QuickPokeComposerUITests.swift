@@ -6,29 +6,45 @@ import XCTest
 ///
 /// Runs against a **real Jolt Server** (no `-snapshotMode`), because the bug
 /// never reproduced against `MockSocialBackend` — the difference is exactly
-/// what's under test. Requires the server in `ServerConfiguration.default`
-/// to be reachable and the README's test account to exist on it with at
-/// least one friend.
+/// what's under test. Requires the app to be built pointing at a reachable
+/// server (`JOLT_DEFAULT_SERVER_URL`) and a test account on it with at least
+/// one friend, passed in as `JOLT_TEST_SERVER_URL`, `JOLT_TEST_EMAIL` and
+/// `JOLT_TEST_PASSWORD` (from the command line, `TEST_RUNNER_`-prefixed).
 final class QuickPokeComposerUITests: XCTestCase {
-    private enum TestAccount {
-        static let email = "tester@example.com"
-        static let password = "REDACTED"
+    private struct TestAccount {
+        let serverURL: URL
+        let email: String
+        let password: String
+
+        /// Must match the server the app under test was built with. Passed
+        /// in because a UI-test bundle runs out-of-process and can't import
+        /// the app's types.
+        static func fromEnvironment() -> TestAccount? {
+            let env = ProcessInfo.processInfo.environment
+            guard let server = env["JOLT_TEST_SERVER_URL"].flatMap(URL.init(string:)),
+                  let email = env["JOLT_TEST_EMAIL"], !email.isEmpty,
+                  let password = env["JOLT_TEST_PASSWORD"], !password.isEmpty else { return nil }
+            return TestAccount(serverURL: server, email: email, password: password)
+        }
     }
 
-    /// Mirrors `ServerConfiguration.default`. Hardcoded because a UI-test
-    /// bundle runs out-of-process and can't import the app's types.
-    private static let serverProbeURL = URL(string: "https://jolt.example.com/api/v1/me")!
+    private var account: TestAccount!
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        guard let account = TestAccount.fromEnvironment() else {
+            throw XCTSkip("Set JOLT_TEST_SERVER_URL, JOLT_TEST_EMAIL and JOLT_TEST_PASSWORD to run live-server tests.")
+        }
+        self.account = account
         try skipUnlessServerReachable()
     }
 
     /// This is a live-server test: it needs the configured Jolt Server and the
-    /// README's test account. Skip — rather than fail — where neither exists,
+    /// test account. Skip — rather than fail — where neither exists,
     /// so an unreachable server on a CI runner doesn't read as a code defect.
     private func skipUnlessServerReachable() throws {
-        var request = URLRequest(url: Self.serverProbeURL)
+        let probeURL = account.serverURL.appendingPathComponent("me")
+        var request = URLRequest(url: probeURL)
         request.httpMethod = "GET"
         request.timeoutInterval = 8
 
@@ -41,7 +57,7 @@ final class QuickPokeComposerUITests: XCTestCase {
         _ = done.wait(timeout: .now() + 12)
 
         if !reachable {
-            throw XCTSkip("Jolt server at \(Self.serverProbeURL.host() ?? "?") is unreachable.")
+            throw XCTSkip("Jolt server at \(probeURL.host() ?? "?") is unreachable.")
         }
     }
 
@@ -142,10 +158,10 @@ final class QuickPokeComposerUITests: XCTestCase {
         let emailField = app.textFields["emailField"]
         if emailField.waitForExistence(timeout: 10) {
             emailField.tap()
-            emailField.typeText(TestAccount.email)
+            emailField.typeText(account.email)
             let password = app.secureTextFields["passwordField"]
             password.tap()
-            password.typeText(TestAccount.password)
+            password.typeText(account.password)
             app.buttons["authSubmitButton"].tap()
         }
 

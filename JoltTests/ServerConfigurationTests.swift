@@ -2,8 +2,21 @@ import XCTest
 @testable import Jolt
 
 final class ServerConfigurationTests: XCTestCase {
-    func testDefaultPointsAtTheHostedInstanceIncludingApiPath() {
-        XCTAssertEqual(ServerConfiguration.default.baseURL.absoluteString, "https://jolt.example.com/api/v1")
+    func testBundledDefaultUsesTheBuildSettingIncludingApiPath() {
+        let config = ServerConfiguration.bundledDefault(from: "https://jolt.example.org/api/v1")
+        XCTAssertEqual(config.baseURL.absoluteString, "https://jolt.example.org/api/v1")
+    }
+
+    func testBundledDefaultFallsBackToThePlaceholder() {
+        // Missing key, an unexpanded build setting, or plain HTTP.
+        XCTAssertEqual(ServerConfiguration.bundledDefault(from: nil), .placeholder)
+        XCTAssertEqual(ServerConfiguration.bundledDefault(from: ""), .placeholder)
+        XCTAssertEqual(ServerConfiguration.bundledDefault(from: "$(JOLT_DEFAULT_SERVER_URL)"), .placeholder)
+        XCTAssertEqual(ServerConfiguration.bundledDefault(from: "http://jolt.example.org/api/v1"), .placeholder)
+    }
+
+    func testDefaultIsAValidHTTPSURL() {
+        XCTAssertEqual(ServerConfiguration.default.baseURL.scheme, "https")
     }
 
     func testAcceptsASelfHostedURL() throws {
@@ -50,7 +63,7 @@ final class ServerSettingsStoreTests: XCTestCase {
         defaults = UserDefaults(suiteName: "ServerSettingsStoreTests-\(UUID().uuidString)")
     }
 
-    func testDefaultsToTheHostedInstance() {
+    func testDefaultsToTheBundledDefault() {
         let store = ServerSettingsStore(defaults: defaults)
         XCTAssertEqual(store.load(), .default)
         XCTAssertFalse(store.isCustom)
@@ -58,7 +71,7 @@ final class ServerSettingsStoreTests: XCTestCase {
 
     func testCustomServerSurvivesAReload() throws {
         let store = ServerSettingsStore(defaults: defaults)
-        let custom = try ServerConfiguration.parse("https://jolt.example.com/api/v1").get()
+        let custom = try ServerConfiguration.parse("https://jolt.example.org/api/v1").get()
         store.save(custom)
 
         XCTAssertEqual(ServerSettingsStore(defaults: defaults).load(), custom)
@@ -67,7 +80,7 @@ final class ServerSettingsStoreTests: XCTestCase {
 
     func testResetReturnsToTheDefault() throws {
         let store = ServerSettingsStore(defaults: defaults)
-        store.save(try ServerConfiguration.parse("https://jolt.example.com/api/v1").get())
+        store.save(try ServerConfiguration.parse("https://jolt.example.org/api/v1").get())
         store.reset()
         XCTAssertEqual(store.load(), .default)
         XCTAssertFalse(store.isCustom)

@@ -1209,6 +1209,7 @@
 				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				INFOPLIST_FILE = Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				JOLT_DEFAULT_SERVER_URL = "https://jolt.example.com/api/v1";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1270,6 +1271,7 @@
 				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				INFOPLIST_FILE = Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				JOLT_DEFAULT_SERVER_URL = "https://jolt.example.com/api/v1";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

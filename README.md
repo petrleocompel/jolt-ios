@@ -2,12 +2,11 @@
 
 Control Pavlok wearables and wake up to them — an independent iOS client.
 
-Peelco iOS app — XcodeGen + Fastlane.
-
 ## Server
 
 Friends, permissions and pokes go through a [Jolt Server](https://github.com/petrleocompel/jolt-server).
-The app ships pointing at `https://jolt.example.com/api/v1`, but the URL is a
+The server a fresh install points at comes from the `JOLT_DEFAULT_SERVER_URL`
+build setting (placeholder `https://jolt.example.com/api/v1`), and the URL is a
 setting — **Settings → Server** — so it can be aimed at a self-hosted instance
 instead. The server repo's `docs/SELFHOSTING.md` covers running one.
 
@@ -35,12 +34,11 @@ about any of this, the setting is simply not shown.
 in-memory and is what snapshot/screenshot runs use, so the UI can be exercised
 without a server.
 
-### Test account
+### Live-server UI test
 
-| Field | Value |
-|-------|-------|
-| Email | `tester@example.com` |
-| Password | `REDACTED` |
+`QuickPokeComposerUITests` runs against a real server when given
+`JOLT_TEST_SERVER_URL`, `JOLT_TEST_EMAIL` and `JOLT_TEST_PASSWORD` (prefixed
+`TEST_RUNNER_` on the `xcodebuild` command line); without them it skips.
 
 ## Requirements
 

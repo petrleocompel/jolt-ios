@@ -44,6 +44,10 @@ targets:
         # this way and neither reached the built app. They live in
         # Resources/Info.plist instead.
         INFOPLIST_FILE: Resources/Info.plist
+        # Server a fresh install points at (Info.plist JoltDefaultServerURL).
+        # A placeholder here; release builds override it on the command line
+        # (fastlane reads JOLT_DEFAULT_SERVER_URL from the environment).
+        JOLT_DEFAULT_SERVER_URL: "https://jolt.example.com/api/v1"
         CODE_SIGN_ENTITLEMENTS: Resources/Jolt.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         CURRENT_PROJECT_VERSION: 1

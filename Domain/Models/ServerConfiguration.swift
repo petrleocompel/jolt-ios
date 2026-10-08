@@ -12,9 +12,25 @@ struct ServerConfiguration: Equatable, Codable {
     /// somewhere unusual behind a reverse proxy still works.
     var baseURL: URL
 
-    static let `default` = ServerConfiguration(
+    /// Where a fresh install points. Comes from the `JoltDefaultServerURL`
+    /// Info.plist key, i.e. the `JOLT_DEFAULT_SERVER_URL` build setting, so
+    /// each build (or self-builder) picks its own instance without a code
+    /// change.
+    static let `default` = bundledDefault(
+        from: Bundle.main.object(forInfoDictionaryKey: "JoltDefaultServerURL")
+    )
+
+    /// Used when the build doesn't set a usable URL: an obvious placeholder
+    /// the user replaces under Settings → Server.
+    static let placeholder = ServerConfiguration(
         baseURL: URL(string: "https://jolt.example.com/api/v1")!
     )
+
+    static func bundledDefault(from infoValue: Any?) -> ServerConfiguration {
+        guard let string = infoValue as? String,
+              case .success(let config) = parse(string) else { return placeholder }
+        return config
+    }
 
     /// Parses user input into a configuration, or explains why it can't.
     ///

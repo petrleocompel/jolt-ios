@@ -1,6 +1,9 @@
-# Peelco iOS GitLab CI — keep only jobs for enabled modules.
-# Runner tag: macos. Set CI variables: APP_IDENTIFIER, APPLE_TEAM_ID,
-# APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY (base64).
+# Jolt iOS GitLab CI (the maintainer's private pipeline: builds, TestFlight,
+# App Store assets). Public checks run in .github/workflows instead.
+# Runner tag: macos. CI variables: APP_STORE_CONNECT_KEY_ID,
+# APP_STORE_CONNECT_ISSUER_ID, APPSTORE_CONNECT_API_KEY (base64 .p8, group),
+# JOLT_DEFAULT_SERVER_URL, JOLT_TEST_EMAIL, JOLT_TEST_PASSWORD; optional
+# APP_IDENTIFIER, APPLE_TEAM_ID.
 
 stages:
   - validate
@@ -17,8 +20,8 @@ variables:
   # cold (~23s measured); fastlane defaults to 3s x 4 retries.
   FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "120"
   FASTLANE_XCODEBUILD_SETTINGS_RETRIES: "5"
-  # Base64 .p8 arrives as the GitLab group variable APPSTORE_CONNECT_API_KEY
-  ASC_KEY_FILE: "$CI_PROJECT_DIR/fastlane/AuthKey_REDACTED.p8"
+  # Base64 .p8 arrives as the group variable APPSTORE_CONNECT_API_KEY
+  ASC_KEY_FILE: "$CI_PROJECT_DIR/fastlane/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
 
 default:
   tags:
@@ -31,6 +34,12 @@ default:
 
 ios_validate:
   stage: validate
+  variables:
+    # xcodebuild hands TEST_RUNNER_* variables to the UI-test runner with the
+    # prefix stripped; QuickPokeComposerUITests skips when they are unset.
+    TEST_RUNNER_JOLT_TEST_EMAIL: "$JOLT_TEST_EMAIL"
+    TEST_RUNNER_JOLT_TEST_PASSWORD: "$JOLT_TEST_PASSWORD"
+    TEST_RUNNER_JOLT_TEST_SERVER_URL: "$JOLT_DEFAULT_SERVER_URL"
   script:
     - bundle exec fastlane dev
   rules:

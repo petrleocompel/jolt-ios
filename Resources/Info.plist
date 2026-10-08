@@ -18,6 +18,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Jolt</string>
+	<key>JoltDefaultServerURL</key>
+	<string>$(JOLT_DEFAULT_SERVER_URL)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- Export compliance, declared here so App Store Connect stops asking on

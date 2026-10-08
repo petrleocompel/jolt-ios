@@ -1,9 +1,8 @@
 # Pavlok account API (`api.pavlok.com/api/v5`)
 
-Recovered from the Android app's Dart AOT snapshot (blutter — see
-`RE-FINDINGS.md`) and then **verified live** against a real account on
-2026-08-29. Every shape below was observed in an actual response unless marked
-otherwise.
+Recovered from the Android app (see `RE-FINDINGS.md`) and then **verified
+live** against a real account on 2026-08-29. Every shape below was observed in
+an actual response unless marked otherwise.
 
 Used by Jolt's optional *Pavlok account* section: sign in with a Pavlok
 account to poke Pavlok friends from Jolt. See "Receiving pokes" for the one

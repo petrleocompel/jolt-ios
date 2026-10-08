@@ -2,20 +2,21 @@
 
 require "shellwords"
 
-# Peelco iOS Fastfile — keep only lanes for enabled modules.
+# Jolt Fastfile.
 # Never hardcode ASC key IDs; use env or gitignored fastlane/AuthKey_<KEY_ID>.p8
 #
 # Env:
 #   APP_STORE_CONNECT_KEY_ID / ISSUER_ID / KEY_PATH or KEY (base64)
+#   JOLT_DEFAULT_SERVER_URL — Jolt Server the built app points at out of the
+#     box (default in project.yml is a placeholder; users can change it in
+#     Settings → Server)
 #   FASTLANE_RUN_XCODEGEN=1  — run xcodegen before build/screenshots
 #   CHANGELOG — TestFlight notes
 #   VERSION_CODE — CI build number (optional; set CURRENT_PROJECT_VERSION)
 
-# App Store Connect credentials follow the GitLab group convention: the
-# base64 .p8 arrives as APPSTORE_CONNECT_API_KEY and CI writes it to
-# fastlane/AuthKey_<KEY_ID>.p8. See another app for the same wiring.
-ASC_DEFAULT_KEY_ID = "REDACTED"
-ASC_DEFAULT_ISSUER_ID = "REDACTED"
+# On CI the base64 .p8 arrives as the GitLab group variable
+# APPSTORE_CONNECT_API_KEY and the job writes it to
+# fastlane/AuthKey_<KEY_ID>.p8; key and issuer IDs are CI variables too.
 # Must match `fastlane/Appfile`'s `team_id`, and the DEVELOPMENT_TEAM in
 # project.yml. When they disagree, the archive builds under one team and
 # `exportArchive` looks for profiles under the other, which fails with
@@ -24,11 +25,11 @@ ASC_DEFAULT_ISSUER_ID = "REDACTED"
 TEAM_ID = ENV.fetch("APPLE_TEAM_ID", "YCFL9S5UA8")
 
 def asc_key_id
-  ENV["APP_STORE_CONNECT_KEY_ID"] || ENV["APPSTORE_CONNECT_API_KEY_ID"] || ASC_DEFAULT_KEY_ID
+  ENV["APP_STORE_CONNECT_KEY_ID"] || ENV["APPSTORE_CONNECT_API_KEY_ID"]
 end
 
 def asc_issuer_id
-  ENV["APP_STORE_CONNECT_ISSUER_ID"] || ENV["APPSTORE_CONNECT_API_KEY_ISSUER_ID"] || ASC_DEFAULT_ISSUER_ID
+  ENV["APP_STORE_CONNECT_ISSUER_ID"] || ENV["APPSTORE_CONNECT_API_KEY_ISSUER_ID"]
 end
 
 def asc_key_path
@@ -39,7 +40,7 @@ end
 # -allowProvisioningUpdates cannot create or fetch profiles without an
 # authenticated account, so xcodebuild needs the key passed through directly.
 def xcode_api_auth_args
-  return "-allowProvisioningUpdates" unless File.exist?(asc_key_path)
+  return "-allowProvisioningUpdates" unless asc_key_id && asc_issuer_id && File.exist?(asc_key_path)
 
   [
     "-allowProvisioningUpdates",
@@ -47,6 +48,18 @@ def xcode_api_auth_args
     "-authenticationKeyIssuerID", Shellwords.escape(asc_issuer_id),
     "-authenticationKeyPath", Shellwords.escape(asc_key_path)
   ].join(" ")
+end
+
+# Build-setting override for the app's out-of-the-box server, so the real URL
+# lives in CI configuration rather than in the source. Empty when unset, which
+# keeps project.yml's placeholder.
+def server_url_args
+  url = ENV["JOLT_DEFAULT_SERVER_URL"].to_s
+  url.empty? ? "" : "JOLT_DEFAULT_SERVER_URL=#{Shellwords.escape(url)}"
+end
+
+def with_server_url(xcargs)
+  [xcargs, server_url_args].reject(&:empty?).join(" ")
 end
 
 # The runner's login keychain is locked in headless sessions; signing fails
@@ -67,9 +80,14 @@ end
 def load_asc_api_key
   key_id = asc_key_id
   issuer_id = asc_issuer_id
-  # Group convention: APPSTORE_CONNECT_API_KEY carries the base64 .p8.
+  # On CI, APPSTORE_CONNECT_API_KEY carries the base64 .p8.
   content = ENV["APP_STORE_CONNECT_KEY"] || ENV["APPSTORE_CONNECT_API_KEY"]
   path = asc_key_path
+
+  unless key_id && issuer_id
+    UI.important("APP_STORE_CONNECT_KEY_ID / APP_STORE_CONNECT_ISSUER_ID not set. Falling back to interactive auth.")
+    return nil
+  end
 
   opts = { key_id: key_id, issuer_id: issuer_id, in_house: false }
   if File.exist?(path)
@@ -126,7 +144,8 @@ platform :ios do
       scheme: "Jolt",
       project: "Jolt.xcodeproj",
       derived_data_path: "DerivedData",
-      destination: ENV.fetch("FASTLANE_SIMULATOR", "platform=iOS Simulator,name=iPhone 17")
+      destination: ENV.fetch("FASTLANE_SIMULATOR", "platform=iOS Simulator,name=iPhone 17"),
+      xcargs: server_url_args
     )
   end
 
@@ -144,7 +163,8 @@ platform :ios do
       skip_package_ipa: true,
       destination: "generic/platform=iOS Simulator",
       output_directory: "build/dev",
-      clean: true
+      clean: true,
+      xcargs: server_url_args
     )
   end
 
@@ -168,7 +188,7 @@ platform :ios do
       output_directory: "build/prod",
       output_name: "Jolt-prod.ipa",
       clean: true,
-      xcargs: xcode_api_auth_args,
+      xcargs: with_server_url(xcode_api_auth_args),
       export_options: signed_export_options
     )
   end
@@ -187,7 +207,7 @@ platform :ios do
       output_directory: "build/internal",
       output_name: "Jolt-internal.ipa",
       clean: true,
-      xcargs: xcode_api_auth_args,
+      xcargs: with_server_url(xcode_api_auth_args),
       export_options: signed_export_options
     )
   end

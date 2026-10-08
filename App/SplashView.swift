@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Launch splash mirroring the petrleocompel.github.io/jolt-ios hero: a glowing green bolt over
+/// Launch splash mirroring the marketing site hero: a glowing green bolt over
 /// black with the product name and tagline. Shown briefly at app start, then
 /// cross-fades to `RootView` (see `JoltApp`).
 ///
