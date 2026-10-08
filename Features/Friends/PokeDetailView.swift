@@ -27,6 +27,12 @@ struct PokeDetailView: View {
                 )
                 LabeledContent("Handle", value: "@\(event.friendHandle)")
                 LabeledContent("Direction", value: event.direction == .sent ? "Sent" : "Received")
+                if event.isAutomated {
+                    LabeledContent("Sent by") {
+                        Label(automationSource, systemImage: AutomatedPokeMark.symbolName)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
 
             Section("Delivery") {
@@ -71,12 +77,26 @@ struct PokeDetailView: View {
                 .background(RemoteTheme.violet.opacity(0.16), in: Circle())
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.headline)
-                Text(RelativeTime.string(for: event.createdAt))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    if event.isAutomated { AutomatedPokeMark() }
+                    Text(RelativeTime.string(for: event.createdAt))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
+    }
+
+    /// Which script, when it's ours to know: the server only names the
+    /// token to its owner, and not at all once it has been revoked.
+    private var automationSource: String {
+        switch event.direction {
+        case .sent:
+            return event.apiTokenName.map { "Script \u{201C}\($0)\u{201D}" } ?? "Your script"
+        case .received:
+            return "\(event.friendDisplayName)'s script"
+        }
     }
 
     private var title: String {
@@ -126,6 +146,17 @@ struct PokeDetailView: View {
         elapsed < 1
             ? String(format: "%.0f ms", elapsed * 1000)
             : String(format: "%.1f s", elapsed)
+    }
+}
+
+/// Marks a poke a script sent (through an API token) rather than a person.
+/// Shared by every list that shows pokes, so it reads the same everywhere.
+struct AutomatedPokeMark: View {
+    static let symbolName = "gearshape.2"
+
+    var body: some View {
+        Image(systemName: Self.symbolName)
+            .accessibilityLabel("Sent by a script")
     }
 }
 

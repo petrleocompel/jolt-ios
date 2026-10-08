@@ -27,10 +27,13 @@ struct PokeActivityView: View {
                 // Deliberately not `Text(_:style: .relative)`: that ticks once
                 // a second, so a screenful of pokes becomes a screenful of
                 // counters. The exact time is one tap away in the detail.
-                Text(
-                    "\(RelativeTime.string(for: event.createdAt)) · "
-                        + "\(event.stimulus.kind.displayName) \(event.stimulus.intensity)%"
-                )
+                HStack(spacing: 4) {
+                    if event.isAutomated { AutomatedPokeMark() }
+                    Text(
+                        "\(RelativeTime.string(for: event.createdAt)) · "
+                            + "\(event.stimulus.kind.displayName) \(event.stimulus.intensity)%"
+                    )
+                }
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }

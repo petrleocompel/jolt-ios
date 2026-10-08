@@ -92,10 +92,14 @@ struct PokeComposerCard: View {
                 // Pokes from here are in person and unaffected; this is for
                 // whoever also pokes from scripts and wonders why one failed.
                 if friend.permissionsGrantedToMe[kind].automationAllowedEffective == false {
-                    Label("Your scripts can't send \(friend.displayName) \(kind.displayName.lowercased())s", systemImage: "gearshape.2")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("pokeAutomationBlockedNote")
+                    HStack(spacing: 4) {
+                        Image(systemName: AutomatedPokeMark.symbolName)
+                        Text("Your scripts can't send \(friend.displayName) \(kind.displayName.lowercased())s")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("pokeAutomationBlockedNote")
                 }
             }
 
