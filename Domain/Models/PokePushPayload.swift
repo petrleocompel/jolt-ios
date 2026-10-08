@@ -23,6 +23,11 @@ struct PokePushPayload: Codable, Equatable {
     /// "not mine".
     var recipientHandle: String?
     var stimulus: StimulusConfig
+    /// Sent by the sender's scripts (an API token), not in person. The alert
+    /// text already says so; this is for anything the app renders itself.
+    ///
+    /// Optional: a server that predates it sends nothing.
+    var viaApiToken: Bool?
 }
 
 extension PokePushPayload {

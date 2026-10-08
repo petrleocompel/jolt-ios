@@ -27,6 +27,9 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
 
     private var user: User?
     private var inviteCode = ""
+    /// From the signed-in profile; nil while signed out, and from a server
+    /// that predates `policies`.
+    private(set) var serverPolicies: ServerPolicies?
     /// Not `private`: `HTTPSocialBackend+Pokes.swift` is the same type in
     /// another file, and Swift's `private` is file-scoped.
     var friendsList: [Friend] = []
@@ -143,6 +146,9 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         let displayName: String
         let email: String
         let inviteCode: String
+        /// Optional: a server that predates it sends no `policies`, and that
+        /// must not fail the sign-in.
+        let policies: ServerPolicies?
 
         var asUser: User { User(id: id, handle: handle, displayName: displayName, email: email) }
     }
@@ -185,6 +191,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         await client.setToken(response.token)
         user = response.user.asUser
         inviteCode = response.user.inviteCode
+        serverPolicies = response.user.policies
         userHub.yield(user)
         await registerLastPushToken()
         await refreshAll()
@@ -212,6 +219,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         await client.setToken(nil)
         user = nil
         inviteCode = ""
+        serverPolicies = nil
         friendsList = []
         incoming = []
         outgoing = []
@@ -229,6 +237,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             let profile: MeResponse = try await client.send("GET", "me")
             user = profile.asUser
             inviteCode = profile.inviteCode
+            serverPolicies = profile.policies
             userHub.yield(user)
             // Apple hands the token over within milliseconds of launch, well
             // before this round-trip finishes, so on a restored session it is

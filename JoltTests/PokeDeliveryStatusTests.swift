@@ -44,6 +44,48 @@ final class PokeDeliveryStatusTests: XCTestCase {
                              "failed to decode \(stamp)")
         }
     }
+
+    func testDecodesAPokeSentByAScript() throws {
+        let json = """
+        { "id": "8B1E4B8E-3E4E-4C0E-9B3E-2A1B4C5D6E7F", "direction": "sent",
+          "friendHandle": "a", "friendDisplayName": "A",
+          "stimulus": { "kind": "zap", "intensity": 1, "repetitions": 1 },
+          "status": "fired", "createdAt": "2026-08-29T10:15:30Z", "ackedAt": null,
+          "viaApiToken": true, "apiTokenName": "home assistant" }
+        """
+        let event = try JSONDecoder.joltTesting.decode(PokeEvent.self, from: Data(json.utf8))
+        XCTAssertTrue(event.isAutomated)
+        XCTAssertEqual(event.apiTokenName, "home assistant")
+    }
+
+    /// The recipient's view: flagged as automated, but the token's name is
+    /// the sender's business.
+    func testDecodesAReceivedScriptedPokeWithoutATokenName() throws {
+        let json = """
+        { "id": "8B1E4B8E-3E4E-4C0E-9B3E-2A1B4C5D6E7F", "direction": "received",
+          "friendHandle": "a", "friendDisplayName": "A",
+          "stimulus": { "kind": "zap", "intensity": 1, "repetitions": 1 },
+          "status": "fired", "createdAt": "2026-08-29T10:15:30Z",
+          "viaApiToken": true, "apiTokenName": null }
+        """
+        let event = try JSONDecoder.joltTesting.decode(PokeEvent.self, from: Data(json.utf8))
+        XCTAssertTrue(event.isAutomated)
+        XCTAssertNil(event.apiTokenName)
+    }
+
+    /// A server that predates the keys: every poke was sent in person.
+    func testAPokeWithoutTheAutomationKeysIsNotAutomated() throws {
+        let json = """
+        { "id": "8B1E4B8E-3E4E-4C0E-9B3E-2A1B4C5D6E7F", "direction": "sent",
+          "friendHandle": "a", "friendDisplayName": "A",
+          "stimulus": { "kind": "zap", "intensity": 1, "repetitions": 1 },
+          "status": "fired", "createdAt": "2026-08-29T10:15:30Z" }
+        """
+        let event = try JSONDecoder.joltTesting.decode(PokeEvent.self, from: Data(json.utf8))
+        XCTAssertFalse(event.isAutomated)
+        XCTAssertNil(event.viaApiToken)
+        XCTAssertNil(event.apiTokenName)
+    }
 }
 
 private extension JSONDecoder {

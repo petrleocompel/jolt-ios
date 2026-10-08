@@ -146,21 +146,3 @@ private final class SignedInFlag: @unchecked Sendable {
         set { lock.lock(); flag = newValue; lock.unlock() }
     }
 }
-
-private extension URLRequest {
-    /// URLSession hands a stubbed protocol the body as a stream, not `httpBody`.
-    var bodyData: Data {
-        if let httpBody { return httpBody }
-        guard let stream = httpBodyStream else { return Data() }
-        stream.open()
-        defer { stream.close() }
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: 1024)
-        while stream.hasBytesAvailable {
-            let read = stream.read(&buffer, maxLength: buffer.count)
-            guard read > 0 else { break }
-            data.append(buffer, count: read)
-        }
-        return data
-    }
-}

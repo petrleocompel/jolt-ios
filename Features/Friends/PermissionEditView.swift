@@ -118,8 +118,10 @@ private struct PermissionPreset: Identifiable {
 
     var id: String { name }
 
+    /// Grant only: a preset says nothing about automated pokes, so whatever
+    /// was answered there can't stop it from reading as active.
     func matches(_ set: FriendPermissionSet) -> Bool {
-        StimulusKind.allCases.allSatisfy { set[$0] == value }
+        StimulusKind.allCases.allSatisfy { set[$0].hasSameGrant(as: value) }
     }
 
     static let full = PermissionPreset(

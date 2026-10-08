@@ -10,6 +10,9 @@ protocol FriendsRepository {
     /// text + QR so someone else can add *you*.
     var myHandle: String { get }
     var myInviteCode: String { get }
+    /// The server's rules for what an unanswered automation consent means.
+    /// Nil while signed out or against a server that predates them.
+    var serverPolicies: ServerPolicies? { get }
 
     func sendRequest(handle: String) async throws
     func sendRequest(inviteCode: String) async throws

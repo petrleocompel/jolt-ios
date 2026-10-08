@@ -39,6 +39,15 @@ struct PokeEvent: Identifiable, Codable, Equatable {
     /// Optional rather than required so a build pointed at a server that
     /// predates the field still decodes its activity feed.
     var ackedAt: Date?
+    /// Sent by the sender's scripts — one of their API tokens — rather than
+    /// by the sender in person. Visible to both sides.
+    ///
+    /// Optional for the same reason as `ackedAt`; read it through
+    /// `isAutomated`.
+    var viaApiToken: Bool?
+    /// The name the sender gave that token. Only ever present for the
+    /// sender's own view, and gone once the token is revoked.
+    var apiTokenName: String?
 }
 
 extension PokeEvent {
@@ -47,4 +56,8 @@ extension PokeEvent {
         guard let ackedAt else { return nil }
         return ackedAt.timeIntervalSince(createdAt)
     }
+
+    /// Sent by a script rather than in person. False when the server doesn't
+    /// say — every poke was in person before it could.
+    var isAutomated: Bool { viaApiToken ?? false }
 }

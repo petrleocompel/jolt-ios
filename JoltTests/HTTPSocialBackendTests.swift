@@ -69,6 +69,66 @@ final class HTTPSocialBackendTests: XCTestCase {
         let signedOutUser = await signedOutIterator.next() ?? nil
         XCTAssertNil(signedOutUser)
     }
+
+    func testReadsServerPoliciesFromTheProfile() async throws {
+        let backend = try await signedInBackend(
+            profileExtras: #","policies":{"automationConsentRequired":true}"#
+        )
+        XCTAssertEqual(backend.serverPolicies, ServerPolicies(automationConsentRequired: true))
+    }
+
+    /// A server that predates `policies` must still sign in — the profile
+    /// decode is what the whole session hangs on.
+    func testAProfileWithoutPoliciesStillSignsIn() async throws {
+        let backend = try await signedInBackend(profileExtras: "")
+        XCTAssertNil(backend.serverPolicies)
+        XCTAssertEqual(backend.myHandle, "me")
+    }
+
+    // MARK: - Helpers
+
+    /// A backend signed in through `restoreSession` against a stub server
+    /// that answers the launch-time fetches, and records the body of every
+    /// other request into `recorder`, answering it with `otherResponse`.
+    private func signedInBackend(
+        profileExtras: String,
+        recorder: RequestRecorder = RequestRecorder(),
+        otherResponse: String = "{}"
+    ) async throws -> HTTPSocialBackend {
+        AuthTokenStore().save("valid-token", for: configuration)
+        StubURLProtocol.handler = { request in
+            let path = request.url?.path ?? ""
+            if request.httpMethod == "GET" {
+                if path.hasSuffix("/me") {
+                    let json = """
+                    {"id":"\(UUID().uuidString)","handle":"me","displayName":"Me",\
+                    "email":"me@example.com","inviteCode":"JOLT-1234"\(profileExtras)}
+                    """
+                    return (200, Data(json.utf8))
+                }
+                if path.hasSuffix("/friends/requests") { return (200, Data(#"{"incoming":[],"outgoing":[]}"#.utf8)) }
+                if path.hasSuffix("/friends") || path.hasSuffix("/pokes") { return (200, Data("[]".utf8)) }
+            }
+            recorder.record(String(decoding: request.bodyData, as: UTF8.self))
+            return (200, Data(otherResponse.utf8))
+        }
+        addTeardownBlock { StubURLProtocol.handler = nil }
+
+        let session = URLSession(configuration: {
+            let config = URLSessionConfiguration.ephemeral
+            config.protocolClasses = [StubURLProtocol.self]
+            return config
+        }())
+        let backend = HTTPSocialBackend(
+            configuration: configuration,
+            deviceRepository: FakeDeviceRepository(),
+            session: session
+        )
+        for await user in backend.currentUser where user != nil {
+            break
+        }
+        return backend
+    }
 }
 
 /// Stubs every request `HTTPSocialBackend`'s `URLSession` makes, so tests can
@@ -107,4 +167,23 @@ final class StubURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+}
+
+/// Shared by every test that inspects what was sent to `StubURLProtocol`.
+extension URLRequest {
+    /// URLSession hands a stubbed protocol the body as a stream, not `httpBody`.
+    var bodyData: Data {
+        if let httpBody { return httpBody }
+        guard let stream = httpBodyStream else { return Data() }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 1024)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            guard read > 0 else { break }
+            data.append(buffer, count: read)
+        }
+        return data
+    }
 }

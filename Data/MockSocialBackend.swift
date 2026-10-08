@@ -50,6 +50,8 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// account at signup.
     let myInviteCode = "JOLT-DEMO-4821"
     var myHandle: String { user?.handle ?? "" }
+    /// The real server's default: automated pokes allowed unless blocked.
+    let serverPolicies: ServerPolicies? = ServerPolicies(automationConsentRequired: false)
 
     init(deviceRepository: DeviceRepository) {
         self.deviceRepository = deviceRepository
@@ -124,8 +126,8 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             id: request.id,
             handle: request.handle,
             displayName: request.displayName,
-            permissionsGrantedToMe: FriendPermissionSet(zap: .allowed(), vibe: .allowed(), beep: .allowed()),
-            permissionsIGranted: .none
+            permissionsGrantedToMe: Self.answeredByServer(FriendPermissionSet(zap: .allowed(), vibe: .allowed(), beep: .allowed())),
+            permissionsIGranted: Self.answeredByServer(.none)
         )
         friendsList.append(friend)
         incomingHub.yield(incoming)
@@ -147,7 +149,9 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     func updatePermission(for friendID: Friend.ID, kind: StimulusKind, permission: StimulusPermission) async throws {
         try await Task.sleep(for: .milliseconds(200))
         guard let index = friendsList.firstIndex(where: { $0.id == friendID }) else { return }
-        friendsList[index].permissionsIGranted[kind] = permission
+        // Like the server: an ordinary edit leaves the automation answer alone.
+        let current = friendsList[index].permissionsIGranted[kind]
+        friendsList[index].permissionsIGranted[kind] = permission.keepingAutomationConsent(of: current)
         friendsHub.yield(friendsList)
     }
 
@@ -198,7 +202,8 @@ final class MockSocialBackend: AuthRepository, FriendsRepository, PokeRepository
                     friendDisplayName: payload.senderDisplayName,
                     stimulus: payload.stimulus,
                     status: status,
-                    createdAt: .now
+                    createdAt: .now,
+                    viaApiToken: payload.viaApiToken
                 ),
                 at: 0
             )
@@ -256,15 +261,26 @@ extension MockSocialBackend {
         return [
             Friend(
                 id: UUID(), handle: "alice", displayName: "Alice",
-                permissionsGrantedToMe: alicePermissionsGrantedToMe,
-                permissionsIGranted: alicePermissionsIGranted
+                permissionsGrantedToMe: answeredByServer(alicePermissionsGrantedToMe),
+                permissionsIGranted: answeredByServer(alicePermissionsIGranted)
             ),
             Friend(
                 id: UUID(), handle: "bob", displayName: "Bob",
-                permissionsGrantedToMe: .none,
-                permissionsIGranted: bobPermissionsIGranted
+                permissionsGrantedToMe: answeredByServer(.none),
+                permissionsIGranted: answeredByServer(bobPermissionsIGranted)
             )
         ]
+    }
+
+    /// Fills in the automation keys the way a current server reports a grant
+    /// nobody has answered yet, so the mock doesn't read as an old server
+    /// (which hides the automation controls).
+    private static func answeredByServer(_ set: FriendPermissionSet) -> FriendPermissionSet {
+        var filled = set
+        for kind in StimulusKind.allCases where filled[kind].automationAllowedEffective == nil {
+            filled[kind].automationAllowedEffective = filled[kind].automationAllowed ?? true
+        }
+        return filled
     }
 
     private static func seedIncomingRequests() -> [FriendRequest] {
