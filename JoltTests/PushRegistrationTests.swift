@@ -23,6 +23,9 @@ final class PushRegistrationTests: XCTestCase {
         AuthTokenStore().clear(for: configuration)
         keys.remove(for: serverId)
         registrations.clear()
+        for pending in registrations.pendingUnregistrations() {
+            registrations.removePendingUnregistration(relayToken: pending.relayToken)
+        }
         backoffDefaults.removePersistentDomain(forName: "cz.peelco.jolt.tests.relayBackoff")
         StubURLProtocol.handler = nil
         StubURLProtocol.headers = nil
@@ -444,9 +447,11 @@ final class PushRegistrationTests: XCTestCase {
         XCTAssertNotNil(backend.pushRegistration.problem)
     }
 
-    /// Signing out still forgets the registration on the server and the key
-    /// here; only the relay, which asked to wait, isn't asked again.
-    func testARateLimitedUnregisterStillSignsOutAndHoldsOffTheRelay() async throws {
+    /// Signing out forgets the registration on the server and the key here at
+    /// once. The relay token stays until the relay confirms it is revoked, and
+    /// meanwhile a plaintext poke is still refused: the relay can still push
+    /// with that token (C9, C21).
+    func testARateLimitedUnregisterKeepsTheRelayTokenUntilTheRelayRevokesIt() async throws {
         let stub = PushStub(pushConfig: (200, relayConfig))
         let backend = try await signedInBackend(stub)
         await backend.registerPushToken(apnsToken)
@@ -457,7 +462,49 @@ final class PushRegistrationTests: XCTestCase {
         XCTAssertEqual(stub.forgottenRelayTokens, ["rt_issued1"])
         XCTAssertNil(keys.currentKey(for: serverId))
         XCTAssertNil(registrations.load())
-        XCTAssertNotNil(RelayBackoff(defaults: backoffDefaults) { [unowned self] in clock }.until)
+        XCTAssertEqual(registrations.pendingUnregistrations().map(\.relayToken), ["rt_issued1"])
+        XCTAssertNil(backend.openIncomingPush(plaintextPoke), "the relay can still push with the token")
+
+        stub.rateLimit("/v1/devices/unregister", retryAfter: nil)
+        clock.addTimeInterval(30)
+        await backend.retryPendingRelayUnregistrations()
+        XCTAssertEqual(stub.relayUnregistrations.count, 1, "not before Retry-After has passed")
+
+        clock.addTimeInterval(31)
+        await backend.retryPendingRelayUnregistrations()
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1", "rt_issued1"])
+        XCTAssertTrue(registrations.pendingUnregistrations().isEmpty)
+        XCTAssertNotNil(backend.openIncomingPush(plaintextPoke), "revoked at last, so pushes are direct again")
+    }
+
+    /// The relay can't be reached when the registration for a server the user
+    /// has left is revoked at launch. The token stays pending, plaintext pokes
+    /// stay refused, and the next attempt finishes the job.
+    func testAnUnreachableRelayKeepsTheRevocationPending() async throws {
+        let oldKey = SymmetricKey(size: .bits256)
+        keys.save(oldKey, for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa")
+        defer { keys.remove(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa") }
+        registrations.save(RelayRegistration(
+            serverBaseURL: URL(string: "https://old.invalid/api/v1")!, relayURL: URL(string: "https://relay.example/")!,
+            serverId: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa", relayToken: "rt_old", apnsToken: apnsToken,
+            keyId: PushEnvelope.keyID(for: oldKey)
+        ))
+        let stub = PushStub(pushConfig: (404, "{}"))
+        stub.makeUnreachable("/v1/devices/unregister", true)
+
+        let backend = try await signedInBackend(stub)
+
+        XCTAssertNil(registrations.load())
+        XCTAssertNil(keys.currentKey(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        XCTAssertEqual(registrations.pendingUnregistrations().map(\.relayToken), ["rt_old"])
+        XCTAssertNil(backend.openIncomingPush(plaintextPoke))
+
+        stub.makeUnreachable("/v1/devices/unregister", false)
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_old", "rt_old"], "the attempt that failed, then the retry")
+        XCTAssertTrue(registrations.pendingUnregistrations().isEmpty)
+        XCTAssertNotNil(backend.openIncomingPush(plaintextPoke))
     }
 
     // MARK: - Receiving
@@ -496,6 +543,11 @@ final class PushRegistrationTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private var plaintextPoke: [AnyHashable: Any] {
+        ["type": "poke", "poke": ["pokeID": UUID().uuidString, "senderHandle": "mallory", "senderDisplayName": "Mallory",
+                                  "stimulus": ["kind": "zap", "intensity": 100, "repetitions": 1]]]
+    }
 
     private func sealedPoke(with key: SymmetricKey) throws -> [AnyHashable: Any] {
         let poke = #"{"type":"poke","poke":{"pokeID":"\#(UUID().uuidString)","serverId":"\#(serverId)","#
@@ -597,6 +649,7 @@ final class PushStub: @unchecked Sendable {
     private var _ackStatus = 204
     private var revoked: Set<String> = []
     private var rateLimits: [String: String] = [:]
+    private var unreachable: Set<String> = []
 
     init(pushConfig: (Int, String)) {
         _pushConfig = pushConfig
@@ -616,6 +669,12 @@ final class PushStub: @unchecked Sendable {
     /// `pathSuffix`, with `retryAfter` as its `Retry-After`; nil lifts it.
     func rateLimit(_ pathSuffix: String, retryAfter: String?) {
         locked { rateLimits[pathSuffix] = retryAfter }
+    }
+
+    /// While set, requests to the relay on paths ending in `pathSuffix` fail
+    /// as if the connection dropped.
+    func makeUnreachable(_ pathSuffix: String, _ isUnreachable: Bool) {
+        locked { if isUnreachable { unreachable.insert(pathSuffix) } else { unreachable.remove(pathSuffix) } }
     }
 
     func headers(for request: URLRequest) -> [String: String] {
@@ -667,6 +726,9 @@ final class PushStub: @unchecked Sendable {
         let body = try? JSONSerialization.jsonObject(with: request.bodyData) as? [String: Any]
         locked { recorded.append(Request(method: method, url: url, body: body)) }
 
+        if request.url?.host() == "relay.example", locked({ unreachable.contains { path.hasSuffix($0) } }) {
+            return (StubURLProtocol.connectionLost, Data())
+        }
         if rateLimit(for: request) != nil {
             return (429, Data(#"{"error":"rate_limited"}"#.utf8))
         }

@@ -61,6 +61,8 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// together, and two relay registrations racing would each revoke the
     /// other's token.
     var pushRegistrationQueue: Task<Void, Never>?
+    /// The scheduled retry of relay revocations the relay hasn't confirmed.
+    var pendingUnregistrationRetry: Task<Void, Never>?
     /// Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` fires test
     /// pushes through the same firer, for the same idempotency reason.
     let firer: LocalStimulusFirer
@@ -108,6 +110,7 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         // `StreamHub`, every subscriber gets its own fresh stream, so tying
         // it to subscription would re-run it once per subscriber.
         Task {
+            await self.retryPendingRelayUnregistrations()
             await self.retireRelayRegistrationForAnotherServer()
             await self.restoreSession()
         }

@@ -1,42 +1,6 @@
 import CryptoKit
 import Foundation
 
-/// Everything the relay path of push registration needs besides the Jolt
-/// server, gathered so tests can replace it: which relays to trust, App
-/// Attest, where keys and the registration are kept, and the network.
-@MainActor
-struct RelayEnvironment {
-    var trustedHosts: TrustedRelayHosts
-    var attestor: AppAttesting
-    var keys: PayloadKeyStore
-    var registrations: RelayRegistrationStore
-    var session: URLSession
-    /// The bundle ID the relay checks against its allow-list.
-    var appId: String
-    /// `production` or `sandbox`: which APNs environment issued this build's
-    /// tokens.
-    var apnsEnvironment: String
-    /// How long the relay has asked to be left alone (C21).
-    var backoff = RelayBackoff()
-
-    static var live: RelayEnvironment {
-        RelayEnvironment(
-            trustedHosts: .bundled,
-            attestor: AppAttestor(),
-            keys: PayloadKeyStore(),
-            registrations: RelayRegistrationStore(),
-            session: .shared,
-            appId: Bundle.main.bundleIdentifier ?? "cz.peelco.jolt",
-            apnsEnvironment: apnsEnvironment(from: Bundle.main.object(forInfoDictionaryKey: "JoltAPSEnvironment"))
-        )
-    }
-
-    /// The entitlement says `development`, the relay says `sandbox`.
-    static func apnsEnvironment(from infoValue: Any?) -> String {
-        infoValue as? String == "development" ? "sandbox" : "production"
-    }
-}
-
 /// Telling the server how to reach this phone, and taking it back again.
 /// Kept out of `HTTPSocialBackend.swift` so neither file grows past readable
 /// size.
@@ -107,7 +71,8 @@ extension HTTPSocialBackend {
     }
 
     /// Undoes every registration this phone holds, on sign-out: the server's
-    /// binding, the relay's, and the key.
+    /// binding and the key at once, the relay's as soon as the relay confirms
+    /// it.
     func unregisterPush() async {
         await pushRegistrationQueue?.value
         await retireRelayRegistration()
@@ -123,9 +88,16 @@ extension HTTPSocialBackend {
     /// The `userInfo` a poke or test handler should read: a relayed push
     /// decrypted, a direct one as it came. Nil when it must be dropped — see
     /// `RelayedPush.Failure`.
+    ///
+    /// A relay token whose revocation the relay hasn't confirmed still counts
+    /// as a relay registration here: the relay can push with it, and only a
+    /// sealed push is known to come from a server (C9). Its key is gone, so
+    /// nothing it sends opens; a plaintext poke is refused like any other.
     func openIncomingPush(_ userInfo: [AnyHashable: Any]) -> [AnyHashable: Any]? {
         let expecting: RelayedPush.Expectation = if let registration = currentRelayRegistration {
             .relay(serverId: registration.serverId)
+        } else if let pending = relay.registrations.pendingUnregistrations().first {
+            .relay(serverId: pending.serverId)
         } else {
             .direct
         }
@@ -165,6 +137,7 @@ extension HTTPSocialBackend {
     }
 
     private func performPushRegistration(replacingRelayRegistration: Bool) async {
+        await retryPendingRelayUnregistrations()
         guard isSignedIn, let apnsToken = lastPushToken else { return }
         let config: PushConfig
         do {
@@ -299,7 +272,10 @@ extension HTTPSocialBackend {
         // kept for a day for pushes it already sealed (C8).
         let key = SymmetricKey(size: .bits256)
         guard relay.keys.save(key, for: target.serverId) else {
-            try? await relayClient.unregister(relayToken: relayToken)
+            await abandon(RelayRegistration(
+                serverBaseURL: configuration.baseURL, relayURL: target.url, serverId: target.serverId,
+                relayToken: relayToken, apnsToken: apnsToken, keyId: ""
+            ))
             pushRegistration = PushRegistrationState(
                 transport: transport,
                 problem: "Couldn't store the key notifications are decrypted with."
@@ -312,10 +288,18 @@ extension HTTPSocialBackend {
         )
         relay.registrations.save(registration)
 
-        // The registration this replaces goes on both sides, or the phone
-        // gets every poke twice (C7).
+        await retire(replaced, replacedThisServer: replacedThisServer, by: registration)
+        return (registration, key)
+    }
+
+    /// Retires what a new registration replaces, on both sides, or the phone
+    /// gets every poke twice (C7): the previous relay registration, or — when
+    /// there was none for this server — a direct one it may have had.
+    private func retire(
+        _ replaced: RelayRegistration?, replacedThisServer: Bool, by registration: RelayRegistration
+    ) async {
         if let replaced {
-            let sameServer = replaced.serverBaseURL == configuration.baseURL && replaced.serverId == target.serverId
+            let sameServer = replaced.serverBaseURL == configuration.baseURL && replaced.serverId == registration.serverId
             await revoke(replaced, droppingKey: !sameServer)
         }
         if !replacedThisServer {
@@ -323,10 +307,9 @@ extension HTTPSocialBackend {
             // known this phone by its APNs token until it moved to the relay.
             try? await client.sendIgnoringResponse(
                 "DELETE", "devices/push-token",
-                body: ForgetPushTokenBody(token: apnsToken)
+                body: ForgetPushTokenBody(token: registration.apnsToken)
             )
         }
-        return (registration, key)
     }
 
     private static func backoffProblem(until: Date) -> String {
@@ -354,44 +337,6 @@ extension HTTPSocialBackend {
                 problem: "The server didn't take the relay registration: \(error.localizedDescription)"
             )
             return .failed
-        }
-    }
-
-    /// Revokes the stored relay registration everywhere it can, and forgets
-    /// it and its key.
-    private func retireRelayRegistration() async {
-        guard let registration = relay.registrations.load() else { return }
-        await revoke(registration, droppingKey: true)
-        relay.registrations.clear()
-    }
-
-    /// Revokes `registration` on the server and the relay. The server's side
-    /// only when it is the server the registration was made for: that's the
-    /// only one this session can authenticate to, and for any other the relay
-    /// revocation is what counts — the old server's sends then come back
-    /// `unregistered`.
-    ///
-    /// The relay's side is best effort, and skipped while the relay has asked
-    /// to be left alone (C21). Either way the token stays valid there until
-    /// this phone next registers for that server; without its key, nothing
-    /// sent with it opens here for long.
-    private func revoke(_ registration: RelayRegistration, droppingKey: Bool) async {
-        if registration.serverBaseURL == configuration.baseURL, isSignedIn {
-            try? await client.sendIgnoringResponse(
-                "DELETE", "devices/push-token",
-                body: ForgetPushTokenBody(relayToken: registration.relayToken)
-            )
-        }
-        if relay.backoff.until == nil {
-            do {
-                try await RelayClient(baseURL: registration.relayURL, session: relay.session, attestor: relay.attestor)
-                    .unregister(relayToken: registration.relayToken)
-            } catch RelayClient.RelayError.rateLimited(let seconds) {
-                relay.backoff.wait(seconds)
-            } catch {}
-        }
-        if droppingKey {
-            relay.keys.remove(for: registration.serverId)
         }
     }
 }
