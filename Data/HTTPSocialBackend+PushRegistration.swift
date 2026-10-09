@@ -222,12 +222,16 @@ extension HTTPSocialBackend {
 
     private func registerThroughRelay(_ target: PushConfig.Relay, apnsToken: String, replacing: Bool) async {
         guard relay.trustedHosts.allows(target.url) else {
-            await retireRelayRegistration()
-            pushRegistration = PushRegistrationState(
-                transport: .relay(serverId: target.serverId),
-                problem: "The server's relay (\(target.url.host() ?? target.url.absoluteString)) "
-                    + "isn't one this app trusts, so notifications can't reach this phone."
-            )
+            // An error like an unknown transport (C18), and what works stays:
+            // a registration only goes once a replacement has been accepted,
+            // or when the server says it no longer uses a relay.
+            let problem = "The server's relay (\(target.url.host() ?? target.url.absoluteString)) "
+                + "isn't one this app trusts, so this phone can't register with it."
+            if currentRelayRegistration != nil {
+                pushRegistration.problem = problem
+            } else {
+                pushRegistration = PushRegistrationState(transport: .relay(serverId: target.serverId), problem: problem)
+            }
             return
         }
         guard await registerOrReassert(target, apnsToken: apnsToken, replacing: replacing) == .revoked else { return }

@@ -104,6 +104,26 @@ final class PushRegistrationTests: XCTestCase {
         XCTAssertNotNil(backend.pushRegistration.problem)
     }
 
+    /// The server names a relay this build doesn't trust: refuse it, but keep
+    /// the registration that already works rather than revoking it (C18).
+    func testAnUntrustedRelayLeavesTheWorkingRegistrationAlone() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+        let key = try XCTUnwrap(keys.currentKey(for: serverId))
+
+        stub.pushConfig = (200, relayConfig.replacingOccurrences(of: "relay.example", with: "untrusted.example"))
+        await backend.registerLastPushToken()
+
+        XCTAssertTrue(stub.relayUnregistrations.isEmpty)
+        XCTAssertTrue(stub.forgottenRelayTokens.isEmpty)
+        XCTAssertTrue(stub.requests(nil, "untrusted.example").isEmpty)
+        XCTAssertEqual(registrations.load()?.relayToken, "rt_issued1")
+        XCTAssertEqual(keys.currentKey(for: serverId).map(PushEnvelope.keyID(for:)), PushEnvelope.keyID(for: key))
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued1")
+        XCTAssertNotNil(backend.pushRegistration.problem)
+    }
+
     /// Offline, or the server is down: keep what was registered rather than
     /// guessing at a transport.
     func testLeavesTheRegistrationAloneWhenPushConfigCannotBeFetched() async throws {
