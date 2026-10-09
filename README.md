@@ -81,6 +81,19 @@ works with no friends, no permissions and (unless you ask it to fire) no
 wearable connected. The phone acks it back, so "Arrived in 1.2s" means it
 genuinely got there rather than that Apple accepted it.
 
+Pushes reach the phone whichever way the server says (`GET /push/config`):
+straight from the server when it holds its own APNs credentials, or through a
+Jolt push relay when it doesn't, which lets a self-hosted server push to the
+official app without an Apple developer account. Through a relay, the app
+registers its APNs token with the relay, generates a key per server and gives
+the server only the relay's token and that key; pokes travel encrypted, and a
+Notification Service Extension decrypts them before they are shown. The app
+only registers with relays on its built-in list, the space-separated
+`JOLT_TRUSTED_RELAY_HOSTS` build setting, which is empty in `project.yml`: a
+build from source trusts no relay until you set it. **Settings →
+Notifications** shows which way this phone is registered and, for a relay,
+the server's ID.
+
 Friends can also poke you from scripts, with API tokens minted on the server's
 web dashboard (the app has no token UI). Whether a friend's scripts may send
 you a given stimulus is a separate answer under **Friends → friend →
@@ -124,6 +137,8 @@ App/           # @main, root UI, AppEnvironment
 Features/      # feature modules (alarms, device control, friends, settings)
 Domain/        # models and repository protocols
 Data/          # repositories: device (BLE, fake), HTTP and mock server backends, stores
+Shared/        # push decryption, compiled into both the app and the extension
+NotificationService/  # Notification Service Extension: rewrites relayed alerts
 BLE/           # Bluetooth: legacy Pavlok 2/3 GATT, Shock Clock Max codec
 Resources/     # Info.plist, assets, entitlements
 JoltTests/     # unit tests

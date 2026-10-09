@@ -53,8 +53,8 @@ extension HTTPSocialBackend {
         // Addressed to somebody else. Only possible when this device is still
         // registered to an account it is no longer signed in as, and the one
         // outcome worth preventing: firing here would shock whoever is
-        // holding this phone for a poke they were never sent. Re-assert the
-        // registration so the next one goes to the right place.
+        // holding this phone for a poke they were never sent. Register afresh
+        // so the next one goes to the right place.
         //
         // Deliberately narrow: only a payload that *names* a different
         // addressee is dropped. No handle (older server) or no known account
@@ -62,7 +62,7 @@ extension HTTPSocialBackend {
         // "can't tell", which must never be read as "not mine".
         if let addressee = payload.recipientHandle, !myHandle.isEmpty, addressee != myHandle {
             print("[Jolt] dropped a poke addressed to @\(addressee) — signed in as @\(myHandle)")
-            await registerLastPushToken()
+            await reregisterPush()
             return .notAllowed
         }
 
@@ -88,7 +88,7 @@ extension HTTPSocialBackend {
             // account — the same stale registration as above, caught on a
             // server too old to say so in the payload.
             print("[Jolt] server rejected the ack for \(payload.pokeID.apiString) — this poke was not ours")
-            await registerLastPushToken()
+            await reregisterPush()
         } catch {
             // Any other failure costs the sender their delivery status and
             // nothing else.

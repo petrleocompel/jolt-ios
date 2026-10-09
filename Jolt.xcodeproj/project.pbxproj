@@ -8,14 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		01BD06F4B0AF5ED92CFC8F84 /* PairDeviceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F53E65E840CC710CB50B918B /* PairDeviceSheet.swift */; };
+		03CF5F080785435D187B1B3E /* AppAttestor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8E773EF696B1C59909BC548 /* AppAttestor.swift */; };
 		048B7F8841233B57BAA7790A /* FriendsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDAFA901701E16049F0913C7 /* FriendsRepository.swift */; };
 		0499A958BFF9FE7D0661D936 /* ServerSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5493D70BE56B44901102A4A0 /* ServerSettingsStore.swift */; };
 		05C9AE950B595877457F54F1 /* PairedDeviceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */; };
 		07557DCAD160B1BCC498222C /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F59E143A4F0C4633C981368 /* User.swift */; };
 		099DD6CDCA28EE8D6D5E1F97 /* DevicePairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970DDB4E2B159F0835610D5C /* DevicePairing.swift */; };
+		09A995841E85A528ED1D7B54 /* RelayRegistrationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C098483CA76ED0254C21B19 /* RelayRegistrationStore.swift */; };
 		09FD76860610794983EEDC3C /* FiringInteractionMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA32B3C5568B56532FDB126 /* FiringInteractionMode.swift */; };
 		0ACB79F06C389DCEFFD749BA /* CBUUID+Canonical.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C7A7BC5B182B1DD46F2563 /* CBUUID+Canonical.swift */; };
 		0B02F2792CB1D29B9B74242E /* AlarmRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E17268D8924C74C31F94055 /* AlarmRepository.swift */; };
+		0BD6EB84E400D72C91FE7227 /* PushAlertText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6911BE714175D905E229C3 /* PushAlertText.swift */; };
 		0BF481DB1EBDD6396CB3FBF3 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4593DB54C3694E3E6816A45 /* OnboardingView.swift */; };
 		0EB50DCF7486C9A800213E7C /* PokeComposerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54FF2B0D3F9A017A99969642 /* PokeComposerCard.swift */; };
 		0EC8D9104A58C01434734177 /* IncomingPokeRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C5405C4E8E79BA7D4A8AD1 /* IncomingPokeRoutingTests.swift */; };
@@ -28,6 +31,7 @@
 		19905697928A1047B746F915 /* StimulusSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */; };
 		1C60EAB3E1BABB69ABA8CB91 /* ConnectionWaiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEB95C0787EAC3FCAA57064 /* ConnectionWaiter.swift */; };
 		1D3CFC3B94077B20FA440C10 /* DeviceFreeUsageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2451B80181EF10936C8BE39F /* DeviceFreeUsageTests.swift */; };
+		1DC74BE922943075EB587DE0 /* Base64URL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 284E9CF2B594E809A7DA2227 /* Base64URL.swift */; };
 		20341B53E581AC27219F5A40 /* ServerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE130A9829B4F98EB8B6DEBB /* ServerConfiguration.swift */; };
 		2088D9579DB4A4076737B96B /* ActiveAlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */; };
 		2139B77ED2381FF082F8F040 /* TabNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF21BF2C419580EB45CDCE26 /* TabNavigation.swift */; };
@@ -38,6 +42,7 @@
 		28EE40110BF3CA0A2002BC32 /* StimulusSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E857EC1C8D109393A3DCD76B /* StimulusSettingsStore.swift */; };
 		2B8C77D5B7218CBAAF731099 /* GATTDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F08ACC7608E8C38AD49E8B6 /* GATTDump.swift */; };
 		2C1F933E48019DACAC0C31C0 /* PokeFeedbackAndFiringSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A549C985F8EFA4E6E81AD3B9 /* PokeFeedbackAndFiringSettingsTests.swift */; };
+		2CE78278A93542E003E5270F /* RelayBackoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F787E41ABEF3ED680EA144A /* RelayBackoff.swift */; };
 		2FBB001B1B07DBC53ED1E37B /* BLELog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 622258DCCFFFC679A9BC97C1 /* BLELog.swift */; };
 		308801E2765557C880FD2CDB /* AlarmsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */; };
 		30D060EECC3A623134FC02FE /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32159D4F64FD75C1B07F26C /* Friend.swift */; };
@@ -51,15 +56,20 @@
 		3C01F079734972A68CC8A62B /* MockSocialBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96552544D49CCD4D3F287C29 /* MockSocialBackend.swift */; };
 		3FEDB3A9E8C3532F9F102BA1 /* PokeFeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EF31018B58C64F93520A5F6 /* PokeFeedbackService.swift */; };
 		40D77CD184D38308FF263535 /* ButtonConfigReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F808F518CF2FC8A7E45CF1 /* ButtonConfigReportTests.swift */; };
+		413BBCEF2A2629A8B396169B /* Stimulus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73676EE1B7477970179576C5 /* Stimulus.swift */; };
 		422BD76A2ACC9BE204805192 /* LEB128.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640EE3B1818CA1E92C4120AE /* LEB128.swift */; };
 		4244D97D3C7532425C33A1A8 /* RemoteDashboardCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36BFB9DF182438D7C1955694 /* RemoteDashboardCards.swift */; };
+		4444465026FFA6464588D994 /* PushRegistrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E381F7F688061F1DD5118A5A /* PushRegistrationTests.swift */; };
 		4487B09DA4532A10E354C647 /* BluetoothCentralManager+Descriptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A00328D11BACA1C6A5CCFEC /* BluetoothCentralManager+Descriptions.swift */; };
+		45B9C9BDF329F070CDDD3FF4 /* RelayedPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042579BA7C2BC796F93F5850 /* RelayedPush.swift */; };
 		45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */; };
 		47EE2BBB2586EECAC0025878 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E384B1B21237F275A6BFD96D /* SettingsView.swift */; };
 		49785568B7E8A160EB7EE7B8 /* FiringInteractionSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E26F9100A78C2752864BEA /* FiringInteractionSettingsStore.swift */; };
 		4D175A78EEFABD16FEF00C79 /* AddFriendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98791DA8F2EF88057FB41B93 /* AddFriendView.swift */; };
+		4E032F3647471D64392EF3A3 /* RelayClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77D56B54C1452BAC5102C0F0 /* RelayClient.swift */; };
 		5065F04BC6014B3C0AE66187 /* StimulusPermissionUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8AE79E7057B34B0E850ABA8 /* StimulusPermissionUpdate.swift */; };
 		526B0A55DE005FE8CE4BD8F2 /* JumpingJacksChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */; };
+		52888BE6D0A5A30A9BD898D2 /* TrustedRelayHostsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAFE897B19F8F3E0A9EAB10 /* TrustedRelayHostsTests.swift */; };
 		535EBA6E39EE0CD08FCE8971 /* ServerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0620C2FBA2833B67D7C987D1 /* ServerSettingsView.swift */; };
 		536B5F857A1740AEACC99E0A /* HTTPSocialBackendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */; };
 		53AF65465FD42CEA84526374 /* NotificationTestViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE89D4B1C57490DDBAEB04 /* NotificationTestViewModel.swift */; };
@@ -83,12 +93,14 @@
 		647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 76CFA2F23E100D332D35DEB5 /* Assets.xcassets */; };
 		65A21194C06CE677CB313567 /* PokeTriggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28E129435EE9D10DA65AF4B /* PokeTriggerTests.swift */; };
 		68E6E86FF009CA9EF78ABE8F /* JoltApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCCFEFA6B6A22F7279DE2F3 /* JoltApp.swift */; };
+		68F28DBFB9A311AB72070749 /* PushRegistrationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD9E87A84C9DA2C950C129A /* PushRegistrationState.swift */; };
 		6B73C6D9B87673900B8889A9 /* ConnectionWaiterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCD616365C34F4FFC52ABA7B /* ConnectionWaiterTests.swift */; };
 		6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */; };
 		6E632728CC4DE51C84E1B65E /* RemoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3A3F815504CC38F96F154C /* RemoteWidget.swift */; };
 		6E758741B4A32DC0A8FA40B9 /* AuthRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B0F6C7124F39EA5A1398305 /* AuthRepository.swift */; };
 		7098159EF5C36D93C036F801 /* JoltAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */; };
 		70AD6C566FFE28941C32F690 /* PairedDeviceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF3896FDA7D5E6870CF29B1 /* PairedDeviceStore.swift */; };
+		71E49CE7492CB6E4918BBE01 /* HTTPSocialBackend+PushRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1918DEFABE061EE61D5A3716 /* HTTPSocialBackend+PushRegistration.swift */; };
 		72BF10A36CFDA988B7D456EE /* TestPushPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4692BE0765FD1C224ED33C /* TestPushPayload.swift */; };
 		73887A0E5FFBCC78A00F3A6B /* FakeDeviceRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */; };
 		73A1FBCED2B3E3FEF6A3E994 /* PokeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C318232E11E62CFE3DE6443D /* PokeViewModel.swift */; };
@@ -99,9 +111,12 @@
 		784FA3A43083B800EC7892DE /* FriendPokeDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910E2135246DB5575B328B9D /* FriendPokeDraftStore.swift */; };
 		78C9804EBCB065B3D32F9BE3 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D562BFD4BFBF009E3829FF /* ProfileView.swift */; };
 		79497BC11FB358372C1F9843 /* LegacyGATT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4EC50C13E10218F83C0380 /* LegacyGATT.swift */; };
+		7D541087A9E681E4EB04C727 /* PokePushPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154DB290EEF9F8DC1D4B01B7 /* PokePushPayload.swift */; };
+		7EE653E41F90D1DF3514C4A8 /* RelayedPushTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC7B806AD6BFCC7AC5D7AC30 /* RelayedPushTests.swift */; };
 		7F871FB232A8A6DCB34EB05B /* AlarmEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ED2121BD0EF6642C97D055D /* AlarmEditView.swift */; };
 		7FFD3436D2A379A9BEDD3B08 /* PokeTriggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5267143FEA552BB62FAFBDEB /* PokeTriggerService.swift */; };
 		816A290E9FD3206B4FEC3AF6 /* PokeViewModelRetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAC1B91563BFC85F7D4F6EBE /* PokeViewModelRetryTests.swift */; };
+		81CF840CF2C0FE73FBA9CACD /* server-id.json in Resources */ = {isa = PBXBuildFile; fileRef = EB778A82FD23C403CB0F4DFE /* server-id.json */; };
 		8271D0BBF324F8A0FC4893F5 /* StatusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F49811747B5975FDC50CE91C /* StatusCard.swift */; };
 		836A44D44537BA5B6FABFAA5 /* AuthTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D8AFF78623AD0961505FBB5 /* AuthTokenStore.swift */; };
 		83CD011BBA626339C672F171 /* FiringModesSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DC09CF049AE34196804D09 /* FiringModesSettingsView.swift */; };
@@ -112,13 +127,18 @@
 		89CD27D34DEF36AA326CA6F1 /* FriendDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BD287A032DA0DD301D8E48 /* FriendDetailView.swift */; };
 		8A647B285B039790CF0258D7 /* PavlokAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7CC8185C3FAC03FECF6A7D /* PavlokAPITests.swift */; };
 		8A938625795098D44B05D78D /* SwiftDataAlarmRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400079B8637C484EF43345B0 /* SwiftDataAlarmRepository.swift */; };
+		8AE698BB47E18D799B92CDDA /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4DEA61B113D02FE0A02C3108 /* Localizable.strings */; };
 		8C215219167B600BCF10BF96 /* NotificationTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E0D95DC8893E320AA05E38 /* NotificationTestView.swift */; };
 		8C2C7A536FA1C7D5715580F2 /* PokeEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91FBBCCFAC9005B5460D2593 /* PokeEvent.swift */; };
+		8C3FF26D4E8438FA3BCF37B0 /* HTTPSocialBackend+RelayRevocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B5315AA250B3D38FE10D1D /* HTTPSocialBackend+RelayRevocation.swift */; };
 		8C9DE227C12CF3BC19F1C0E7 /* PokeTriggerServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5795740F619EA74D0128DA35 /* PokeTriggerServiceTests.swift */; };
 		8D7072CB1969A80893653F6D /* PushDiagnosticsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 556C7F2737C9DDC6FBA1DC43 /* PushDiagnosticsRepository.swift */; };
 		8E8D9925E5BCADB692E3422D /* StimulusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF5E0E0667396A7D5910DA2 /* StimulusCard.swift */; };
+		8FFF579EC8F91CBF68AC4DB1 /* PushAlertText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6911BE714175D905E229C3 /* PushAlertText.swift */; };
 		9086786CD110801CC188BE3A /* ESFTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2188183D844D85E718C1FF /* ESFTag.swift */; };
+		91F299A29C58940E4D14BB1F /* RelayEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 189D788375FD1135B31FCAC8 /* RelayEnvironment.swift */; };
 		9229C0BB7F05571F15C07BFF /* AlarmDismissFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37D18F03D0F1DB6C5B0AFBCB /* AlarmDismissFlowTests.swift */; };
+		93A03734CF6B454688362004 /* PayloadKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152199E4C49608CF1A20B749 /* PayloadKeyStore.swift */; };
 		952527E623469F634261634E /* ServerPolicies.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDD6310E7A33FCD613E30C4 /* ServerPolicies.swift */; };
 		95D85FD27D05E8321068585F /* AppNotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC2545F27AFC5797E640ADA /* AppNotificationDelegate.swift */; };
 		95FCEFD9EB58E6ECA04F86C2 /* DeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FABADD5059216B0FFBB3073 /* DeviceController.swift */; };
@@ -132,10 +152,12 @@
 		A0F2FBA41DF00001CD200CBD /* FriendPokeDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5963F9DF3C89426BCAD0B4 /* FriendPokeDraft.swift */; };
 		A0FAB2921372229A88EB3819 /* PokeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 980B0D46360561F1A59CC41D /* PokeSettings.swift */; };
 		A3A1E48F4ECC2F6C7C6E0DBA /* FireControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F23807ACBB1B708122188A2 /* FireControl.swift */; };
+		A3A37864A48034494DCC86E5 /* RelayedPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042579BA7C2BC796F93F5850 /* RelayedPush.swift */; };
 		A41559CFD6C47B3EEBA0E92F /* DeviceControlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E28CC69A96FF047B1F4137 /* DeviceControlViewModel.swift */; };
 		A5CD51F537C20D9DBDCB6078 /* QuickPokeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A203663ED2E6C54D999C6 /* QuickPokeService.swift */; };
 		A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9EF092B259B55847C7549D /* RemoteControlView.swift */; };
 		A9502C9B2BE1F8C56014FF7A /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B8896F658741B48ABE9882 /* AboutView.swift */; };
+		AA0AA11DF437F4FB39E6CDE0 /* Base64URL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 284E9CF2B594E809A7DA2227 /* Base64URL.swift */; };
 		AC3C15EE93C4AF92AD0140DB /* CompositeDeviceRepository+DeviceInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A562F19A0F25DCA25703C8 /* CompositeDeviceRepository+DeviceInfo.swift */; };
 		AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4FB149A464BDDB2E4581A4 /* AppDependencies.swift */; };
 		AD9CA846C73D8B3C3A01C8A9 /* BluetoothCentralManager+Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */; };
@@ -143,15 +165,19 @@
 		AEF1FA1F3EA2B656B054289A /* DeviceFreeUsageUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26C4FBE48E390505C317ED53 /* DeviceFreeUsageUITests.swift */; };
 		B217CBF47B2BC1483241C04B /* PokeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A5AEA892F2E53172B23C65 /* PokeDetailView.swift */; };
 		B2DFC2821E829010D25FF4F5 /* LegacyDeviceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBF42D28FFD62932FDC169A /* LegacyDeviceController.swift */; };
+		B8E958198FF0FAD376AE9D9E /* PushEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85083C79468CAD536E4D82E0 /* PushEnvelope.swift */; };
 		B98B18DD7650C7484A19F1A9 /* DeviceEventCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6BEE8EF5BEE5720380DB46A /* DeviceEventCaptureView.swift */; };
 		B98E874CD49AE9A5CD89769B /* BluetoothCentralManager+Timeouts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4786788351C2A665216D4C62 /* BluetoothCentralManager+Timeouts.swift */; };
+		BAE019445A1609160C63D24F /* RelayedNotificationContentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A9D7FB234A99344BF8393D /* RelayedNotificationContentTests.swift */; };
 		BBC1106544B9A4E31CEAEE29 /* RelativeTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FCDD7A416FEBCEE8B48CD7 /* RelativeTime.swift */; };
 		BC41981A707219299F215F47 /* BluetoothCentralManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */; };
 		BC5B23F9A2EFB12239494BF3 /* FiringInteractionSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C62A92E9A5EEDFA07CC3D81 /* FiringInteractionSettings.swift */; };
 		BC622AC928943A575F9D99FE /* BluetoothLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F953DC81C35A18E75FFD98F /* BluetoothLogView.swift */; };
 		BE07FB79112D1FF4525F3B01 /* HTTPSocialBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B35D9983EA32CBC9307B82 /* HTTPSocialBackend.swift */; };
 		BE6756E9CF6E5E10430741E4 /* PokeFeedbackSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1EC1C1C3C72F053AD1D651 /* PokeFeedbackSettingsStore.swift */; };
+		BE9EF2E2DD77035DB80CB40E /* PayloadKeyStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BA77EAD91F14E44C44ED42 /* PayloadKeyStoreTests.swift */; };
 		C17CB8971594C24AED024B85 /* ButtonConfigView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B5264D3FF698C55EBC5C2DE /* ButtonConfigView.swift */; };
+		C28F67D4E2543FF3B070DB4A /* PushEnvelopeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1659C3C3B1EDE0406EFB1F3 /* PushEnvelopeTests.swift */; };
 		C4726286A7EA2982C8A882F5 /* DesignReferenceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918F2A817ED312D0EDCFDDF8 /* DesignReferenceUITests.swift */; };
 		C6575CA48B6ACDF839CAA9FD /* RemoteDeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BFBFF7CBA11D17D7CC2558A /* RemoteDeviceDetailView.swift */; };
 		C679C74DB39A8CD27A743115 /* QuickPokeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAFCF0D4E0E1D455A6D9AF7 /* QuickPokeSettingsView.swift */; };
@@ -179,17 +205,23 @@
 		DB1DF0F1F738F84331C08A1A /* LegacyProtocolStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DED8E3672CD1D399D5DD3B7C /* LegacyProtocolStore.swift */; };
 		DC15FE1AFB23B9A52A211C31 /* ScreenshotsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930F82BB7EFB83736F532039 /* ScreenshotsUITests.swift */; };
 		DC4C367A6EF5EBAC59CDB1EB /* PavlokAccountViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0C711ACE52370651DCD9C7 /* PavlokAccountViewModel.swift */; };
+		DCAE7663B3B20188A5AE21AB /* PayloadKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 152199E4C49608CF1A20B749 /* PayloadKeyStore.swift */; };
 		DCDC3F5E6C3BD3C9DEC99C44 /* FriendsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8BB6D098B53F00B1F19518 /* FriendsListView.swift */; };
 		DE0802A3E6852A2334D1A6A9 /* RemoteTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F25BFA54F117FB8911D6D84 /* RemoteTheme.swift */; };
 		DECE51CCCDD89B34A39C297D /* PushDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE2FD5123762F32D9224DBB /* PushDiagnostics.swift */; };
 		DF4A955EFEA722898C3EE23E /* StimulusPermissionUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC110078C07FB650415021B /* StimulusPermissionUpdateTests.swift */; };
+		DF7084E4FDC4C5AC377EC7CB /* TrustedRelayHosts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B27DE19283A2185E0D1E47 /* TrustedRelayHosts.swift */; };
+		E01185C3C6915D19DFF3275D /* envelope-v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 5DB969B4691D2CA3CDEC5844 /* envelope-v1.json */; };
+		E013ACFE7B8D8866DF9F46A2 /* JoltNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0150674C79E96B705416E626 /* JoltNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E465DF506896C81016586C83 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3728532FBB4B6DFA4BB80060 /* QRScannerView.swift */; };
 		E479AE3BB629C829A2A8B781 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AEC536ADB82917F4A57AF77 /* SplashView.swift */; };
 		E51216EC1387F8A478306FF9 /* Alarm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AE988AF1F2845FA5280393 /* Alarm.swift */; };
 		E5C5C3C7E1928FAF084C3567 /* ButtonActionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF71AA30F279883F4EF1BFC /* ButtonActionRecord.swift */; };
 		E74FD2D3928806A2732C0C2F /* AlarmScreenStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BEB1ADE1A09EF543BCBABD /* AlarmScreenStyle.swift */; };
+		E92F9520E65D682E5253F808 /* TestPushPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4692BE0765FD1C224ED33C /* TestPushPayload.swift */; };
 		E962F1D5B029A9A1CD3B807E /* CompositeDeviceRepository+ButtonConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94ECC070890709E943D845F6 /* CompositeDeviceRepository+ButtonConfig.swift */; };
 		E9DC494DEB0907E7965E48AB /* PokeFeedbackSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D78FF3F37ADFB37EE345CD /* PokeFeedbackSettingsView.swift */; };
+		EA0AD583F43C4108EA358F0F /* PushConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A6BD1C8C0CCBB26F6DB0871 /* PushConfig.swift */; };
 		EAFA8A17DC383D8C8090504F /* RemoteDashboardLayoutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 588FAE7735095AC95BC66251 /* RemoteDashboardLayoutService.swift */; };
 		EB44FEC66895F981A30A7485 /* RemoteDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A479CC6F92AA233BBA0CFCB /* RemoteDashboardView.swift */; };
 		ECEBD8CE2FB5208A43336B4D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED177E123C49A2F9DEA54E05 /* RootView.swift */; };
@@ -200,6 +232,7 @@
 		F117091CE8F0C7B5EF82BEF2 /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD0154A817E7BE315780729 /* SnapshotHelper.swift */; };
 		F18868631569AE1FA033DF17 /* FriendPermissionSetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */; };
 		F290A76E43B763F6743332DD /* DeviceFamily.swift in Sources */ = {isa = PBXBuildFile; fileRef = D75889B44064B3E52F7D6FEC /* DeviceFamily.swift */; };
+		F31028127343E8FEA6D140F5 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110A8B3F5954BD23C39BF547 /* NotificationService.swift */; };
 		F6BF0DC5DFCF0191B00436C9 /* QuickPokeComposerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AEB4D2935604E2CCA19F24 /* QuickPokeComposerUITests.swift */; };
 		F7A78E3DD1BF0B1C126CCBA0 /* Stimulus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73676EE1B7477970179576C5 /* Stimulus.swift */; };
 		F8E1BFA151C7D358F6FB95CF /* DeviceBatteryRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC2FAA53439162035799D86 /* DeviceBatteryRefreshTests.swift */; };
@@ -208,10 +241,18 @@
 		FC3A4120D7FADA17AB573B1B /* MathPuzzleChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */; };
 		FCD181385D75F62964D5F16C /* FriendsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F044A6D9143077ABC9E6548D /* FriendsViewModelTests.swift */; };
 		FEAD4FC7C821408535A62250 /* FriendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E28510EA72908E36C4BC261 /* FriendsViewModel.swift */; };
+		FF48C001EF6DD84079159892 /* PushEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85083C79468CAD536E4D82E0 /* PushEnvelope.swift */; };
 		FFB1CB9DFBF08C5C9AA9728A /* PermissionEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85AB6BDC42BB67C1DD5DC49D /* PermissionEditView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		636FABB958066A4283473227 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A97450DD3C42AB63E8A3A869 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1ABB9AD488900FB7C7A2E7FD;
+			remoteInfo = JoltNotificationService;
+		};
 		98B66164DDACD1409BE85816 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A97450DD3C42AB63E8A3A869 /* Project object */;
@@ -228,9 +269,25 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		4638E2B28B7D367868642207 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E013ACFE7B8D8866DF9F46A2 /* JoltNotificationService.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		005F907E84DDB3B357B7C0D9 /* Jolt.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Jolt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0150674C79E96B705416E626 /* JoltNotificationService.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = JoltNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		02F808F518CF2FC8A7E45CF1 /* ButtonConfigReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfigReportTests.swift; sourceTree = "<group>"; };
+		042579BA7C2BC796F93F5850 /* RelayedPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayedPush.swift; sourceTree = "<group>"; };
 		04A562F19A0F25DCA25703C8 /* CompositeDeviceRepository+DeviceInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CompositeDeviceRepository+DeviceInfo.swift"; sourceTree = "<group>"; };
 		054E4A4B48F68D0A0B2BE2A3 /* ButtonConfigReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonConfigReport.swift; sourceTree = "<group>"; };
 		0620C2FBA2833B67D7C987D1 /* ServerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSettingsView.swift; sourceTree = "<group>"; };
@@ -242,7 +299,12 @@
 		0EF7569653C9B4BE647886FF /* InlineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineBanner.swift; sourceTree = "<group>"; };
 		1024A9B23DCA9E58750F96FF /* MathPuzzleChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathPuzzleChallengeView.swift; sourceTree = "<group>"; };
 		10E0D95DC8893E320AA05E38 /* NotificationTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationTestView.swift; sourceTree = "<group>"; };
+		110A8B3F5954BD23C39BF547 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		152199E4C49608CF1A20B749 /* PayloadKeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayloadKeyStore.swift; sourceTree = "<group>"; };
 		154DB290EEF9F8DC1D4B01B7 /* PokePushPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokePushPayload.swift; sourceTree = "<group>"; };
+		16B5315AA250B3D38FE10D1D /* HTTPSocialBackend+RelayRevocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPSocialBackend+RelayRevocation.swift"; sourceTree = "<group>"; };
+		189D788375FD1135B31FCAC8 /* RelayEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayEnvironment.swift; sourceTree = "<group>"; };
+		1918DEFABE061EE61D5A3716 /* HTTPSocialBackend+PushRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPSocialBackend+PushRegistration.swift"; sourceTree = "<group>"; };
 		19DCDC72F43CB8947131C023 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		1AC2FAA53439162035799D86 /* DeviceBatteryRefreshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceBatteryRefreshTests.swift; sourceTree = "<group>"; };
 		1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmEntity.swift; sourceTree = "<group>"; };
@@ -254,7 +316,9 @@
 		2451B80181EF10936C8BE39F /* DeviceFreeUsageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFreeUsageTests.swift; sourceTree = "<group>"; };
 		24E1D8EC13A8ED08C29DCF8D /* BluetoothCentralManager+GATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+GATT.swift"; sourceTree = "<group>"; };
 		25C966EFB8ECB2E881758E09 /* DismissChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissChallenge.swift; sourceTree = "<group>"; };
+		26A9D7FB234A99344BF8393D /* RelayedNotificationContentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayedNotificationContentTests.swift; sourceTree = "<group>"; };
 		26C4FBE48E390505C317ED53 /* DeviceFreeUsageUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFreeUsageUITests.swift; sourceTree = "<group>"; };
+		284E9CF2B594E809A7DA2227 /* Base64URL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Base64URL.swift; sourceTree = "<group>"; };
 		301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettingsTests.swift; sourceTree = "<group>"; };
 		3102DCF24D82A3301323982C /* FakeDeviceRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeDeviceRepository.swift; sourceTree = "<group>"; };
 		31865B03D35B4B3F0E11BA98 /* StimulusPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusPermission.swift; sourceTree = "<group>"; };
@@ -288,6 +352,7 @@
 		4E28510EA72908E36C4BC261 /* FriendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
 		4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendPermissionSetTests.swift; sourceTree = "<group>"; };
 		4F23807ACBB1B708122188A2 /* FireControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireControl.swift; sourceTree = "<group>"; };
+		4F787E41ABEF3ED680EA144A /* RelayBackoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayBackoff.swift; sourceTree = "<group>"; };
 		510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairedDeviceStoreTests.swift; sourceTree = "<group>"; };
 		5267143FEA552BB62FAFBDEB /* PokeTriggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerService.swift; sourceTree = "<group>"; };
 		5493D70BE56B44901102A4A0 /* ServerSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSettingsStore.swift; sourceTree = "<group>"; };
@@ -296,11 +361,14 @@
 		5677A43DA311141C36544CCA /* PokeFeedbackSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeFeedbackSettings.swift; sourceTree = "<group>"; };
 		574D649B6DAAD15202451697 /* JumpingJacksChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JumpingJacksChallengeView.swift; sourceTree = "<group>"; };
 		5795740F619EA74D0128DA35 /* PokeTriggerServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerServiceTests.swift; sourceTree = "<group>"; };
+		57CD370571467C5260008495 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		588FAE7735095AC95BC66251 /* RemoteDashboardLayoutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDashboardLayoutService.swift; sourceTree = "<group>"; };
 		5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPSocialBackend+PushDiagnostics.swift"; sourceTree = "<group>"; };
 		5AC110078C07FB650415021B /* StimulusPermissionUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusPermissionUpdateTests.swift; sourceTree = "<group>"; };
 		5BFBFF7CBA11D17D7CC2558A /* RemoteDeviceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDeviceDetailView.swift; sourceTree = "<group>"; };
+		5C6911BE714175D905E229C3 /* PushAlertText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushAlertText.swift; sourceTree = "<group>"; };
 		5CDD6310E7A33FCD613E30C4 /* ServerPolicies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerPolicies.swift; sourceTree = "<group>"; };
+		5DB969B4691D2CA3CDEC5844 /* envelope-v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "envelope-v1.json"; sourceTree = "<group>"; };
 		5FA45A12A1F7CA13091CD392 /* PavlokDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokDevice.swift; sourceTree = "<group>"; };
 		60F122B4726BC6D32D619EA1 /* MathProblem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathProblem.swift; sourceTree = "<group>"; };
 		622258DCCFFFC679A9BC97C1 /* BLELog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLELog.swift; sourceTree = "<group>"; };
@@ -311,6 +379,7 @@
 		640EE3B1818CA1E92C4120AE /* LEB128.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LEB128.swift; sourceTree = "<group>"; };
 		64D78FF3F37ADFB37EE345CD /* PokeFeedbackSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeFeedbackSettingsView.swift; sourceTree = "<group>"; };
 		6A00328D11BACA1C6A5CCFEC /* BluetoothCentralManager+Descriptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Descriptions.swift"; sourceTree = "<group>"; };
+		6A6BD1C8C0CCBB26F6DB0871 /* PushConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushConfig.swift; sourceTree = "<group>"; };
 		6AD6FC776876FC38ED93E942 /* DesignReferenceUITests+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DesignReferenceUITests+Helpers.swift"; sourceTree = "<group>"; };
 		6C6768BF7088CC5C0A372F1C /* PokeSendAfterDropTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeSendAfterDropTests.swift; sourceTree = "<group>"; };
 		6CABBB0E4D950B756C439136 /* StimulusSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettings.swift; sourceTree = "<group>"; };
@@ -320,6 +389,7 @@
 		73676EE1B7477970179576C5 /* Stimulus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stimulus.swift; sourceTree = "<group>"; };
 		73E8EC03FFA614FA5D0678C9 /* ESFCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ESFCodec.swift; sourceTree = "<group>"; };
 		76CFA2F23E100D332D35DEB5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		77D56B54C1452BAC5102C0F0 /* RelayClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayClient.swift; sourceTree = "<group>"; };
 		79FCDD7A416FEBCEE8B48CD7 /* RelativeTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelativeTime.swift; sourceTree = "<group>"; };
 		7A0CE68590FFE37FBCE8E2AC /* DeviceInformationReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInformationReader.swift; sourceTree = "<group>"; };
 		7A479CC6F92AA233BBA0CFCB /* RemoteDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDashboardView.swift; sourceTree = "<group>"; };
@@ -335,11 +405,13 @@
 		7F953DC81C35A18E75FFD98F /* BluetoothLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothLogView.swift; sourceTree = "<group>"; };
 		805E27A53B607DB735ECDCD8 /* SCMaxGATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCMaxGATT.swift; sourceTree = "<group>"; };
 		81B71236334EAF269D921011 /* WaiterRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaiterRegistry.swift; sourceTree = "<group>"; };
+		85083C79468CAD536E4D82E0 /* PushEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushEnvelope.swift; sourceTree = "<group>"; };
 		85386829606830BE54311E62 /* PokeTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTrigger.swift; sourceTree = "<group>"; };
 		85AB6BDC42BB67C1DD5DC49D /* PermissionEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionEditView.swift; sourceTree = "<group>"; };
 		85CF7B6973503393E2FA669A /* PokeDeliveryStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeDeliveryStatusTests.swift; sourceTree = "<group>"; };
 		8756D0DDC39B4053D99E79CF /* WaiterRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaiterRegistryTests.swift; sourceTree = "<group>"; };
 		8BE2FD5123762F32D9224DBB /* PushDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushDiagnostics.swift; sourceTree = "<group>"; };
+		8C098483CA76ED0254C21B19 /* RelayRegistrationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayRegistrationStore.swift; sourceTree = "<group>"; };
 		8E56349A82487F1C9C58EDBC /* HTTPSocialBackendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPSocialBackendTests.swift; sourceTree = "<group>"; };
 		8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmsViewModel.swift; sourceTree = "<group>"; };
 		8F59E143A4F0C4633C981368 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
@@ -358,6 +430,7 @@
 		970DDB4E2B159F0835610D5C /* DevicePairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePairing.swift; sourceTree = "<group>"; };
 		980B0D46360561F1A59CC41D /* PokeSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeSettings.swift; sourceTree = "<group>"; };
 		98791DA8F2EF88057FB41B93 /* AddFriendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriendView.swift; sourceTree = "<group>"; };
+		98B27DE19283A2185E0D1E47 /* TrustedRelayHosts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrustedRelayHosts.swift; sourceTree = "<group>"; };
 		9A4692BE0765FD1C224ED33C /* TestPushPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestPushPayload.swift; sourceTree = "<group>"; };
 		9A4EC50C13E10218F83C0380 /* LegacyGATT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyGATT.swift; sourceTree = "<group>"; };
 		9B0F6C7124F39EA5A1398305 /* AuthRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthRepository.swift; sourceTree = "<group>"; };
@@ -367,9 +440,11 @@
 		A549C985F8EFA4E6E81AD3B9 /* PokeFeedbackAndFiringSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeFeedbackAndFiringSettingsTests.swift; sourceTree = "<group>"; };
 		A93A203663ED2E6C54D999C6 /* QuickPokeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPokeService.swift; sourceTree = "<group>"; };
 		ACA143AF1ACE9282E330D961 /* ActiveAlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAlarmView.swift; sourceTree = "<group>"; };
+		ADAFE897B19F8F3E0A9EAB10 /* TrustedRelayHostsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrustedRelayHostsTests.swift; sourceTree = "<group>"; };
 		B4593DB54C3694E3E6816A45 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		B6C5405C4E8E79BA7D4A8AD1 /* IncomingPokeRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomingPokeRoutingTests.swift; sourceTree = "<group>"; };
 		B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStimulusFirer.swift; sourceTree = "<group>"; };
+		B8E773EF696B1C59909BC548 /* AppAttestor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAttestor.swift; sourceTree = "<group>"; };
 		BAC1B91563BFC85F7D4F6EBE /* PokeViewModelRetryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeViewModelRetryTests.swift; sourceTree = "<group>"; };
 		BB63BE3829CCCBE5C11951BF /* PavlokAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokAccount.swift; sourceTree = "<group>"; };
 		BC0FD616B80C9B28B685DFDE /* BluetoothCentralManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothCentralManager.swift; sourceTree = "<group>"; };
@@ -377,7 +452,9 @@
 		BE7CC8185C3FAC03FECF6A7D /* PavlokAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PavlokAPITests.swift; sourceTree = "<group>"; };
 		C01F19C56F89D3CD4CA64257 /* JoltUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JoltUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0A72C61E08152D0A883DA3D /* MockSocialBackend+PushDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MockSocialBackend+PushDiagnostics.swift"; sourceTree = "<group>"; };
+		C1659C3C3B1EDE0406EFB1F3 /* PushEnvelopeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushEnvelopeTests.swift; sourceTree = "<group>"; };
 		C1B9758A8D03F37235AF02AA /* JoltTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JoltTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1BA77EAD91F14E44C44ED42 /* PayloadKeyStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayloadKeyStoreTests.swift; sourceTree = "<group>"; };
 		C27CEABD71F97CB87FC062B7 /* DeviceFamilyMatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceFamilyMatchingTests.swift; sourceTree = "<group>"; };
 		C28E129435EE9D10DA65AF4B /* PokeTriggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerTests.swift; sourceTree = "<group>"; };
 		C318232E11E62CFE3DE6443D /* PokeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeViewModel.swift; sourceTree = "<group>"; };
@@ -405,13 +482,17 @@
 		E0640031935727DE4DCBABAA /* BluetoothCentralManager+Scanning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Scanning.swift"; sourceTree = "<group>"; };
 		E1542BF96C2591BB810F778C /* PhoneAlarmScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAlarmScheduler.swift; sourceTree = "<group>"; };
 		E219C140AECA783C13E49BD2 /* QRCodeChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeChallengeView.swift; sourceTree = "<group>"; };
+		E381F7F688061F1DD5118A5A /* PushRegistrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationTests.swift; sourceTree = "<group>"; };
 		E384B1B21237F275A6BFD96D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E8471D33515278BAA59DB0C0 /* FriendsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsRootView.swift; sourceTree = "<group>"; };
 		E857EC1C8D109393A3DCD76B /* StimulusSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StimulusSettingsStore.swift; sourceTree = "<group>"; };
 		EA1EC1C1C3C72F053AD1D651 /* PokeFeedbackSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeFeedbackSettingsStore.swift; sourceTree = "<group>"; };
+		EAD9E87A84C9DA2C950C129A /* PushRegistrationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationState.swift; sourceTree = "<group>"; };
 		EB4B3623CC73ADF1369B22F9 /* RelativeTimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelativeTimeTests.swift; sourceTree = "<group>"; };
+		EB778A82FD23C403CB0F4DFE /* server-id.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "server-id.json"; sourceTree = "<group>"; };
 		EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigurationTests.swift; sourceTree = "<group>"; };
 		EB8BCC16663A65F4DEA6FA86 /* BluetoothCentralManager+Delegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BluetoothCentralManager+Delegates.swift"; sourceTree = "<group>"; };
+		EC7B806AD6BFCC7AC5D7AC30 /* RelayedPushTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayedPushTests.swift; sourceTree = "<group>"; };
 		ED177E123C49A2F9DEA54E05 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		EF8F8AD6A08A6AD3B7F0D74E /* LocalStimulusFirerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStimulusFirerTests.swift; sourceTree = "<group>"; };
 		F044A6D9143077ABC9E6548D /* FriendsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModelTests.swift; sourceTree = "<group>"; };
@@ -437,6 +518,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		25BB03EEA26A2D039A2360E1 /* Push */ = {
+			isa = PBXGroup;
+			children = (
+				284E9CF2B594E809A7DA2227 /* Base64URL.swift */,
+				152199E4C49608CF1A20B749 /* PayloadKeyStore.swift */,
+				5C6911BE714175D905E229C3 /* PushAlertText.swift */,
+				85083C79468CAD536E4D82E0 /* PushEnvelope.swift */,
+				042579BA7C2BC796F93F5850 /* RelayedPush.swift */,
+			);
+			path = Push;
+			sourceTree = "<group>";
+		};
 		39212CCABBA1A2D4E5ADFDA5 /* Pavlok */ = {
 			isa = PBXGroup;
 			children = (
@@ -534,6 +627,7 @@
 			isa = PBXGroup;
 			children = (
 				1BF5A362638FE41AF9DC82BC /* AlarmEntity.swift */,
+				B8E773EF696B1C59909BC548 /* AppAttestor.swift */,
 				4D8AFF78623AD0961505FBB5 /* AuthTokenStore.swift */,
 				DEBFEF5555C2533799DF9F34 /* BackgroundActivity.swift */,
 				48D1525EDBDED03799C1BA2A /* CompositeDeviceRepository.swift */,
@@ -547,6 +641,8 @@
 				C3B35D9983EA32CBC9307B82 /* HTTPSocialBackend.swift */,
 				FC9C6A7FBA9767E72D7B473E /* HTTPSocialBackend+Pokes.swift */,
 				5902175E7BB1201B5AD43B71 /* HTTPSocialBackend+PushDiagnostics.swift */,
+				1918DEFABE061EE61D5A3716 /* HTTPSocialBackend+PushRegistration.swift */,
+				16B5315AA250B3D38FE10D1D /* HTTPSocialBackend+RelayRevocation.swift */,
 				F855BE94B5B7C0AA1C59F8C7 /* JoltAPIClient.swift */,
 				DED8E3672CD1D399D5DD3B7C /* LegacyProtocolStore.swift */,
 				B78E1AA2EE347D03FDC99AFB /* LocalStimulusFirer.swift */,
@@ -558,6 +654,10 @@
 				EA1EC1C1C3C72F053AD1D651 /* PokeFeedbackSettingsStore.swift */,
 				0C25D15319543C334BBFBCBF /* PokeTriggerStore.swift */,
 				62615824717B2EC9115D3184 /* QuickPokeSettingsStore.swift */,
+				4F787E41ABEF3ED680EA144A /* RelayBackoff.swift */,
+				77D56B54C1452BAC5102C0F0 /* RelayClient.swift */,
+				189D788375FD1135B31FCAC8 /* RelayEnvironment.swift */,
+				8C098483CA76ED0254C21B19 /* RelayRegistrationStore.swift */,
 				FE54C683DA891EC13865B978 /* RemoteDashboardLayoutStore.swift */,
 				5493D70BE56B44901102A4A0 /* ServerSettingsStore.swift */,
 				F8AE79E7057B34B0E850ABA8 /* StimulusPermissionUpdate.swift */,
@@ -639,6 +739,7 @@
 				F947011453C822510A2EE4C1 /* NotificationTestViewModelTests.swift */,
 				510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */,
 				BE7CC8185C3FAC03FECF6A7D /* PavlokAPITests.swift */,
+				C1BA77EAD91F14E44C44ED42 /* PayloadKeyStoreTests.swift */,
 				85CF7B6973503393E2FA669A /* PokeDeliveryStatusTests.swift */,
 				A549C985F8EFA4E6E81AD3B9 /* PokeFeedbackAndFiringSettingsTests.swift */,
 				F3357B2E1D4E2799275C2B9A /* PokePushPayloadTests.swift */,
@@ -646,14 +747,20 @@
 				5795740F619EA74D0128DA35 /* PokeTriggerServiceTests.swift */,
 				C28E129435EE9D10DA65AF4B /* PokeTriggerTests.swift */,
 				BAC1B91563BFC85F7D4F6EBE /* PokeViewModelRetryTests.swift */,
+				C1659C3C3B1EDE0406EFB1F3 /* PushEnvelopeTests.swift */,
+				E381F7F688061F1DD5118A5A /* PushRegistrationTests.swift */,
 				4ADFBD4B73B40566FF620785 /* QuickPokeSettingsTests.swift */,
 				EB4B3623CC73ADF1369B22F9 /* RelativeTimeTests.swift */,
+				26A9D7FB234A99344BF8393D /* RelayedNotificationContentTests.swift */,
+				EC7B806AD6BFCC7AC5D7AC30 /* RelayedPushTests.swift */,
 				EB793F57859DDB807A21C383 /* ServerConfigurationTests.swift */,
 				D041FFF3FEC00A60BF0E4C15 /* StimulusConfigTests.swift */,
 				5AC110078C07FB650415021B /* StimulusPermissionUpdateTests.swift */,
 				301AA5347CE33EB1F72A9628 /* StimulusSettingsTests.swift */,
 				07AE7384436BE969756EBE54 /* TestPushPayloadTests.swift */,
+				ADAFE897B19F8F3E0A9EAB10 /* TrustedRelayHostsTests.swift */,
 				8756D0DDC39B4053D99E79CF /* WaiterRegistryTests.swift */,
+				D4A9A011A594BF7BB5D66117 /* RelayVectors */,
 			);
 			path = JoltTests;
 			sourceTree = "<group>";
@@ -662,6 +769,7 @@
 			isa = PBXGroup;
 			children = (
 				005F907E84DDB3B357B7C0D9 /* Jolt.app */,
+				0150674C79E96B705416E626 /* JoltNotificationService.appex */,
 				C1B9758A8D03F37235AF02AA /* JoltTests.xctest */,
 				C01F19C56F89D3CD4CA64257 /* JoltUITests.xctest */,
 			);
@@ -688,7 +796,9 @@
 				D3F3F6B00033640D07520C3F /* Domain */,
 				6A458766A37EDA5681A055D3 /* Features */,
 				750B4CC90F78A54A1931F933 /* JoltTests */,
+				EE75839729C4BF25E4762078 /* NotificationService */,
 				FFC5F9F65E22F3AB976DD2DD /* Resources */,
+				F9B4EECB55AEEF9276DB10C5 /* Shared */,
 				44BB84AEF1E7F3722A60E3E7 /* UITests */,
 				7FBBC6795DF56FE5B0A5DB8F /* Products */,
 			);
@@ -726,7 +836,9 @@
 				154DB290EEF9F8DC1D4B01B7 /* PokePushPayload.swift */,
 				980B0D46360561F1A59CC41D /* PokeSettings.swift */,
 				85386829606830BE54311E62 /* PokeTrigger.swift */,
+				6A6BD1C8C0CCBB26F6DB0871 /* PushConfig.swift */,
 				8BE2FD5123762F32D9224DBB /* PushDiagnostics.swift */,
+				EAD9E87A84C9DA2C950C129A /* PushRegistrationState.swift */,
 				211ECBBA9F2A7DC0C6C767AE /* QuickPokeSettings.swift */,
 				7F3A3F815504CC38F96F154C /* RemoteWidget.swift */,
 				FE130A9829B4F98EB8B6DEBB /* ServerConfiguration.swift */,
@@ -735,6 +847,7 @@
 				31865B03D35B4B3F0E11BA98 /* StimulusPermission.swift */,
 				6CABBB0E4D950B756C439136 /* StimulusSettings.swift */,
 				9A4692BE0765FD1C224ED33C /* TestPushPayload.swift */,
+				98B27DE19283A2185E0D1E47 /* TrustedRelayHosts.swift */,
 				8F59E143A4F0C4633C981368 /* User.swift */,
 			);
 			path = Models;
@@ -796,6 +909,15 @@
 			path = Domain;
 			sourceTree = "<group>";
 		};
+		D4A9A011A594BF7BB5D66117 /* RelayVectors */ = {
+			isa = PBXGroup;
+			children = (
+				5DB969B4691D2CA3CDEC5844 /* envelope-v1.json */,
+				EB778A82FD23C403CB0F4DFE /* server-id.json */,
+			);
+			path = RelayVectors;
+			sourceTree = "<group>";
+		};
 		DE262A2774115A3A96473C18 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
@@ -831,6 +953,14 @@
 			path = Alarms;
 			sourceTree = "<group>";
 		};
+		EE75839729C4BF25E4762078 /* NotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				110A8B3F5954BD23C39BF547 /* NotificationService.swift */,
+			);
+			path = NotificationService;
+			sourceTree = "<group>";
+		};
 		F7B8ED5A1A7E149D84343E04 /* Legacy */ = {
 			isa = PBXGroup;
 			children = (
@@ -840,10 +970,19 @@
 			path = Legacy;
 			sourceTree = "<group>";
 		};
+		F9B4EECB55AEEF9276DB10C5 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				25BB03EEA26A2D039A2360E1 /* Push */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		FFC5F9F65E22F3AB976DD2DD /* Resources */ = {
 			isa = PBXGroup;
 			children = (
 				76CFA2F23E100D332D35DEB5 /* Assets.xcassets */,
+				4DEA61B113D02FE0A02C3108 /* Localizable.strings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -851,16 +990,35 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1ABB9AD488900FB7C7A2E7FD /* JoltNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9A752D5F2A95C30E8FF92D4 /* Build configuration list for PBXNativeTarget "JoltNotificationService" */;
+			buildPhases = (
+				A6969AC35278945521AF8A69 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = JoltNotificationService;
+			packageProductDependencies = (
+			);
+			productName = JoltNotificationService;
+			productReference = 0150674C79E96B705416E626 /* JoltNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		2546FC3379D8F6AC9675B44E /* Jolt */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 374E054DDDA9F770D8E965BE /* Build configuration list for PBXNativeTarget "Jolt" */;
 			buildPhases = (
 				FDE9660CC5DA3C21201639C0 /* Sources */,
 				18A7A45C1ECF629492358D7A /* Resources */,
+				4638E2B28B7D367868642207 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DA60F50663160B3C28E7D7FB /* PBXTargetDependency */,
 			);
 			name = Jolt;
 			packageProductDependencies = (
@@ -874,6 +1032,7 @@
 			buildConfigurationList = D45C35E9FA2F887790E473D1 /* Build configuration list for PBXNativeTarget "JoltTests" */;
 			buildPhases = (
 				5E234818E9EF045EFABE6209 /* Sources */,
+				AA68FD7674DE32B9D00E56DB /* Resources */,
 			);
 			buildRules = (
 			);
@@ -914,6 +1073,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1ABB9AD488900FB7C7A2E7FD = {
+						DevelopmentTeam = YCFL9S5UA8;
+						ProvisioningStyle = Automatic;
+					};
 					2546FC3379D8F6AC9675B44E = {
 						DevelopmentTeam = YCFL9S5UA8;
 						ProvisioningStyle = Automatic;
@@ -940,6 +1103,7 @@
 			projectRoot = "";
 			targets = (
 				2546FC3379D8F6AC9675B44E /* Jolt */,
+				1ABB9AD488900FB7C7A2E7FD /* JoltNotificationService */,
 				AC2A9B67567D69D441D19263 /* JoltUITests */,
 				806F6681133A879E21CD422F /* JoltTests */,
 			);
@@ -952,6 +1116,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				647F6A3ECED4F7EB0538E046 /* Assets.xcassets in Resources */,
+				8AE698BB47E18D799B92CDDA /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA68FD7674DE32B9D00E56DB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E01185C3C6915D19DFF3275D /* envelope-v1.json in Resources */,
+				81CF840CF2C0FE73FBA9CACD /* server-id.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -997,6 +1171,7 @@
 				11672FD896442C7D399887FB /* NotificationTestViewModelTests.swift in Sources */,
 				05C9AE950B595877457F54F1 /* PairedDeviceStoreTests.swift in Sources */,
 				8A647B285B039790CF0258D7 /* PavlokAPITests.swift in Sources */,
+				BE9EF2E2DD77035DB80CB40E /* PayloadKeyStoreTests.swift in Sources */,
 				CD8B3FF65CFF6FA3B87AE154 /* PokeDeliveryStatusTests.swift in Sources */,
 				2C1F933E48019DACAC0C31C0 /* PokeFeedbackAndFiringSettingsTests.swift in Sources */,
 				5EA5563F29DA59A22B35B3AC /* PokePushPayloadTests.swift in Sources */,
@@ -1004,14 +1179,35 @@
 				8C9DE227C12CF3BC19F1C0E7 /* PokeTriggerServiceTests.swift in Sources */,
 				65A21194C06CE677CB313567 /* PokeTriggerTests.swift in Sources */,
 				816A290E9FD3206B4FEC3AF6 /* PokeViewModelRetryTests.swift in Sources */,
+				C28F67D4E2543FF3B070DB4A /* PushEnvelopeTests.swift in Sources */,
+				4444465026FFA6464588D994 /* PushRegistrationTests.swift in Sources */,
 				D1DB6E5108E6321A1A715191 /* QuickPokeSettingsTests.swift in Sources */,
 				5FE1D4B376234FBF779FD7DF /* RelativeTimeTests.swift in Sources */,
+				BAE019445A1609160C63D24F /* RelayedNotificationContentTests.swift in Sources */,
+				7EE653E41F90D1DF3514C4A8 /* RelayedPushTests.swift in Sources */,
 				540633BA86E7AD838EF4F1E8 /* ServerConfigurationTests.swift in Sources */,
 				1562B0FE93E361749F049B30 /* StimulusConfigTests.swift in Sources */,
 				DF4A955EFEA722898C3EE23E /* StimulusPermissionUpdateTests.swift in Sources */,
 				19905697928A1047B746F915 /* StimulusSettingsTests.swift in Sources */,
 				999AD2717052CAD40572966B /* TestPushPayloadTests.swift in Sources */,
+				52888BE6D0A5A30A9BD898D2 /* TrustedRelayHostsTests.swift in Sources */,
 				36B4AE3677796E4A9C1F16CF /* WaiterRegistryTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A6969AC35278945521AF8A69 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0AA11DF437F4FB39E6CDE0 /* Base64URL.swift in Sources */,
+				F31028127343E8FEA6D140F5 /* NotificationService.swift in Sources */,
+				93A03734CF6B454688362004 /* PayloadKeyStore.swift in Sources */,
+				7D541087A9E681E4EB04C727 /* PokePushPayload.swift in Sources */,
+				8FFF579EC8F91CBF68AC4DB1 /* PushAlertText.swift in Sources */,
+				B8E958198FF0FAD376AE9D9E /* PushEnvelope.swift in Sources */,
+				A3A37864A48034494DCC86E5 /* RelayedPush.swift in Sources */,
+				413BBCEF2A2629A8B396169B /* Stimulus.swift in Sources */,
+				E92F9520E65D682E5253F808 /* TestPushPayload.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1029,6 +1225,7 @@
 				E74FD2D3928806A2732C0C2F /* AlarmScreenStyle.swift in Sources */,
 				5B24563B50F504A69F9072AF /* AlarmsListView.swift in Sources */,
 				308801E2765557C880FD2CDB /* AlarmsViewModel.swift in Sources */,
+				03CF5F080785435D187B1B3E /* AppAttestor.swift in Sources */,
 				AC48BB933FB5C1EB47BB4F7B /* AppDependencies.swift in Sources */,
 				C7C6B8E97608B484362DB3BC /* AppEnvironment.swift in Sources */,
 				95D85FD27D05E8321068585F /* AppNotificationDelegate.swift in Sources */,
@@ -1038,6 +1235,7 @@
 				137FDC16BA7C62A58E07D3D1 /* AuthViewModel.swift in Sources */,
 				2FBB001B1B07DBC53ED1E37B /* BLELog.swift in Sources */,
 				D838CA47363E280C55C4C9FB /* BackgroundActivity.swift in Sources */,
+				1DC74BE922943075EB587DE0 /* Base64URL.swift in Sources */,
 				AD9CA846C73D8B3C3A01C8A9 /* BluetoothCentralManager+Delegates.swift in Sources */,
 				4487B09DA4532A10E354C647 /* BluetoothCentralManager+Descriptions.swift in Sources */,
 				98AB92482B7F00441483EA08 /* BluetoothCentralManager+GATT.swift in Sources */,
@@ -1089,6 +1287,8 @@
 				2B8C77D5B7218CBAAF731099 /* GATTDump.swift in Sources */,
 				22B1578F17D1B18E2F3418FF /* HTTPSocialBackend+Pokes.swift in Sources */,
 				ADE18696232BDE8C4016133B /* HTTPSocialBackend+PushDiagnostics.swift in Sources */,
+				71E49CE7492CB6E4918BBE01 /* HTTPSocialBackend+PushRegistration.swift in Sources */,
+				8C3FF26D4E8438FA3BCF37B0 /* HTTPSocialBackend+RelayRevocation.swift in Sources */,
 				BE07FB79112D1FF4525F3B01 /* HTTPSocialBackend.swift in Sources */,
 				34359AD510570C687E8C7DE9 /* InlineBanner.swift in Sources */,
 				7098159EF5C36D93C036F801 /* JoltAPIClient.swift in Sources */,
@@ -1115,6 +1315,7 @@
 				DC4C367A6EF5EBAC59CDB1EB /* PavlokAccountViewModel.swift in Sources */,
 				550660351203D4070C5F9A6B /* PavlokCredentialStore.swift in Sources */,
 				6CBEB42B8D1622F52E9418EC /* PavlokDevice.swift in Sources */,
+				DCAE7663B3B20188A5AE21AB /* PayloadKeyStore.swift in Sources */,
 				FFB1CB9DFBF08C5C9AA9728A /* PermissionEditView.swift in Sources */,
 				9BD33171E530E1939245CB7B /* PhoneAlarmScheduler.swift in Sources */,
 				388B114FD98AEF3635AF0A0F /* PokeActivityView.swift in Sources */,
@@ -1136,8 +1337,12 @@
 				78C9804EBCB065B3D32F9BE3 /* ProfileView.swift in Sources */,
 				59E07883460438620981E70D /* ProtocolLabView.swift in Sources */,
 				D05B77BF63E019DFD2DF285F /* ProtocolMap.swift in Sources */,
+				0BD6EB84E400D72C91FE7227 /* PushAlertText.swift in Sources */,
+				EA0AD583F43C4108EA358F0F /* PushConfig.swift in Sources */,
 				DECE51CCCDD89B34A39C297D /* PushDiagnostics.swift in Sources */,
 				8D7072CB1969A80893653F6D /* PushDiagnosticsRepository.swift in Sources */,
+				FF48C001EF6DD84079159892 /* PushEnvelope.swift in Sources */,
+				68F28DBFB9A311AB72070749 /* PushRegistrationState.swift in Sources */,
 				45CD5C45F5B348024A5876D1 /* QRCodeChallengeView.swift in Sources */,
 				5AA63700C7CC002B9C3C348F /* QRCodeView.swift in Sources */,
 				E465DF506896C81016586C83 /* QRScannerView.swift in Sources */,
@@ -1146,6 +1351,11 @@
 				560B7122CE69D797D73F6656 /* QuickPokeSettingsStore.swift in Sources */,
 				C679C74DB39A8CD27A743115 /* QuickPokeSettingsView.swift in Sources */,
 				BBC1106544B9A4E31CEAEE29 /* RelativeTime.swift in Sources */,
+				2CE78278A93542E003E5270F /* RelayBackoff.swift in Sources */,
+				4E032F3647471D64392EF3A3 /* RelayClient.swift in Sources */,
+				91F299A29C58940E4D14BB1F /* RelayEnvironment.swift in Sources */,
+				09A995841E85A528ED1D7B54 /* RelayRegistrationStore.swift in Sources */,
+				45B9C9BDF329F070CDDD3FF4 /* RelayedPush.swift in Sources */,
 				A9099E141F484267E57DA105 /* RemoteControlView.swift in Sources */,
 				D576369E89AF107885426854 /* RemoteCustomizeView.swift in Sources */,
 				4244D97D3C7532425C33A1A8 /* RemoteDashboardCards.swift in Sources */,
@@ -1175,6 +1385,7 @@
 				32F2B048CA156DAC2775D6F8 /* StreamHub.swift in Sources */,
 				8A938625795098D44B05D78D /* SwiftDataAlarmRepository.swift in Sources */,
 				72BF10A36CFDA988B7D456EE /* TestPushPayload.swift in Sources */,
+				DF7084E4FDC4C5AC377EC7CB /* TrustedRelayHosts.swift in Sources */,
 				07557DCAD160B1BCC498222C /* User.swift in Sources */,
 				D4C53CE3902C219AF906460B /* WaiterRegistry.swift in Sources */,
 			);
@@ -1193,28 +1404,44 @@
 			target = 2546FC3379D8F6AC9675B44E /* Jolt */;
 			targetProxy = DAF408B952746AD570399B8C /* PBXContainerItemProxy */;
 		};
+		DA60F50663160B3C28E7D7FB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1ABB9AD488900FB7C7A2E7FD /* JoltNotificationService */;
+			targetProxy = 636FABB958066A4283473227 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		4DEA61B113D02FE0A02C3108 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				57CD370571467C5260008495 /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		06EA08E480EAB09C05459D1F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APP_ATTEST_ENVIRONMENT = development;
 				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Resources/Jolt.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				INFOPLIST_FILE = Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				JOLT_DEFAULT_SERVER_URL = "https://jolt.example.com/api/v1";
+				JOLT_TRUSTED_RELAY_HOSTS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt;
 				PRODUCT_NAME = Jolt;
 				SDKROOT = iphoneos;
@@ -1240,6 +1467,26 @@
 			};
 			name = Release;
 		};
+		32B5FB4E12180D150322F9BD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationService/JoltNotificationService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = YCFL9S5UA8;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt.NotificationService;
+				PRODUCT_NAME = JoltNotificationService;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 		35ACE5AC1962376E6877AAD5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1261,22 +1508,22 @@
 		3F2DE7E815C2CA4467D81438 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APP_ATTEST_ENVIRONMENT = production;
 				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Resources/Jolt.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = YCFL9S5UA8;
 				INFOPLIST_FILE = Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				JOLT_DEFAULT_SERVER_URL = "https://jolt.example.com/api/v1";
+				JOLT_TRUSTED_RELAY_HOSTS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt;
 				PRODUCT_NAME = Jolt;
 				SDKROOT = iphoneos;
@@ -1318,6 +1565,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1330,6 +1578,9 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				JOLT_APP_GROUP = group.cz.peelco.jolt;
+				JOLT_SHARED_KEYCHAIN_GROUP = cz.peelco.jolt.shared;
+				MARKETING_VERSION = 1.0.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1414,6 +1665,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1432,6 +1684,9 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				JOLT_APP_GROUP = group.cz.peelco.jolt;
+				JOLT_SHARED_KEYCHAIN_GROUP = cz.peelco.jolt.shared;
+				MARKETING_VERSION = 1.0.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1442,6 +1697,26 @@
 				SWIFT_VERSION = 5.1;
 			};
 			name = Debug;
+		};
+		D856A33E5EC342E0263909C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationService/JoltNotificationService.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = YCFL9S5UA8;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cz.peelco.jolt.NotificationService;
+				PRODUCT_NAME = JoltNotificationService;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -1469,6 +1744,15 @@
 			buildConfigurations = (
 				6AB553C94A3228DA3716AB5A /* Debug */,
 				5E856394CD7F519B5A94F310 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A9A752D5F2A95C30E8FF92D4 /* Build configuration list for PBXNativeTarget "JoltNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32B5FB4E12180D150322F9BD /* Debug */,
+				D856A33E5EC342E0263909C3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

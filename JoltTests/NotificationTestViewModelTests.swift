@@ -6,6 +6,7 @@ import XCTest
 @MainActor
 private final class FakePushDiagnostics: PushDiagnosticsRepository {
     var devices: [RegisteredDevice] = []
+    var pushRegistration = PushRegistrationState()
     var statusToReturn: TestPushStatus?
     var sendError: Error?
 
@@ -54,6 +55,7 @@ final class NotificationTestViewModelTests: XCTestCase {
     private func status(
         accepted: Bool = true,
         apnsConfigured: Bool = true,
+        pushTransport: String? = nil,
         acks: [TestPushAck] = []
     ) -> TestPushStatus {
         TestPushStatus(
@@ -69,7 +71,8 @@ final class NotificationTestViewModelTests: XCTestCase {
                     detail: accepted ? nil : "BadDeviceToken"
                 )
             ],
-            acks: acks
+            acks: acks,
+            pushTransport: pushTransport
         )
     }
 
@@ -92,6 +95,24 @@ final class NotificationTestViewModelTests: XCTestCase {
 
         XCTAssertEqual(model.thisDevice?.id, deviceID)
         XCTAssertTrue(model.isRegistered)
+    }
+
+    /// Through the relay, the server knows this phone by the relay's token,
+    /// not Apple's, so that is the tail to look for.
+    func testMatchesThisDeviceByItsRelayTokenWhenRelayed() async {
+        let repository = FakePushDiagnostics()
+        repository.devices = [device(tokenSuffix: "relaytkn")]
+        repository.pushRegistration = PushRegistrationState(
+            transport: .relay(serverId: "srv_kzdvvj2umnduyauf35o36k6kw4"),
+            registeredToken: "rt_0123456789relaytkn"
+        )
+        let model = viewModel(repository)
+
+        await model.refresh()
+
+        XCTAssertEqual(model.thisDevice?.id, deviceID)
+        XCTAssertEqual(model.pushRegistration.transport.displayName, "Relay")
+        XCTAssertEqual(model.pushRegistration.serverId, "srv_kzdvvj2umnduyauf35o36k6kw4")
     }
 
     func testReportsUnregisteredWhenNoDeviceMatchesTheToken() async {
@@ -204,6 +225,25 @@ final class NotificationTestViewModelTests: XCTestCase {
 
         // Nothing will ever arrive, so "waiting" would be a lie.
         XCTAssertEqual(model.outcome, .notConfigured)
+        model.cancelPolling()
+    }
+
+    /// `pushTransport` is what the server says (C19); `apnsConfigured` only
+    /// counts for a server that predates it.
+    func testTakesTheServersPushTransportOverApnsConfigured() async {
+        let repository = FakePushDiagnostics()
+        repository.devices = [device()]
+        repository.statusToReturn = status(apnsConfigured: true, pushTransport: "none")
+        let model = viewModel(repository)
+        await model.refresh()
+
+        await model.send()
+        XCTAssertEqual(model.outcome, .notConfigured)
+        model.cancelPolling()
+
+        repository.statusToReturn = status(apnsConfigured: false, pushTransport: "relay")
+        await model.send()
+        XCTAssertEqual(model.outcome, .waiting)
         model.cancelPolling()
     }
 

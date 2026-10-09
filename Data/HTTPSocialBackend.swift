@@ -18,12 +18,17 @@ extension UUID {
 /// view of the friend graph is whatever the last fetch returned.
 @MainActor
 final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository {
-    private let configuration: ServerConfiguration
+    /// Not `private`: `HTTPSocialBackend+PushRegistration.swift` ties the
+    /// relay registration to the server it was made for.
+    let configuration: ServerConfiguration
     /// Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` is the same
     /// type in another file, and Swift's `private` is file-scoped.
     let client: JoltAPIClient
     private let tokenStore: AuthTokenStore
     let deviceRepository: DeviceRepository
+    /// Everything the relay path of `HTTPSocialBackend+PushRegistration.swift`
+    /// needs besides the server.
+    let relay: RelayEnvironment
 
     private var user: User?
     private var inviteCode = ""
@@ -45,7 +50,19 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     /// be cleared on first use, which meant a second account signing in on
     /// the same launch never registered at all and kept firing pokes at the
     /// first one's wrist.
-    private var lastPushToken: String?
+    ///
+    /// Not `private`, like the two below: push registration lives in
+    /// `HTTPSocialBackend+PushRegistration.swift`.
+    var lastPushToken: String?
+    /// How pushes reach this phone, as far as the last registration got.
+    var pushRegistration = PushRegistrationState()
+    /// The registration in progress, if any. Each one waits for the one
+    /// before it: a token from Apple and a session restore routinely land
+    /// together, and two relay registrations racing would each revoke the
+    /// other's token.
+    var pushRegistrationQueue: Task<Void, Never>?
+    /// The scheduled retry of relay revocations the relay hasn't confirmed.
+    var pendingUnregistrationRetry: Task<Void, Never>?
     /// Not `private`: `HTTPSocialBackend+PushDiagnostics.swift` fires test
     /// pushes through the same firer, for the same idempotency reason.
     let firer: LocalStimulusFirer
@@ -65,17 +82,22 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
     private let activityHub = StreamHub<[PokeEvent]>()
 
     var myHandle: String { user?.handle ?? "" }
+    var isSignedIn: Bool { user != nil }
     var myInviteCode: String { inviteCode }
 
     init(
         configuration: ServerConfiguration,
         deviceRepository: DeviceRepository,
         tokenStore: AuthTokenStore = AuthTokenStore(),
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        // Optional rather than defaulting to `.live`: a default argument is
+        // evaluated outside the main actor, which `.live` needs.
+        relay: RelayEnvironment? = nil
     ) {
         self.configuration = configuration
         self.deviceRepository = deviceRepository
         self.tokenStore = tokenStore
+        self.relay = relay ?? .live
         self.firer = LocalStimulusFirer(deviceRepository: deviceRepository)
         self.client = JoltAPIClient(
             configuration: configuration,
@@ -87,7 +109,11 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         // once here rather than on first `currentUser` subscription — with
         // `StreamHub`, every subscriber gets its own fresh stream, so tying
         // it to subscription would re-run it once per subscriber.
-        Task { await self.restoreSession() }
+        Task {
+            await self.retryPendingRelayUnregistrations()
+            await self.retireRelayRegistrationForAnotherServer()
+            await self.restoreSession()
+        }
     }
 
     var currentUser: AsyncStream<User?> { userHub.stream() }
@@ -204,16 +230,12 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
         //
         // Both calls go through `client` rather than the `sendIgnoringResponse`
         // wrapper above, which logs out on 401 — from in here that recurses.
-        if let lastPushToken, user != nil {
-            // Unbind this phone before the session goes: the registration
-            // outlives it otherwise, and the account keeps this device as a
-            // poke target until something re-registers the token. A friend
-            // poking *them* would fire on this wrist.
-            try? await client.sendIgnoringResponse(
-                "DELETE", "devices/push-token",
-                body: ForgetPushTokenBody(token: lastPushToken)
-            )
-        }
+        //
+        // Unbind this phone before the session goes: the registration
+        // outlives it otherwise, and the account keeps this device as a poke
+        // target until something re-registers the token. A friend poking
+        // *them* would fire on this wrist.
+        await unregisterPush()
         try? await client.sendIgnoringResponse("POST", "auth/logout")
         tokenStore.clear(for: configuration)
         await client.setToken(nil)
@@ -253,36 +275,6 @@ final class HTTPSocialBackend: AuthRepository, FriendsRepository, PokeRepository
             // Offline or server down: keep the token and stay signed out for
             // now rather than destroying a session over a flaky network.
         }
-    }
-
-    struct PushTokenBody: Encodable {
-        let token: String
-        let platform = "ios"
-    }
-
-    struct ForgetPushTokenBody: Encodable {
-        let token: String
-    }
-
-    func registerPushToken(_ token: String) async {
-        lastPushToken = token
-        // Nothing to attach it to yet; whoever signs in (or the session
-        // restore) sends it. Remembered either way — see `lastPushToken`.
-        guard user != nil else { return }
-        try? await sendIgnoringResponse("POST", "devices/push-token", body: PushTokenBody(token: token))
-    }
-
-    /// Re-asserts this phone's registration for whoever is signed in now.
-    /// Idempotent server-side (the token is the conflict target), so calling
-    /// it on every identity change costs one request and buys the guarantee
-    /// that the binding matches the session.
-    ///
-    /// Not `private`: a poke arriving for the wrong account is the clearest
-    /// evidence the registration is stale, and that is handled in
-    /// `HTTPSocialBackend+Pokes.swift`.
-    func registerLastPushToken() async {
-        guard let lastPushToken else { return }
-        await registerPushToken(lastPushToken)
     }
 
     // MARK: - Friends

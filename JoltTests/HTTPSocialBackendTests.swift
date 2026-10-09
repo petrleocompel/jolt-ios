@@ -173,6 +173,8 @@ final class StubURLProtocol: URLProtocol {
     static let connectionLost = -1
 
     nonisolated(unsafe) static var handler: (@Sendable (URLRequest) -> (Int, Data))?
+    /// Extra response headers, for the few tests that need one.
+    nonisolated(unsafe) static var headers: (@Sendable (URLRequest) -> [String: String])?
 
     override static func canInit(with request: URLRequest) -> Bool { true }
     override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -189,7 +191,7 @@ final class StubURLProtocol: URLProtocol {
         }
         guard let response = HTTPURLResponse(
             url: url, statusCode: status, httpVersion: nil,
-            headerFields: ["Content-Type": "application/json"]
+            headerFields: ["Content-Type": "application/json"].merging(Self.headers?(request) ?? [:]) { $1 }
         ) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return

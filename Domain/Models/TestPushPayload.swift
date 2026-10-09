@@ -7,8 +7,9 @@ import Foundation
 /// `PokeEvent` behind it, so it never appears in Friends activity and is
 /// acked to `/devices/test-push/{testID}/ack` instead.
 ///
-/// The server's `sentAt` and `source` are ignored on this side — the round
-/// trip is timed where it was started, so the phone has nothing to add.
+/// The server's `source` is ignored on this side, and `sentAt` only feeds the
+/// alert text — the round trip is timed where it was started, so the phone
+/// has nothing to add.
 struct TestPushPayload: Codable, Equatable {
     var testID: UUID
     /// Which of the account's devices this copy was addressed to. Echoed back
@@ -17,6 +18,10 @@ struct TestPushPayload: Codable, Equatable {
     /// Absent for a notification-only test: delivery can then be checked with
     /// no Pavlok connected at all.
     var stimulus: StimulusConfig?
+    /// ISO-8601, kept as sent; see `PokePushPayload.sentAt`.
+    var sentAt: String?
+    /// See `PokePushPayload.serverId`.
+    var serverId: String?
 }
 
 extension TestPushPayload {

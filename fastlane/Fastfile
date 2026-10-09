@@ -10,6 +10,8 @@ require "shellwords"
 #   JOLT_DEFAULT_SERVER_URL — Jolt Server the built app points at out of the
 #     box (default in project.yml is a placeholder; users can change it in
 #     Settings → Server)
+#   JOLT_TRUSTED_RELAY_HOSTS — push relay host names the app may register
+#     with, space-separated (empty in project.yml, so no relay is trusted)
 #   FASTLANE_RUN_XCODEGEN=1  — run xcodegen before build/screenshots
 #   CHANGELOG — TestFlight notes
 #   VERSION_CODE — CI build number (optional; set CURRENT_PROJECT_VERSION)
@@ -50,16 +52,21 @@ def xcode_api_auth_args
   ].join(" ")
 end
 
-# Build-setting override for the app's out-of-the-box server, so the real URL
-# lives in CI configuration rather than in the source. Empty when unset, which
-# keeps project.yml's placeholder.
-def server_url_args
-  url = ENV["JOLT_DEFAULT_SERVER_URL"].to_s
-  url.empty? ? "" : "JOLT_DEFAULT_SERVER_URL=#{Shellwords.escape(url)}"
+# Build settings that name deployments — the app's out-of-the-box server and
+# the push relays it trusts — so the real hosts live in CI configuration
+# rather than in the source. Each is left out when unset, which keeps
+# project.yml's placeholder.
+DEPLOYMENT_BUILD_SETTINGS = %w[JOLT_DEFAULT_SERVER_URL JOLT_TRUSTED_RELAY_HOSTS].freeze
+
+def deployment_args
+  DEPLOYMENT_BUILD_SETTINGS.filter_map do |name|
+    value = ENV[name].to_s
+    "#{name}=#{Shellwords.escape(value)}" unless value.empty?
+  end.join(" ")
 end
 
-def with_server_url(xcargs)
-  [xcargs, server_url_args].reject(&:empty?).join(" ")
+def with_deployment(xcargs)
+  [xcargs, deployment_args].reject(&:empty?).join(" ")
 end
 
 # The runner's login keychain is locked in headless sessions; signing fails
@@ -73,6 +80,11 @@ def prepare_ci_keychain
   )
 end
 
+# Automatic signing covers both bundle IDs in the archive — the app and its
+# Notification Service Extension (cz.peelco.jolt.NotificationService) — so
+# there is no per-target profile map to keep in step. Both App IDs need the
+# App Group (group.cz.peelco.jolt) on the team; the app's also needs Push
+# Notifications and App Attest.
 def signed_export_options
   { signingStyle: "automatic", teamID: TEAM_ID }
 end
@@ -145,7 +157,7 @@ platform :ios do
       project: "Jolt.xcodeproj",
       derived_data_path: "DerivedData",
       destination: ENV.fetch("FASTLANE_SIMULATOR", "platform=iOS Simulator,name=iPhone 17"),
-      xcargs: server_url_args
+      xcargs: deployment_args
     )
   end
 
@@ -164,7 +176,7 @@ platform :ios do
       destination: "generic/platform=iOS Simulator",
       output_directory: "build/dev",
       clean: true,
-      xcargs: server_url_args
+      xcargs: deployment_args
     )
   end
 
@@ -188,7 +200,7 @@ platform :ios do
       output_directory: "build/prod",
       output_name: "Jolt-prod.ipa",
       clean: true,
-      xcargs: with_server_url(xcode_api_auth_args),
+      xcargs: with_deployment(xcode_api_auth_args),
       export_options: signed_export_options
     )
   end
@@ -207,7 +219,7 @@ platform :ios do
       output_directory: "build/internal",
       output_name: "Jolt-internal.ipa",
       clean: true,
-      xcargs: with_server_url(xcode_api_auth_args),
+      xcargs: with_deployment(xcode_api_auth_args),
       export_options: signed_export_options
     )
   end

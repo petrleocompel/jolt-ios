@@ -46,11 +46,22 @@ Server you use stores only what that feature needs:
 - Your friends, and the per-friend permissions and limits you set
 - A record of pokes sent and received, and their delivery status
 - An Apple Push Notification (APNs) token for each device you sign in on, so a
-  poke can be delivered
+  poke can be delivered, or a push relay's token in its place (see below)
 
 A poke push contains the sender's name and the stimulus to fire, so your device
 can act on it immediately. Poke history is retained for a limited period (90
 days by default) and pending friend requests expire automatically.
+
+**Push relay.** A server without its own Apple credentials can deliver pokes
+through a Jolt push relay. The app then registers with the relay directly: it
+sends the relay this device's APNs token, the app's bundle ID, your server's ID
+and, where the device supports it, an Apple App Attest statement that the
+request comes from a genuine copy of the app. Your server receives the relay's
+token instead of the APNs token, together with a key generated on your device.
+Pokes are encrypted with that key before they leave the server, so the relay
+sees which server sent a message, to which registration, whether it was a poke
+or a test, its size and when it was sent, but not who sent it or what it
+contains. Signing out revokes the registration and deletes the key.
 
 The friends server is [open source](https://github.com/petrleocompel/jolt-server)
 and the app can point at any instance (**Settings → Server**). When you use an

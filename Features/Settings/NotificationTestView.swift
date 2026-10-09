@@ -45,11 +45,26 @@ struct NotificationTestView: View {
             if let host = dependencies.serverConfiguration?.baseURL.host() {
                 LabeledContent("Server", value: host)
             }
+            LabeledContent("Delivery", value: viewModel.pushRegistration.transport.displayName)
+                .accessibilityIdentifier("pushTransportRow")
+            if let serverId = viewModel.pushRegistration.serverId {
+                LabeledContent("Server ID") {
+                    Text(serverId)
+                        .font(.footnote.monospaced())
+                        .textSelection(.enabled)
+                }
+            }
+            if let problem = viewModel.pushRegistration.problem {
+                Text(problem)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
         } header: {
             Text("This device")
         } footer: {
             Text("A push has to clear all three: iOS must allow it, Apple must have a token for "
-                + "this install, and the server must know that token belongs to your account.")
+                + "this install, and the server must know that token belongs to your account. "
+                + "Through a relay, the relay forwards it without being able to read it.")
         }
     }
 
@@ -175,8 +190,8 @@ private struct OutcomeRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Label("Server can't send pushes", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                Text("It has no Apple credentials, so it logged the push instead of delivering it. "
-                    + "Pokes will reach you only while the app is open.")
+                Text("It has neither Apple credentials nor a push relay, so it logged the push "
+                    + "instead of delivering it. Pokes will reach you only while the app is open.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

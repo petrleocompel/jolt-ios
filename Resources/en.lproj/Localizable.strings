@@ -1,0 +1,13 @@
+/* Push notification text for a relayed push, shown when the Notification
+   Service Extension can't decrypt it (or iOS doesn't run the extension).
+   The relay sends these keys instead of the real text, which it can't read;
+   see jolt-relay/spec/protocol-v1.md, section 5. */
+
+/* Title of a relayed poke or test notification. */
+"PUSH_FALLBACK_TITLE" = "Jolt";
+
+/* Body of a relayed poke notification that couldn't be decrypted. */
+"PUSH_FALLBACK_POKE_BODY" = "You've been poked. Open Jolt for details.";
+
+/* Body of a relayed test notification that couldn't be decrypted. */
+"PUSH_FALLBACK_TEST_BODY" = "Test notification — push delivery works.";

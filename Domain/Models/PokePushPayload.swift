@@ -28,6 +28,13 @@ struct PokePushPayload: Codable, Equatable {
     ///
     /// Optional: a server that predates it sends nothing.
     var viaApiToken: Bool?
+    /// When the server accepted the poke, ISO-8601, kept as sent. Only the
+    /// relayed alert renders it (`PushAlertText`); a direct push already
+    /// carries the server's rendering in its text.
+    var sentAt: String?
+    /// The `serverId` of the server that sent it. Set by a server that knows
+    /// about the relay; a relayed push is dropped unless it matches `srv`.
+    var serverId: String?
 }
 
 extension PokePushPayload {

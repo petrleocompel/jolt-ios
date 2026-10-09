@@ -56,11 +56,20 @@ struct TestPushStatus: Codable, Equatable {
     var testID: UUID
     var sentAt: Date
     var stimulus: StimulusConfig?
-    /// False when the server has no Apple credentials and is logging pushes
-    /// instead of sending them — nothing will ever be acked.
+    /// False when the server has no way to push and is logging pushes
+    /// instead of sending them — nothing will ever be acked. True through the
+    /// relay as well; kept for servers that predate `pushTransport`.
     var apnsConfigured: Bool
     var devices: [TestPushDeviceResult]
     var acks: [TestPushAck]
+    /// `apns`, `relay` or `none`: how the server sent it. Authoritative where
+    /// present (C19); a server that predates the relay sends nothing.
+    var pushTransport: String?
+
+    /// Whether the server can deliver pushes at all.
+    var canPush: Bool {
+        pushTransport.map { $0 != "none" } ?? apnsConfigured
+    }
 
     /// The first confirmation from `deviceID`, if any has arrived.
     func ack(for deviceID: UUID) -> TestPushAck? {

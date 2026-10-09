@@ -7,6 +7,15 @@ settings:
   base:
     SWIFT_VERSION: 5.10
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    # Project-wide so the app and its extension can't drift apart: iOS
+    # refuses to install an app whose extension has a different version.
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+    # Shared between the app and JoltNotificationService. The keychain group
+    # holds the relay payload keys the extension decrypts with; both appear in
+    # each target's entitlements and Info.plist.
+    JOLT_APP_GROUP: group.cz.peelco.jolt
+    JOLT_SHARED_KEYCHAIN_GROUP: cz.peelco.jolt.shared
 targets:
   Jolt:
     type: application
@@ -18,6 +27,7 @@ targets:
       - Domain
       - BLE
       - Data
+      - Shared
       - path: Resources
         buildPhase: resources
         excludes:
@@ -47,24 +57,58 @@ targets:
         # A placeholder here; release builds override it on the command line
         # (fastlane reads JOLT_DEFAULT_SERVER_URL from the environment).
         JOLT_DEFAULT_SERVER_URL: "https://jolt.example.com/api/v1"
+        # Push relays the app will register with (Info.plist
+        # JoltTrustedRelayHosts), space-separated host names. Empty here, so a
+        # build from source trusts no relay; release builds set it on the
+        # command line (fastlane reads JOLT_TRUSTED_RELAY_HOSTS).
+        JOLT_TRUSTED_RELAY_HOSTS: ""
         CODE_SIGN_ENTITLEMENTS: Resources/Jolt.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
-        CURRENT_PROJECT_VERSION: 1
-        MARKETING_VERSION: 1.0.0
       # aps-environment is $(APS_ENVIRONMENT) in Jolt.entitlements, resolved
       # per configuration: a debug build talks to APNs sandbox, a Release
       # build (Archive → TestFlight/App Store) to production. This must match
-      # the server's APNS_ENV.
+      # the server's APNS_ENV, or for a relayed server the relay's (the app
+      # tells the relay which one its token belongs to). App Attest follows
+      # the same split.
       configs:
         Debug:
           APS_ENVIRONMENT: development
+          APP_ATTEST_ENVIRONMENT: development
         Release:
           APS_ENVIRONMENT: production
+          APP_ATTEST_ENVIRONMENT: production
+    dependencies:
+      - target: JoltNotificationService
     scheme:
       testTargets:
         - JoltUITests
         - JoltTests
       gatherCoverageData: true
+  # Rewrites relayed alerts with the decrypted poke before iOS shows them.
+  # Compiles the push code it needs from the app's own sources rather than a
+  # framework: Shared/ plus the three payload models.
+  JoltNotificationService:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: NotificationService
+        excludes:
+          - Info.plist
+          - JoltNotificationService.entitlements
+      - Shared
+      - Domain/Models/Stimulus.swift
+      - Domain/Models/PokePushPayload.swift
+      - Domain/Models/TestPushPayload.swift
+    settings:
+      base:
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "YCFL9S5UA8"
+        PRODUCT_BUNDLE_IDENTIFIER: "cz.peelco.jolt.NotificationService"
+        PRODUCT_NAME: "JoltNotificationService"
+        INFOPLIST_FILE: NotificationService/Info.plist
+        CODE_SIGN_ENTITLEMENTS: NotificationService/JoltNotificationService.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
   JoltUITests:
     type: bundle.ui-testing
     platform: iOS
