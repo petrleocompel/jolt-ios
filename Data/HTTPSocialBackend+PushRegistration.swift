@@ -127,7 +127,7 @@ extension HTTPSocialBackend {
         } else {
             .direct
         }
-        switch RelayedPush.open(userInfo, expecting: expecting, key: relay.keys.key(for:)) {
+        switch RelayedPush.open(userInfo, expecting: expecting, key: relay.keys.key(for:kid:)) {
         case .success(let opened):
             return opened
         case .failure(let failure):
@@ -221,7 +221,7 @@ extension HTTPSocialBackend {
         // server was given is still here. Re-asserting it is enough.
         if !replacing, let current = currentRelayRegistration,
            current.relayURL == target.url, current.serverId == target.serverId, current.apnsToken == apnsToken,
-           let key = relay.keys.key(for: current.serverId), PushEnvelope.keyID(for: key) == current.keyId {
+           let key = relay.keys.currentKey(for: current.serverId), PushEnvelope.keyID(for: key) == current.keyId {
             await sendRelayToken(current, key: key)
             return
         }

@@ -39,7 +39,7 @@ final class RelayedNotificationContentTests: XCTestCase {
 
     func testLeavesTheFallbackWhenNoKeyIsHeld() throws {
         let vectors = try EnvelopeVectors.load()
-        let content = RelayedNotificationContent(userInfo: try relayed(vectors.case("poke")), key: { _ in nil })
+        let content = RelayedNotificationContent(userInfo: try relayed(vectors.case("poke")), key: { _, _ in nil })
 
         XCTAssertNil(content)
     }
@@ -107,7 +107,7 @@ final class RelayedNotificationContentTests: XCTestCase {
     }
 
     private func rewrite(_ userInfo: [AnyHashable: Any], key: SymmetricKey) -> RelayedNotificationContent? {
-        RelayedNotificationContent(userInfo: userInfo, key: { _ in key }, timeZone: prague, locale: britishEnglish)
+        RelayedNotificationContent(userInfo: userInfo, key: { _, _ in key }, timeZone: prague, locale: britishEnglish)
     }
 
     private func text(_ poke: PokePushPayload) -> PushAlertText {

@@ -22,7 +22,7 @@ final class NotificationService: UNNotificationServiceExtension {
         let keys = PayloadKeyStore()
         guard let relayed = RelayedNotificationContent(
             userInfo: request.content.userInfo,
-            key: { keys.key(for: $0) }
+            key: { keys.key(for: $0, kid: $1) }
         ), let content = request.content.mutableCopy() as? UNMutableNotificationContent else {
             contentHandler(request.content)
             return

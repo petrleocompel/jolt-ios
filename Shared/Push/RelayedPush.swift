@@ -10,8 +10,10 @@ enum RelayedPush {
     enum Failure: Error, Equatable {
         /// `enc` without a usable `srv`, `type` or envelope.
         case malformed
-        /// No `payloadKey` held for the sending server.
-        case unknownServer
+        /// No `payloadKey` held for the sending server under the envelope's
+        /// `kid`: not registered with it, or a key retired more than a day
+        /// ago.
+        case unknownKey
         case envelope(PushEnvelope.OpenError)
         /// The decrypted `type` disagrees with the one outside.
         case typeMismatch
@@ -48,14 +50,16 @@ enum RelayedPush {
     }
 
     /// Decrypts `userInfo` if it is a relayed push and checks it against
-    /// section 6 of the protocol: the key held for `srv`, the AAD built from
-    /// `srv` and the outer `type`, the inner `type`, and the inner `serverId`.
-    /// Anything without an envelope passes through untouched unless
-    /// `expecting` rules it out.
+    /// section 6 of the protocol: the key held for `srv` and `kid`, the AAD
+    /// built from `srv` and the outer `type`, the inner `type`, and the inner
+    /// `serverId`. Anything without an envelope passes through untouched
+    /// unless `expecting` rules it out (C9).
+    ///
+    /// - Parameter key: the key held for a `serverId` and `kid`, if any.
     static func open(
         _ userInfo: [AnyHashable: Any],
         expecting: Expectation,
-        key: (String) -> SymmetricKey?
+        key: (_ serverId: String, _ kid: String) -> SymmetricKey?
     ) -> Result<[AnyHashable: Any], Failure> {
         guard isRelayed(userInfo) else {
             if case .relay = expecting, let type = userInfo["type"] as? String, kinds.contains(type) {
@@ -71,7 +75,7 @@ enum RelayedPush {
         if let refusal = refusal(of: serverId, expecting: expecting) {
             return .failure(refusal)
         }
-        guard let payloadKey = key(serverId) else { return .failure(.unknownServer) }
+        guard let payloadKey = key(serverId, envelope.kid) else { return .failure(.unknownKey) }
 
         let object: [String: Any]
         switch decrypt(envelope, with: payloadKey, serverId: serverId, kind: type) {
@@ -131,7 +135,7 @@ struct RelayedNotificationContent {
     /// failed any check — the alert then keeps the fallback text.
     init?(
         userInfo: [AnyHashable: Any],
-        key: (String) -> SymmetricKey?,
+        key: (_ serverId: String, _ kid: String) -> SymmetricKey?,
         timeZone: TimeZone = .current,
         locale: Locale = .current
     ) {

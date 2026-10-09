@@ -106,11 +106,11 @@ final class RelayedPushTests: XCTestCase {
         XCTAssertEqual(failure(try relayedUserInfo(vectors.case("poke")), expecting: .direct, key: vectors.key), .serverMismatch)
     }
 
-    func testRefusesAServerWithNoKey() throws {
+    func testRefusesAServerOrKeyIDWithNoKey() throws {
         let vectors = try EnvelopeVectors.load()
-        let result = RelayedPush.open(try relayedUserInfo(vectors.case("poke")), expecting: .anyKeyedServer) { _ in nil }
+        let result = RelayedPush.open(try relayedUserInfo(vectors.case("poke")), expecting: .anyKeyedServer) { _, _ in nil }
 
-        XCTAssertEqual(result.failure, .unknownServer)
+        XCTAssertEqual(result.failure, .unknownKey)
     }
 
     func testRefusesAnEnvelopeWithoutAServer() throws {
@@ -165,13 +165,13 @@ final class RelayedPushTests: XCTestCase {
     private func open(
         _ userInfo: [AnyHashable: Any], expecting: RelayedPush.Expectation, key: SymmetricKey
     ) throws -> [AnyHashable: Any] {
-        try RelayedPush.open(userInfo, expecting: expecting) { $0 == self.serverId ? key : nil }.get()
+        try RelayedPush.open(userInfo, expecting: expecting) { serverId, _ in serverId == self.serverId ? key : nil }.get()
     }
 
     private func failure(
         _ userInfo: [AnyHashable: Any], expecting: RelayedPush.Expectation? = nil, key: SymmetricKey
     ) -> RelayedPush.Failure? {
-        RelayedPush.open(userInfo, expecting: expecting ?? .relay(serverId: serverId)) { _ in key }.failure
+        RelayedPush.open(userInfo, expecting: expecting ?? .relay(serverId: serverId)) { _, _ in key }.failure
     }
 }
 

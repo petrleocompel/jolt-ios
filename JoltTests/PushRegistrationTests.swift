@@ -46,7 +46,7 @@ final class PushRegistrationTests: XCTestCase {
         XCTAssertEqual(serverRequest["relayToken"] as? String, "rt_issued1")
         XCTAssertNil(serverRequest["token"], "the server must never see the APNs token")
 
-        let key = try XCTUnwrap(keys.key(for: serverId), "the payload key must be kept for the extension")
+        let key = try XCTUnwrap(keys.currentKey(for: serverId), "the payload key must be kept for the extension")
         let sentKey = try XCTUnwrap((serverRequest["payloadKey"] as? String).flatMap(Base64URL.decode))
         XCTAssertEqual(sentKey, key.withUnsafeBytes { Data($0) })
         XCTAssertEqual(serverRequest["keyId"] as? String, PushEnvelope.keyID(for: key))
@@ -187,7 +187,7 @@ final class PushRegistrationTests: XCTestCase {
 
         XCTAssertEqual(stub.requests("DELETE", "/devices/push-token").first?.body?["relayToken"] as? String, "rt_issued1")
         XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
-        XCTAssertNil(keys.key(for: serverId))
+        XCTAssertNil(keys.currentKey(for: serverId))
         XCTAssertNil(registrations.load())
         XCTAssertEqual(stub.requests("POST", "/devices/push-token").last?.body?["token"] as? String, apnsToken)
     }
@@ -219,7 +219,7 @@ final class PushRegistrationTests: XCTestCase {
 
         XCTAssertEqual(stub.requests("DELETE", "/devices/push-token").first?.body?["relayToken"] as? String, "rt_issued1")
         XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
-        XCTAssertNil(keys.key(for: serverId))
+        XCTAssertNil(keys.currentKey(for: serverId))
         XCTAssertNil(registrations.load())
         XCTAssertEqual(backend.pushRegistration, PushRegistrationState())
     }
@@ -244,7 +244,7 @@ final class PushRegistrationTests: XCTestCase {
 
         XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_old").count, 1)
         XCTAssertTrue(stub.requests("DELETE", "/devices/push-token").isEmpty)
-        XCTAssertNil(keys.key(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        XCTAssertNil(keys.currentKey(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa"))
         XCTAssertNil(registrations.load())
 
         await backend.registerPushToken(apnsToken)
@@ -258,7 +258,7 @@ final class PushRegistrationTests: XCTestCase {
         let stub = PushStub(pushConfig: (200, relayConfig))
         let backend = try await signedInBackend(stub)
         await backend.registerPushToken(apnsToken)
-        let key = try XCTUnwrap(keys.key(for: serverId))
+        let key = try XCTUnwrap(keys.currentKey(for: serverId))
 
         let poke = #"{"type":"poke","poke":{"pokeID":"7d6f0c1e-2b3a-4c5d-8e9f-0a1b2c3d4e5f","serverId":"\#(serverId)","#
             + #""senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
