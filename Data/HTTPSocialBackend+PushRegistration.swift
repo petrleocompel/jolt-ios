@@ -101,14 +101,14 @@ extension HTTPSocialBackend {
     /// The app would refuse what it sent, but the extension would show it.
     func retireRelayRegistrationForAnotherServer() async {
         guard let stored = relay.registrations.load(), stored.serverBaseURL != configuration.baseURL else { return }
-        await serialized { await self.retireRelayRegistration() }
+        await serialized { await self.retireRelayRegistration(keepingKey: false) }
     }
 
     /// Undoes every registration this phone holds, on sign-out: the server's
     /// binding, the relay's, and the key.
     func unregisterPush() async {
         await pushRegistrationQueue?.value
-        await retireRelayRegistration()
+        await retireRelayRegistration(keepingKey: false)
         if let lastPushToken, isSignedIn {
             try? await client.sendIgnoringResponse(
                 "DELETE", "devices/push-token",
@@ -179,10 +179,10 @@ extension HTTPSocialBackend {
 
         switch config.transport {
         case .apns:
-            await retireRelayRegistration()
+            await retireRelayRegistration(keepingKey: false)
             await registerDirectly(apnsToken)
         case .none:
-            await retireRelayRegistration()
+            await retireRelayRegistration(keepingKey: false)
             pushRegistration = PushRegistrationState(transport: .none)
         case .relay:
             guard let target = config.relay else {
@@ -190,6 +190,10 @@ extension HTTPSocialBackend {
                 return
             }
             await registerThroughRelay(target, apnsToken: apnsToken, replacing: replacingRelayRegistration)
+        case .unsupported(let name):
+            // An error, not a reason to tear down what works (C18).
+            pushRegistration.problem = "The server delivers notifications a way this version of Jolt "
+                + "doesn't know (\(name)). Updating the app should fix it."
         }
     }
 
@@ -205,62 +209,108 @@ extension HTTPSocialBackend {
         }
     }
 
+    /// What became of handing the server a relay registration.
+    private enum RelayTokenOutcome {
+        case accepted
+        case failed
+        /// `410 relay_token_revoked`: the relay has dropped this registration
+        /// and the server won't take it back (C6).
+        case revoked
+    }
+
     private func registerThroughRelay(_ target: PushConfig.Relay, apnsToken: String, replacing: Bool) async {
-        let transport = PushTransport.relay(serverId: target.serverId)
         guard relay.trustedHosts.allows(target.url) else {
-            await retireRelayRegistration()
+            await retireRelayRegistration(keepingKey: false)
             pushRegistration = PushRegistrationState(
-                transport: transport,
+                transport: .relay(serverId: target.serverId),
                 problem: "The server's relay (\(target.url.host() ?? target.url.absoluteString)) "
                     + "isn't one this app trusts, so notifications can't reach this phone."
             )
             return
         }
+        guard await registerOrReassert(target, apnsToken: apnsToken, replacing: replacing) == .revoked else { return }
 
-        // Still good: same server, relay and APNs token, and the key the
-        // server was given is still here. Re-asserting it is enough.
+        // The relay dropped the registration (Apple retired the token, or an
+        // admin revoked it) and the server has said so. Nothing about it is
+        // worth keeping, the key included: start over, once.
+        await retireRelayRegistration(keepingKey: false)
+        if await registerOrReassert(target, apnsToken: apnsToken, replacing: true) == .revoked {
+            pushRegistration.problem = "The server refused a fresh relay registration as revoked."
+        }
+    }
+
+    /// Re-asserts the stored registration while server, relay, APNs token
+    /// and key all still match it; registers afresh otherwise.
+    private func registerOrReassert(
+        _ target: PushConfig.Relay, apnsToken: String, replacing: Bool
+    ) async -> RelayTokenOutcome {
         if !replacing, let current = currentRelayRegistration,
            current.relayURL == target.url, current.serverId == target.serverId, current.apnsToken == apnsToken,
            let key = relay.keys.currentKey(for: current.serverId), PushEnvelope.keyID(for: key) == current.keyId {
-            await sendRelayToken(current, key: key)
-            return
+            return await sendRelayToken(current, key: key)
+        }
+        guard let (registration, key) = await makeRelayRegistration(target, apnsToken: apnsToken) else {
+            return .failed
+        }
+        return await sendRelayToken(registration, key: key)
+    }
+
+    /// Replaces whatever this phone was registered as with a new relay
+    /// registration and a new key, and stores both. Nil when the relay
+    /// couldn't be reached or the key couldn't be kept.
+    private func makeRelayRegistration(
+        _ target: PushConfig.Relay, apnsToken: String
+    ) async -> (RelayRegistration, SymmetricKey)? {
+        // The registration being replaced goes on both sides, or the phone
+        // gets every poke twice (C7). Its key stays for a day when the new
+        // one is for the same server, which may still be sealing with it
+        // (C8).
+        if let previous = currentRelayRegistration {
+            await retireRelayRegistration(keepingKey: previous.serverId == target.serverId)
+        } else {
+            await retireRelayRegistration(keepingKey: false)
+            // No relay registration for this server, so it may have known
+            // this phone by its APNs token until it switched to the relay.
+            try? await client.sendIgnoringResponse(
+                "DELETE", "devices/push-token",
+                body: ForgetPushTokenBody(token: apnsToken)
+            )
         }
 
-        await retireRelayRegistration()
+        let transport = PushTransport.relay(serverId: target.serverId)
+        let relayClient = RelayClient(baseURL: target.url, session: relay.session, attestor: relay.attestor)
         let relayToken: String
         do {
-            relayToken = try await RelayClient(baseURL: target.url, session: relay.session, attestor: relay.attestor)
-                .register(
-                    apnsToken: apnsToken, environment: relay.apnsEnvironment,
-                    appId: relay.appId, serverId: target.serverId
-                )
+            relayToken = try await relayClient.register(
+                apnsToken: apnsToken, environment: relay.apnsEnvironment,
+                appId: relay.appId, serverId: target.serverId
+            )
         } catch {
             pushRegistration = PushRegistrationState(
                 transport: transport,
                 problem: "Couldn't register with the relay: \(error.localizedDescription)"
             )
-            return
+            return nil
         }
 
         let key = SymmetricKey(size: .bits256)
-        let registration = RelayRegistration(
-            serverBaseURL: configuration.baseURL, relayURL: target.url, serverId: target.serverId,
-            relayToken: relayToken, apnsToken: apnsToken, keyId: PushEnvelope.keyID(for: key)
-        )
         guard relay.keys.save(key, for: target.serverId) else {
-            try? await RelayClient(baseURL: target.url, session: relay.session, attestor: relay.attestor)
-                .unregister(relayToken: relayToken)
+            try? await relayClient.unregister(relayToken: relayToken)
             pushRegistration = PushRegistrationState(
                 transport: transport,
                 problem: "Couldn't store the key notifications are decrypted with."
             )
-            return
+            return nil
         }
+        let registration = RelayRegistration(
+            serverBaseURL: configuration.baseURL, relayURL: target.url, serverId: target.serverId,
+            relayToken: relayToken, apnsToken: apnsToken, keyId: PushEnvelope.keyID(for: key)
+        )
         relay.registrations.save(registration)
-        await sendRelayToken(registration, key: key)
+        return (registration, key)
     }
 
-    private func sendRelayToken(_ registration: RelayRegistration, key: SymmetricKey) async {
+    private func sendRelayToken(_ registration: RelayRegistration, key: SymmetricKey) async -> RelayTokenOutcome {
         let transport = PushTransport.relay(serverId: registration.serverId)
         let body = RelayPushTokenBody(
             relayToken: registration.relayToken,
@@ -270,20 +320,29 @@ extension HTTPSocialBackend {
         do {
             try await client.sendIgnoringResponse("POST", "devices/push-token", body: body)
             pushRegistration = PushRegistrationState(transport: transport, registeredToken: registration.relayToken)
+            return .accepted
+        } catch JoltAPIClient.APIError.server(410, _) {
+            // The endpoint's only 410 is `relay_token_revoked` (C6).
+            return .revoked
         } catch {
             pushRegistration = PushRegistrationState(
                 transport: transport,
                 problem: "The server didn't take the relay registration: \(error.localizedDescription)"
             )
+            return .failed
         }
     }
 
     /// Revokes the stored relay registration everywhere it can, and forgets
-    /// it and its key. The server's side only when it is the server the
-    /// registration was made for: that's the only one this session can
-    /// authenticate to, and for any other the relay revocation is what
-    /// counts — the old server's sends then come back `unregistered`.
-    private func retireRelayRegistration() async {
+    /// it. The server's side only when it is the server the registration was
+    /// made for: that's the only one this session can authenticate to, and
+    /// for any other the relay revocation is what counts — the old server's
+    /// sends then come back `unregistered`.
+    ///
+    /// - Parameter keepingKey: keep its key as the previous one for a day
+    ///   (C8), because a new registration with the same server replaces it.
+    ///   Otherwise the key goes too.
+    private func retireRelayRegistration(keepingKey: Bool) async {
         guard let registration = relay.registrations.load() else { return }
         if registration.serverBaseURL == configuration.baseURL, isSignedIn {
             try? await client.sendIgnoringResponse(
@@ -292,11 +351,15 @@ extension HTTPSocialBackend {
             )
         }
         // Best effort. If the relay can't be reached, the token stays valid
-        // there until this phone next registers for that server, but the key
-        // is gone, so nothing sent with it can be opened here.
+        // there until this phone next registers for that server; without its
+        // key, nothing sent with it opens here for long.
         try? await RelayClient(baseURL: registration.relayURL, session: relay.session, attestor: relay.attestor)
             .unregister(relayToken: registration.relayToken)
-        relay.keys.remove(for: registration.serverId)
+        if keepingKey {
+            relay.keys.retireCurrentKey(for: registration.serverId)
+        } else {
+            relay.keys.remove(for: registration.serverId)
+        }
         relay.registrations.clear()
     }
 }

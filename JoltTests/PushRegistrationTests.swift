@@ -32,7 +32,7 @@ final class PushRegistrationTests: XCTestCase {
 
         await backend.registerPushToken(apnsToken)
 
-        let relayRequest = try XCTUnwrap(stub.requests("POST", "relay.example/v1/devices").first?.body)
+        let relayRequest = try XCTUnwrap(stub.relayRegistrations.first?.body)
         XCTAssertEqual(relayRequest["platform"] as? String, "ios")
         XCTAssertEqual(relayRequest["provider"] as? String, "apns")
         XCTAssertEqual(relayRequest["token"] as? String, apnsToken)
@@ -121,7 +121,7 @@ final class PushRegistrationTests: XCTestCase {
         await backend.registerPushToken(apnsToken)
 
         XCTAssertTrue(stub.requests("GET", "/v1/challenge").isEmpty)
-        let body = try XCTUnwrap(stub.requests("POST", "relay.example/v1/devices").first?.body)
+        let body = try XCTUnwrap(stub.relayRegistrations.first?.body)
         XCTAssertNil(body["attestation"])
         XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued1")
     }
@@ -134,7 +134,7 @@ final class PushRegistrationTests: XCTestCase {
         await backend.registerPushToken(apnsToken)
         await backend.reregisterPush()
 
-        let bodies = stub.requests("POST", "relay.example/v1/devices").compactMap { $0.body?["attestation"] as? [String: Any] }
+        let bodies = stub.relayRegistrations.compactMap { $0.body?["attestation"] as? [String: Any] }
         XCTAssertEqual(bodies.count, 2)
         XCTAssertEqual(bodies[0]["type"] as? String, "apple-app-attest")
         XCTAssertEqual(bodies[0]["challenge"] as? String, "Y2hhbGxlbmdlLTE")
@@ -157,7 +157,7 @@ final class PushRegistrationTests: XCTestCase {
         await backend.registerPushToken(apnsToken)
         await backend.registerLastPushToken()
 
-        XCTAssertEqual(stub.requests("POST", "relay.example/v1/devices").count, 1)
+        XCTAssertEqual(stub.relayRegistrations.count, 1)
         let tokens = stub.requests("POST", "/devices/push-token").map { $0.body?["relayToken"] as? String }
         XCTAssertEqual(tokens, ["rt_issued1", "rt_issued1"])
     }
@@ -169,9 +169,9 @@ final class PushRegistrationTests: XCTestCase {
         await backend.registerPushToken(apnsToken)
         await backend.registerPushToken("ffff")
 
-        let relayTokens = stub.requests("POST", "relay.example/v1/devices").map { $0.body?["token"] as? String }
+        let relayTokens = stub.relayRegistrations.map { $0.body?["token"] as? String }
         XCTAssertEqual(relayTokens, [apnsToken, "ffff"])
-        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1"])
         XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued2")
     }
 
@@ -185,8 +185,8 @@ final class PushRegistrationTests: XCTestCase {
         stub.pushConfig = (200, #"{"transport":"apns","apnsEnvironment":"production"}"#)
         await backend.registerLastPushToken()
 
-        XCTAssertEqual(stub.requests("DELETE", "/devices/push-token").first?.body?["relayToken"] as? String, "rt_issued1")
-        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertEqual(stub.forgottenRelayTokens, ["rt_issued1"])
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1"])
         XCTAssertNil(keys.currentKey(for: serverId))
         XCTAssertNil(registrations.load())
         XCTAssertEqual(stub.requests("POST", "/devices/push-token").last?.body?["token"] as? String, apnsToken)
@@ -205,8 +205,8 @@ final class PushRegistrationTests: XCTestCase {
             recipientHandle: nil, stimulus: StimulusConfig(kind: .vibe)
         ))
 
-        XCTAssertEqual(stub.requests("POST", "relay.example/v1/devices").count, 2)
-        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertEqual(stub.relayRegistrations.count, 2)
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1"])
         XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued2")
     }
 
@@ -217,8 +217,8 @@ final class PushRegistrationTests: XCTestCase {
 
         await backend.logOut()
 
-        XCTAssertEqual(stub.requests("DELETE", "/devices/push-token").first?.body?["relayToken"] as? String, "rt_issued1")
-        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertEqual(stub.forgottenRelayTokens, ["rt_issued1"])
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1"])
         XCTAssertNil(keys.currentKey(for: serverId))
         XCTAssertNil(registrations.load())
         XCTAssertEqual(backend.pushRegistration, PushRegistrationState())
@@ -242,7 +242,7 @@ final class PushRegistrationTests: XCTestCase {
         // Signing in waits for the launch-time revocation queued before it.
         let backend = try await signedInBackend(stub)
 
-        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_old").count, 1)
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_old"])
         XCTAssertTrue(stub.requests("DELETE", "/devices/push-token").isEmpty)
         XCTAssertNil(keys.currentKey(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa"))
         XCTAssertNil(registrations.load())
@@ -250,6 +250,114 @@ final class PushRegistrationTests: XCTestCase {
         await backend.registerPushToken(apnsToken)
 
         XCTAssertEqual(registrations.load()?.serverId, serverId)
+    }
+
+    /// Every new relay token comes with a new key, and the one it replaces
+    /// keeps opening pushes for a day: the server may have sealed some just
+    /// before it heard of the new one (C8).
+    func testANewRelayTokenComesWithANewKeyAndKeepsThePreviousOne() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+        let oldKey = try XCTUnwrap(keys.currentKey(for: serverId))
+
+        await backend.reregisterPush()
+
+        let newKey = try XCTUnwrap(keys.currentKey(for: serverId))
+        XCTAssertNotEqual(PushEnvelope.keyID(for: newKey), PushEnvelope.keyID(for: oldKey))
+        XCTAssertEqual(registrations.load()?.keyId, PushEnvelope.keyID(for: newKey))
+        let sentKeys = stub.requests("POST", "/devices/push-token").compactMap { $0.body?["payloadKey"] as? String }
+        XCTAssertEqual(sentKeys.count, 2)
+        XCTAssertNotEqual(sentKeys[0], sentKeys[1])
+
+        let inFlight = try sealedPoke(with: oldKey)
+        XCTAssertNotNil(backend.openIncomingPush(inFlight), "a push sealed with the previous key still opens")
+        XCTAssertNotNil(backend.openIncomingPush(try sealedPoke(with: newKey)))
+    }
+
+    /// The server says the relay dropped this registration. Token and key
+    /// both go, and a fresh registration takes their place (C6).
+    func testRecoversFromARevokedRelayToken() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+        let oldKey = try XCTUnwrap(keys.currentKey(for: serverId))
+
+        stub.revoke("rt_issued1")
+        await backend.registerLastPushToken()
+
+        XCTAssertEqual(stub.relayRegistrations.count, 2)
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1"])
+        XCTAssertEqual(stub.forgottenRelayTokens, ["rt_issued1"])
+        let posted = stub.requests("POST", "/devices/push-token").map { $0.body?["relayToken"] as? String }
+        XCTAssertEqual(posted, ["rt_issued1", "rt_issued1", "rt_issued2"])
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued2")
+        XCTAssertNil(backend.pushRegistration.problem)
+        XCTAssertNil(
+            keys.key(for: serverId, kid: PushEnvelope.keyID(for: oldKey)),
+            "a revoked registration's key is discarded, not kept for a day"
+        )
+        XCTAssertNotNil(keys.currentKey(for: serverId))
+    }
+
+    /// Tries once. A server that keeps refusing doesn't get a loop.
+    func testGivesUpWhenEvenAFreshRelayTokenIsRefusedAsRevoked() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        stub.revoke("rt_issued1")
+        stub.revoke("rt_issued2")
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertEqual(stub.relayRegistrations.count, 2)
+        XCTAssertNotNil(backend.pushRegistration.problem)
+    }
+
+    /// The server moved from its own credentials to the relay: the direct
+    /// registration goes, or the phone would get every poke twice (C7).
+    func testMovingOntoTheRelayForgetsTheDirectRegistration() async throws {
+        let stub = PushStub(pushConfig: (200, #"{"transport":"apns","apnsEnvironment":"production"}"#))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        stub.pushConfig = (200, relayConfig)
+        await backend.registerLastPushToken()
+
+        XCTAssertEqual(stub.forgottenAPNsTokens, [apnsToken])
+        XCTAssertEqual(stub.relayRegistrations.count, 1)
+        XCTAssertEqual(backend.pushRegistration.transport, .relay(serverId: serverId))
+    }
+
+    /// A relay URL may carry a path prefix, with or without the trailing
+    /// slash, and either spelling is the same relay (C1).
+    func testResolvesRelayPathsUnderAPathPrefix() async throws {
+        let config = #"{"transport":"relay","relay":{"url":"https://relay.example/jolt","serverId":"\#(serverId)"}}"#
+        let stub = PushStub(pushConfig: (200, config))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+        stub.pushConfig = (200, config.replacingOccurrences(of: "/jolt", with: "/jolt/"))
+        await backend.registerLastPushToken()
+
+        XCTAssertEqual(stub.relayRegistrations.map(\.url), ["https://relay.example/jolt/v1/devices"])
+        XCTAssertTrue(stub.relayUnregistrations.isEmpty, "the same relay, spelled differently, is not a new one")
+    }
+
+    /// A route this build doesn't know is an error, and what works stays (C18).
+    func testKeepsTheRegistrationWhenTheTransportIsUnknown() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        stub.pushConfig = (200, #"{"transport":"carrier-pigeon"}"#)
+        await backend.registerLastPushToken()
+
+        XCTAssertTrue(stub.relayUnregistrations.isEmpty)
+        XCTAssertTrue(stub.forgottenRelayTokens.isEmpty)
+        XCTAssertNotNil(registrations.load())
+        XCTAssertEqual(backend.pushRegistration.transport, .relay(serverId: serverId))
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued1")
+        XCTAssertNotNil(backend.pushRegistration.problem)
     }
 
     // MARK: - Receiving
@@ -288,6 +396,13 @@ final class PushRegistrationTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func sealedPoke(with key: SymmetricKey) throws -> [AnyHashable: Any] {
+        let poke = #"{"type":"poke","poke":{"pokeID":"\#(UUID().uuidString)","serverId":"\#(serverId)","#
+            + #""senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
+        let envelope = try PushEnvelope.seal(Data(poke.utf8), with: key, serverId: serverId, kind: "poke")
+        return ["type": "poke", "srv": serverId, "enc": envelope.jsonObject]
+    }
 
     private func assertRegisteredDirectly(
         _ stub: PushStub, _ backend: HTTPSocialBackend, file: StaticString = #filePath, line: UInt = #line
@@ -378,6 +493,7 @@ final class PushStub: @unchecked Sendable {
     private var challenges = 0
     private var _pushConfig: (Int, String)
     private var _ackStatus = 204
+    private var revoked: Set<String> = []
 
     init(pushConfig: (Int, String)) {
         _pushConfig = pushConfig
@@ -391,6 +507,32 @@ final class PushStub: @unchecked Sendable {
     var ackStatus: Int {
         get { locked { _ackStatus } }
         set { locked { _ackStatus = newValue } }
+    }
+
+    /// From now on the server answers `410 relay_token_revoked` when this
+    /// relay token is posted to it (C6).
+    func revoke(_ relayToken: String) {
+        locked { _ = revoked.insert(relayToken) }
+    }
+
+    /// Registrations with the relay, `POST /v1/devices`.
+    var relayRegistrations: [Request] {
+        locked { recorded.filter { $0.method == "POST" && $0.url.contains("relay.example/") && $0.url.hasSuffix("/v1/devices") } }
+    }
+
+    /// Relay tokens revoked with `POST /v1/devices/unregister`, in order.
+    var relayUnregistrations: [String] {
+        requests("POST", "/v1/devices/unregister").compactMap { $0.body?["relayToken"] as? String }
+    }
+
+    /// Relay tokens the server was told to forget, in order.
+    var forgottenRelayTokens: [String] {
+        requests("DELETE", "/devices/push-token").compactMap { $0.body?["relayToken"] as? String }
+    }
+
+    /// APNs tokens the server was told to forget, in order.
+    var forgottenAPNsTokens: [String] {
+        requests("DELETE", "/devices/push-token").compactMap { $0.body?["token"] as? String }
     }
 
     /// Requests whose method matches (any, for nil) and whose URL contains
@@ -408,10 +550,10 @@ final class PushStub: @unchecked Sendable {
 
         if request.url?.host() == "relay.example" {
             switch (method, path) {
-            case ("GET", "/v1/challenge"):
+            case ("GET", _) where path.hasSuffix("/v1/challenge"):
                 let challenge = locked { challenges += 1; return Base64URL.encode(Data("challenge-\(challenges)".utf8)) }
                 return (200, Data(#"{"challenge":"\#(challenge)","expiresAt":"2026-10-09T12:37:00Z"}"#.utf8))
-            case ("POST", "/v1/devices"):
+            case ("POST", _) where path.hasSuffix("/v1/devices"):
                 let token = locked { issued += 1; return "rt_issued\(issued)" }
                 return (201, Data(#"{"relayToken":"\#(token)"}"#.utf8))
             default:
@@ -431,6 +573,10 @@ final class PushStub: @unchecked Sendable {
         if method == "GET", path.hasSuffix("/push/config") {
             let (status, json) = pushConfig
             return (status, Data(json.utf8))
+        }
+        if method == "POST", path.hasSuffix("/devices/push-token"),
+           let relayToken = body?["relayToken"] as? String, locked({ revoked.contains(relayToken) }) {
+            return (410, Data(#"{"error":"relay_token_revoked","message":"This relay token has been revoked."}"#.utf8))
         }
         if path.hasSuffix("/ack") {
             return (ackStatus, ackStatus == 404 ? Data(#"{"message":"Not found"}"#.utf8) : Data())

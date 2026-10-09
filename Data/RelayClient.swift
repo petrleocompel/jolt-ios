@@ -21,6 +21,9 @@ struct RelayClient {
             case .rejected(_, "server_blocked"?): return "The relay has blocked this server."
             case .rejected(_, "unknown_server"?): return "The relay doesn't know this server yet."
             case .rejected(_, "attestation_failed"?): return "The relay couldn't verify this copy of the app."
+            case .rejected(_, "app_not_allowed"?): return "The relay doesn't serve this build of the app."
+            case .rejected(_, "registration_closed"?): return "The relay isn't taking new devices right now."
+            case .rejected(_, "provider_unavailable"?): return "The relay can't reach Apple right now."
             case .rejected(let status, _): return "The relay answered \(status)."
             case .transport(let detail): return detail
             case .malformed: return "The relay sent an answer the app doesn't understand."
@@ -31,6 +34,12 @@ struct RelayClient {
     let baseURL: URL
     let session: URLSession
     let attestor: AppAttesting
+
+    init(baseURL: URL, session: URLSession, attestor: AppAttesting) {
+        self.baseURL = Self.normalizedBaseURL(baseURL)
+        self.session = session
+        self.attestor = attestor
+    }
 
     private struct ChallengeResponse: Decodable {
         let challenge: String
@@ -55,6 +64,10 @@ struct RelayClient {
     }
 
     private struct RegisterResponse: Decodable {
+        let relayToken: String
+    }
+
+    private struct UnregisterBody: Encodable {
         let relayToken: String
     }
 
@@ -90,9 +103,17 @@ struct RelayClient {
     }
 
     /// Revokes a registration. The relay answers 204 for a token it doesn't
-    /// know, so this only fails when the relay can't be reached.
+    /// know, so this only fails when the relay can't be reached. The token
+    /// goes in the body, where access logs don't keep it (C5).
     func unregister(relayToken: String) async throws {
-        _ = try await perform("DELETE", "v1/devices/\(relayToken)", body: Optional<RegisterBody>.none)
+        _ = try await perform("POST", "v1/devices/unregister", body: UnregisterBody(relayToken: relayToken))
+    }
+
+    /// The relay's base URL may carry a path prefix and may or may not end in
+    /// a slash (C1). Ending it in one makes `v1/…` resolve under the prefix,
+    /// and makes two spellings of the same relay compare equal.
+    nonisolated static func normalizedBaseURL(_ url: URL) -> URL {
+        url.absoluteString.hasSuffix("/") ? url : URL(string: url.absoluteString + "/") ?? url
     }
 
     /// SHA-256 of `jolt-relay-v1|<challenge>|<token>|<serverId>`: what the
@@ -136,7 +157,7 @@ struct RelayClient {
     }
 
     private func perform(_ method: String, _ path: String, body: (some Encodable)?) async throws -> Data {
-        var request = URLRequest(url: baseURL.appending(path: path))
+        var request = URLRequest(url: URL(string: path, relativeTo: baseURL)?.absoluteURL ?? baseURL.appending(path: path))
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 20
