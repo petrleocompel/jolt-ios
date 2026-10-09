@@ -4,6 +4,8 @@ included:
   - Domain
   - BLE
   - Data
+  - Shared
+  - NotificationService
   - UITests
 
 excluded:

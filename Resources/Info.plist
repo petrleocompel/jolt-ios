@@ -20,13 +20,27 @@
 	<string>Jolt</string>
 	<key>JoltDefaultServerURL</key>
 	<string>$(JOLT_DEFAULT_SERVER_URL)</string>
+	<!-- Relay hosts the app will register with (space-separated), from the
+	     JOLT_TRUSTED_RELAY_HOSTS build setting. A server can only point the
+	     app at a relay on this list; see TrustedRelayHosts. -->
+	<key>JoltTrustedRelayHosts</key>
+	<string>$(JOLT_TRUSTED_RELAY_HOSTS)</string>
+	<!-- Which APNs environment this build's token belongs to, told to the
+	     relay at registration. Same build setting as aps-environment. -->
+	<key>JoltAPSEnvironment</key>
+	<string>$(APS_ENVIRONMENT)</string>
+	<!-- The keychain group shared with the Notification Service Extension;
+	     see PayloadKeyStore. -->
+	<key>JoltKeychainAccessGroup</key>
+	<string>$(AppIdentifierPrefix)$(JOLT_SHARED_KEYCHAIN_GROUP)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- Export compliance, declared here so App Store Connect stops asking on
 	     every TestFlight build. False is accurate: the app ships no encryption
-	     of its own. It uses HTTPS via URLSession and the keychain via the
-	     Security framework, both of which are encryption provided by the
-	     operating system and exempt under Apple's rules.
+	     of its own. It uses HTTPS via URLSession, the keychain via the
+	     Security framework, and CryptoKit's AES-GCM to open relayed pushes,
+	     all of which are encryption provided by the operating system and
+	     exempt under Apple's rules.
 
 	     Must be a real boolean. A <string>NO</string> here is truthy to App
 	     Store Connect and it will keep prompting.

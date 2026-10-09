@@ -6,8 +6,8 @@ final class TestPushPayloadTests: XCTestCase {
         var test: [String: Any] = [
             "testID": testID.uuidString,
             "deviceID": deviceID.uuidString,
-            // The server sends these; the client ignores them, and must not
-            // choke on them.
+            // The server sends these; the client ignores `source` and only
+            // renders `sentAt` in a relayed alert, and must not choke on them.
             "sentAt": "2026-09-07T10:15:00.000Z",
             "source": "web"
         ]
