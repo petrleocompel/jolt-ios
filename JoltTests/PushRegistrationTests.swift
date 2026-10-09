@@ -16,11 +16,16 @@ final class PushRegistrationTests: XCTestCase {
     {"transport":"relay","relay":{"url":"https://relay.example/","serverId":"srv_kzdvvj2umnduyauf35o36k6kw4"}}
     """
 
+    private let backoffDefaults = UserDefaults(suiteName: "cz.peelco.jolt.tests.relayBackoff")!
+    private var clock = Date()
+
     override func tearDown() {
         AuthTokenStore().clear(for: configuration)
         keys.remove(for: serverId)
         registrations.clear()
+        backoffDefaults.removePersistentDomain(forName: "cz.peelco.jolt.tests.relayBackoff")
         StubURLProtocol.handler = nil
+        StubURLProtocol.headers = nil
         super.tearDown()
     }
 
@@ -360,6 +365,81 @@ final class PushRegistrationTests: XCTestCase {
         XCTAssertNotNil(backend.pushRegistration.problem)
     }
 
+    // MARK: - Back-off (C21)
+
+    func testReadsRetryAfterInSecondsWithAFallback() {
+        XCTAssertEqual(RelayClient.retryAfter("120"), 120)
+        XCTAssertEqual(RelayClient.retryAfter(" 5 "), 5)
+        XCTAssertEqual(RelayClient.retryAfter(nil), RelayClient.defaultRetryAfter)
+        XCTAssertEqual(RelayClient.retryAfter("Wed, 21 Oct 2026 07:28:00 GMT"), RelayClient.defaultRetryAfter)
+        XCTAssertEqual(RelayClient.retryAfter("-3"), RelayClient.defaultRetryAfter)
+    }
+
+    /// Told to wait while replacing a registration: the current one keeps
+    /// working, nothing is torn down, and the relay hears nothing more until
+    /// the wait is over.
+    func testKeepsTheCurrentRegistrationWhileTheRelayAsksToWait() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+        let key = try XCTUnwrap(keys.currentKey(for: serverId))
+
+        stub.rateLimit("/v1/devices", retryAfter: "120")
+        await backend.registerPushToken("ffff")
+
+        XCTAssertEqual(stub.relayRegistrations.count, 2)
+        XCTAssertEqual(registrations.load()?.relayToken, "rt_issued1")
+        XCTAssertEqual(registrations.load()?.apnsToken, apnsToken)
+        XCTAssertEqual(keys.currentKey(for: serverId).map(PushEnvelope.keyID(for:)), PushEnvelope.keyID(for: key))
+        XCTAssertTrue(stub.relayUnregistrations.isEmpty)
+        XCTAssertTrue(stub.forgottenRelayTokens.isEmpty)
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued1")
+        XCTAssertNotNil(backend.pushRegistration.problem)
+
+        clock.addTimeInterval(119)
+        await backend.registerLastPushToken()
+        XCTAssertEqual(stub.relayRegistrations.count, 2, "not a request before Retry-After has passed")
+
+        stub.rateLimit("/v1/devices", retryAfter: nil)
+        clock.addTimeInterval(2)
+        await backend.registerLastPushToken()
+        XCTAssertEqual(stub.relayRegistrations.count, 3)
+        XCTAssertEqual(registrations.load()?.apnsToken, "ffff")
+        XCTAssertEqual(stub.relayUnregistrations, ["rt_issued1"])
+    }
+
+    /// A 429 on the challenge stops the registration too; going ahead
+    /// without attestation would just be the next request the relay refuses.
+    func testARateLimitedChallengeStopsTheRegistration() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        stub.rateLimit("/v1/challenge", retryAfter: "30")
+        let backend = try await signedInBackend(stub, attestor: FakeAttestor(isSupported: true))
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertEqual(stub.requests("GET", "/v1/challenge").count, 1)
+        XCTAssertTrue(stub.relayRegistrations.isEmpty)
+        XCTAssertTrue(stub.requests("POST", "/devices/push-token").isEmpty)
+        XCTAssertNil(registrations.load())
+        XCTAssertNotNil(backend.pushRegistration.problem)
+    }
+
+    /// Signing out still forgets the registration on the server and the key
+    /// here; only the relay, which asked to wait, isn't asked again.
+    func testARateLimitedUnregisterStillSignsOutAndHoldsOffTheRelay() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        stub.rateLimit("/v1/devices/unregister", retryAfter: "60")
+        await backend.logOut()
+
+        XCTAssertEqual(stub.forgottenRelayTokens, ["rt_issued1"])
+        XCTAssertNil(keys.currentKey(for: serverId))
+        XCTAssertNil(registrations.load())
+        XCTAssertNotNil(RelayBackoff(defaults: backoffDefaults) { [unowned self] in clock }.until)
+    }
+
     // MARK: - Receiving
 
     func testOpensOnlyPushesSealedForTheRegisteredServer() async throws {
@@ -423,6 +503,7 @@ final class PushRegistrationTests: XCTestCase {
     ) async throws -> HTTPSocialBackend {
         AuthTokenStore().save("valid-token", for: configuration)
         StubURLProtocol.handler = { stub.handle($0) }
+        StubURLProtocol.headers = { stub.headers(for: $0) }
 
         let session = URLSession(configuration: {
             let config = URLSessionConfiguration.ephemeral
@@ -440,7 +521,8 @@ final class PushRegistrationTests: XCTestCase {
                 registrations: registrations,
                 session: session,
                 appId: "cz.peelco.jolt",
-                apnsEnvironment: "sandbox"
+                apnsEnvironment: "sandbox",
+                backoff: RelayBackoff(defaults: backoffDefaults) { [unowned self] in clock }
             )
         )
         // `restoreSession` runs as a detached task from `init`; wait for it
@@ -494,6 +576,7 @@ final class PushStub: @unchecked Sendable {
     private var _pushConfig: (Int, String)
     private var _ackStatus = 204
     private var revoked: Set<String> = []
+    private var rateLimits: [String: String] = [:]
 
     init(pushConfig: (Int, String)) {
         _pushConfig = pushConfig
@@ -507,6 +590,22 @@ final class PushStub: @unchecked Sendable {
     var ackStatus: Int {
         get { locked { _ackStatus } }
         set { locked { _ackStatus = newValue } }
+    }
+
+    /// From now on the relay answers `429 rate_limited` on paths ending in
+    /// `pathSuffix`, with `retryAfter` as its `Retry-After`; nil lifts it.
+    func rateLimit(_ pathSuffix: String, retryAfter: String?) {
+        locked { rateLimits[pathSuffix] = retryAfter }
+    }
+
+    func headers(for request: URLRequest) -> [String: String] {
+        guard let retryAfter = rateLimit(for: request) else { return [:] }
+        return ["Retry-After": retryAfter]
+    }
+
+    private func rateLimit(for request: URLRequest) -> String? {
+        guard request.url?.host() == "relay.example", let path = request.url?.path else { return nil }
+        return locked { rateLimits.first { path.hasSuffix($0.key) }?.value }
     }
 
     /// From now on the server answers `410 relay_token_revoked` when this
@@ -548,6 +647,9 @@ final class PushStub: @unchecked Sendable {
         let body = try? JSONSerialization.jsonObject(with: request.bodyData) as? [String: Any]
         locked { recorded.append(Request(method: method, url: url, body: body)) }
 
+        if rateLimit(for: request) != nil {
+            return (429, Data(#"{"error":"rate_limited"}"#.utf8))
+        }
         if request.url?.host() == "relay.example" {
             switch (method, path) {
             case ("GET", _) where path.hasSuffix("/v1/challenge"):

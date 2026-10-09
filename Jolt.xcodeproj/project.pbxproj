@@ -42,6 +42,7 @@
 		28EE40110BF3CA0A2002BC32 /* StimulusSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E857EC1C8D109393A3DCD76B /* StimulusSettingsStore.swift */; };
 		2B8C77D5B7218CBAAF731099 /* GATTDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F08ACC7608E8C38AD49E8B6 /* GATTDump.swift */; };
 		2C1F933E48019DACAC0C31C0 /* PokeFeedbackAndFiringSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A549C985F8EFA4E6E81AD3B9 /* PokeFeedbackAndFiringSettingsTests.swift */; };
+		2CE78278A93542E003E5270F /* RelayBackoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F787E41ABEF3ED680EA144A /* RelayBackoff.swift */; };
 		2FBB001B1B07DBC53ED1E37B /* BLELog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 622258DCCFFFC679A9BC97C1 /* BLELog.swift */; };
 		308801E2765557C880FD2CDB /* AlarmsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EBBAD05DB93F78D1F0C1B46 /* AlarmsViewModel.swift */; };
 		30D060EECC3A623134FC02FE /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32159D4F64FD75C1B07F26C /* Friend.swift */; };
@@ -347,6 +348,7 @@
 		4E28510EA72908E36C4BC261 /* FriendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsViewModel.swift; sourceTree = "<group>"; };
 		4F0853EE5F9E0A457BA63BE7 /* FriendPermissionSetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendPermissionSetTests.swift; sourceTree = "<group>"; };
 		4F23807ACBB1B708122188A2 /* FireControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FireControl.swift; sourceTree = "<group>"; };
+		4F787E41ABEF3ED680EA144A /* RelayBackoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelayBackoff.swift; sourceTree = "<group>"; };
 		510DD425CA351AC24B9C8C71 /* PairedDeviceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairedDeviceStoreTests.swift; sourceTree = "<group>"; };
 		5267143FEA552BB62FAFBDEB /* PokeTriggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokeTriggerService.swift; sourceTree = "<group>"; };
 		5493D70BE56B44901102A4A0 /* ServerSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerSettingsStore.swift; sourceTree = "<group>"; };
@@ -647,6 +649,7 @@
 				EA1EC1C1C3C72F053AD1D651 /* PokeFeedbackSettingsStore.swift */,
 				0C25D15319543C334BBFBCBF /* PokeTriggerStore.swift */,
 				62615824717B2EC9115D3184 /* QuickPokeSettingsStore.swift */,
+				4F787E41ABEF3ED680EA144A /* RelayBackoff.swift */,
 				77D56B54C1452BAC5102C0F0 /* RelayClient.swift */,
 				8C098483CA76ED0254C21B19 /* RelayRegistrationStore.swift */,
 				FE54C683DA891EC13865B978 /* RemoteDashboardLayoutStore.swift */,
@@ -1341,6 +1344,7 @@
 				560B7122CE69D797D73F6656 /* QuickPokeSettingsStore.swift in Sources */,
 				C679C74DB39A8CD27A743115 /* QuickPokeSettingsView.swift in Sources */,
 				BBC1106544B9A4E31CEAEE29 /* RelativeTime.swift in Sources */,
+				2CE78278A93542E003E5270F /* RelayBackoff.swift in Sources */,
 				4E032F3647471D64392EF3A3 /* RelayClient.swift in Sources */,
 				09A995841E85A528ED1D7B54 /* RelayRegistrationStore.swift in Sources */,
 				45B9C9BDF329F070CDDD3FF4 /* RelayedPush.swift in Sources */,

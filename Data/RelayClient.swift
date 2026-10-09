@@ -15,6 +15,9 @@ struct RelayClient {
         case transport(String)
         /// Answered with something that isn't the contract's JSON.
         case malformed
+        /// `429 rate_limited`: nothing more for this long, in seconds, from
+        /// `Retry-After` (C21).
+        case rateLimited(retryAfter: TimeInterval)
 
         var errorDescription: String? {
             switch self {
@@ -27,6 +30,7 @@ struct RelayClient {
             case .rejected(let status, _): return "The relay answered \(status)."
             case .transport(let detail): return detail
             case .malformed: return "The relay sent an answer the app doesn't understand."
+            case .rateLimited: return "The relay is busy and asked the app to wait before trying again."
             }
         }
     }
@@ -82,7 +86,7 @@ struct RelayClient {
     /// - Parameter environment: `production` or `sandbox`, whichever APNs
     ///   environment issued the token.
     func register(apnsToken: String, environment: String, appId: String, serverId: String) async throws -> String {
-        let attestation = await attestation(apnsToken: apnsToken, serverId: serverId)
+        let attestation = try await attestation(apnsToken: apnsToken, serverId: serverId)
         let body = RegisterBody(
             token: apnsToken, environment: environment, appId: appId,
             serverId: serverId, attestation: attestation?.body
@@ -125,10 +129,11 @@ struct RelayClient {
     /// Nil when there is nothing to attest with — the simulator, an older
     /// device — or when attesting failed. Either way the registration goes
     /// ahead without it: the relay logs a missing attestation rather than
-    /// refusing it until it starts enforcing, and then it says so.
+    /// refusing it until it starts enforcing, and then it says so. Throws
+    /// only when the relay asked to be left alone for a while.
     private func attestation(
         apnsToken: String, serverId: String
-    ) async -> (body: AttestationBody, evidence: AppAttestEvidence)? {
+    ) async throws -> (body: AttestationBody, evidence: AppAttestEvidence)? {
         guard attestor.isSupported else { return nil }
         do {
             let challenge: ChallengeResponse = try await decode(
@@ -143,6 +148,11 @@ struct RelayClient {
                 assertion: evidence.assertion?.base64EncodedString()
             )
             return (body, evidence)
+        } catch let error as RelayError {
+            // Being told to wait applies to the registration too (C21).
+            if case .rateLimited = error { throw error }
+            print("[Jolt] registering with the relay without App Attest: \(error)")
+            return nil
         } catch {
             print("[Jolt] registering with the relay without App Attest: \(error)")
             return nil
@@ -174,10 +184,24 @@ struct RelayClient {
             throw RelayError.transport(error.localizedDescription)
         }
         guard let http = response as? HTTPURLResponse else { throw RelayError.malformed }
+        if http.statusCode == 429 {
+            throw RelayError.rateLimited(retryAfter: Self.retryAfter(http.value(forHTTPHeaderField: "Retry-After")))
+        }
         guard (200..<300).contains(http.statusCode) else {
             let code = try? JSONDecoder().decode(ErrorBody.self, from: data).error
             throw RelayError.rejected(status: http.statusCode, code: code)
         }
         return data
+    }
+
+    /// Used when a 429 comes without a usable `Retry-After`.
+    static let defaultRetryAfter: TimeInterval = 60
+
+    /// `Retry-After` in seconds (C21). Missing or unreadable, a minute — long
+    /// enough not to hammer a relay that is already struggling.
+    static func retryAfter(_ header: String?) -> TimeInterval {
+        guard let seconds = header.flatMap({ TimeInterval($0.trimmingCharacters(in: .whitespaces)) }),
+              seconds.isFinite, seconds >= 0 else { return defaultRetryAfter }
+        return seconds
     }
 }
