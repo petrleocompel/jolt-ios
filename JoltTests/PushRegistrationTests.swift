@@ -516,7 +516,7 @@ final class PushRegistrationTests: XCTestCase {
         let key = try XCTUnwrap(keys.currentKey(for: serverId))
 
         let poke = #"{"type":"poke","poke":{"pokeID":"7d6f0c1e-2b3a-4c5d-8e9f-0a1b2c3d4e5f","serverId":"\#(serverId)","#
-            + #""senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
+            + #""sentAt":"\#(Self.timestamp(Date()))","senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
         let envelope = try PushEnvelope.seal(Data(poke.utf8), with: key, serverId: serverId, kind: "poke")
         let relayed: [AnyHashable: Any] = ["type": "poke", "srv": serverId, "enc": envelope.jsonObject]
 
@@ -544,6 +544,10 @@ final class PushRegistrationTests: XCTestCase {
 
     // MARK: - Helpers
 
+    static func timestamp(_ date: Date) -> String {
+        ISO8601DateFormatter().string(from: date)
+    }
+
     private var plaintextPoke: [AnyHashable: Any] {
         ["type": "poke", "poke": ["pokeID": UUID().uuidString, "senderHandle": "mallory", "senderDisplayName": "Mallory",
                                   "stimulus": ["kind": "zap", "intensity": 100, "repetitions": 1]]]
@@ -551,7 +555,7 @@ final class PushRegistrationTests: XCTestCase {
 
     private func sealedPoke(with key: SymmetricKey) throws -> [AnyHashable: Any] {
         let poke = #"{"type":"poke","poke":{"pokeID":"\#(UUID().uuidString)","serverId":"\#(serverId)","#
-            + #""senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
+            + #""sentAt":"\#(Self.timestamp(Date()))","senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
         let envelope = try PushEnvelope.seal(Data(poke.utf8), with: key, serverId: serverId, kind: "poke")
         return ["type": "poke", "srv": serverId, "enc": envelope.jsonObject]
     }

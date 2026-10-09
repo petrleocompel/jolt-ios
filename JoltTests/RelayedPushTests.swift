@@ -6,6 +6,8 @@ import XCTest
 /// poke and test parsers read, and every reason to refuse one.
 final class RelayedPushTests: XCTestCase {
     private let serverId = "srv_kzdvvj2umnduyauf35o36k6kw4"
+    /// Two minutes after the poke vector was sent, one after the test vector.
+    private let vectorTime = ISO8601DateFormatter().date(from: "2026-10-09T12:34:00Z")!
 
     // MARK: - Opening
 
@@ -108,7 +110,7 @@ final class RelayedPushTests: XCTestCase {
 
     func testRefusesAServerOrKeyIDWithNoKey() throws {
         let vectors = try EnvelopeVectors.load()
-        let result = RelayedPush.open(try relayedUserInfo(vectors.case("poke")), expecting: .anyKeyedServer) { _, _ in nil }
+        let result = RelayedPush.open(try relayedUserInfo(vectors.case("poke")), expecting: .anyKeyedServer, now: vectorTime) { _, _ in nil }
 
         XCTAssertEqual(result.failure, .unknownKey)
     }
@@ -125,6 +127,53 @@ final class RelayedPushTests: XCTestCase {
         let userInfo: [AnyHashable: Any] = ["type": "poke", "poke": ["pokeID": UUID().uuidString]]
 
         XCTAssertEqual(failure(userInfo, expecting: .relay(serverId: serverId), key: SymmetricKey(size: .bits256)), .missingEnvelope)
+    }
+
+    // MARK: - Freshness
+
+    /// A relay that kept a sealed poke can send it again a day later, and it
+    /// still opens. Only `sentAt` tells it apart (C4).
+    func testRefusesARelayedPokeOlderThanFiveMinutes() throws {
+        let key = SymmetricKey(size: .bits256)
+        let sent = vectorTime
+
+        XCTAssertNoThrow(try open(sealedPoke(sentAt: sent, key: key), expecting: .relay(serverId: serverId), key: key,
+                                  now: sent.addingTimeInterval(RelayedPush.maximumAge - 1)))
+        XCTAssertEqual(failure(try sealedPoke(sentAt: sent, key: key), key: key,
+                               now: sent.addingTimeInterval(RelayedPush.maximumAge + 1)), .stale)
+        XCTAssertEqual(failure(try sealedPoke(sentAt: sent, key: key), key: key,
+                               now: sent.addingTimeInterval(86_400)), .stale)
+    }
+
+    func testRefusesARelayedPokeFromTooFarInTheFuture() throws {
+        let key = SymmetricKey(size: .bits256)
+        let now = vectorTime
+
+        XCTAssertNoThrow(try open(
+            sealedPoke(sentAt: now.addingTimeInterval(RelayedPush.allowedClockSkew - 1), key: key),
+            expecting: .relay(serverId: serverId), key: key, now: now
+        ), "a server clock a little ahead is fine")
+        XCTAssertEqual(failure(
+            try sealedPoke(sentAt: now.addingTimeInterval(RelayedPush.allowedClockSkew + 1), key: key), key: key, now: now
+        ), .stale)
+    }
+
+    func testRefusesARelayedPokeWithoutAUsableSentAt() throws {
+        let key = SymmetricKey(size: .bits256)
+
+        XCTAssertEqual(failure(try sealedPoke(sentAt: nil, key: key), key: key), .stale)
+        XCTAssertEqual(failure(try sealed(
+            #"{"type":"poke","poke":{"serverId":"srv_kzdvvj2umnduyauf35o36k6kw4","sentAt":"yesterday"}}"#,
+            kind: "poke", key: key
+        ), key: key), .stale)
+    }
+
+    func testRefusesAStaleRelayedTest() throws {
+        let vectors = try EnvelopeVectors.load()
+        let userInfo = try relayedUserInfo(vectors.case("test-with-stimulus"))
+        let sent = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-09T12:33:00Z"))
+
+        XCTAssertEqual(failure(userInfo, key: vectors.key, now: sent.addingTimeInterval(RelayedPush.maximumAge + 1)), .stale)
     }
 
     // MARK: - Passing through
@@ -157,21 +206,33 @@ final class RelayedPushTests: XCTestCase {
         ]
     }
 
+    private func sealedPoke(sentAt: Date?, key: SymmetricKey) throws -> [AnyHashable: Any] {
+        let sentAtField = sentAt.map { #","sentAt":"\#(ISO8601DateFormatter().string(from: $0))""# } ?? ""
+        let plaintext = #"{"type":"poke","poke":{"pokeID":"\#(UUID().uuidString)","serverId":"\#(serverId)""#
+            + #","senderHandle":"alice","senderDisplayName":"Alice","#
+            + #""stimulus":{"kind":"zap","intensity":30,"repetitions":1}\#(sentAtField)}}"#
+        return try sealed(plaintext, kind: "poke", key: key)
+    }
+
     private func sealed(_ plaintext: String, kind: String, key: SymmetricKey) throws -> [AnyHashable: Any] {
         let envelope = try PushEnvelope.seal(Data(plaintext.utf8), with: key, serverId: serverId, kind: kind)
         return ["type": kind, "srv": serverId, "enc": envelope.jsonObject]
     }
 
     private func open(
-        _ userInfo: [AnyHashable: Any], expecting: RelayedPush.Expectation, key: SymmetricKey
+        _ userInfo: [AnyHashable: Any], expecting: RelayedPush.Expectation, key: SymmetricKey, now: Date? = nil
     ) throws -> [AnyHashable: Any] {
-        try RelayedPush.open(userInfo, expecting: expecting) { serverId, _ in serverId == self.serverId ? key : nil }.get()
+        try RelayedPush.open(userInfo, expecting: expecting, now: now ?? vectorTime) { serverId, _ in
+            serverId == self.serverId ? key : nil
+        }.get()
     }
 
     private func failure(
-        _ userInfo: [AnyHashable: Any], expecting: RelayedPush.Expectation? = nil, key: SymmetricKey
+        _ userInfo: [AnyHashable: Any], expecting: RelayedPush.Expectation? = nil, key: SymmetricKey, now: Date? = nil
     ) -> RelayedPush.Failure? {
-        RelayedPush.open(userInfo, expecting: expecting ?? .relay(serverId: serverId)) { _, _ in key }.failure
+        RelayedPush.open(userInfo, expecting: expecting ?? .relay(serverId: serverId), now: now ?? vectorTime) { _, _ in
+            key
+        }.failure
     }
 }
 

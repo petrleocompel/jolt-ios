@@ -52,7 +52,8 @@ struct PushAlertText: Equatable {
         return formatter.string(from: date)
     }
 
-    private static func parseTimestamp(_ text: String) -> Date? {
+    /// ISO-8601, with or without fractional seconds, as jolt-server sends it.
+    static func parseTimestamp(_ text: String) -> Date? {
         let withFraction = ISO8601DateFormatter()
         withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let plain = ISO8601DateFormatter()

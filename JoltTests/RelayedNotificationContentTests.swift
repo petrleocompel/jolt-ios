@@ -9,6 +9,8 @@ final class RelayedNotificationContentTests: XCTestCase {
     /// server's.
     private let prague = TimeZone(identifier: "Europe/Prague")!
     private let britishEnglish = Locale(identifier: "en_GB")
+    /// Two minutes after the poke vector was sent, one after the test vector.
+    private let vectorTime = ISO8601DateFormatter().date(from: "2026-10-09T12:34:00Z")!
 
     func testRewritesARelayedPokeInLocalTime() throws {
         let vectors = try EnvelopeVectors.load()
@@ -49,6 +51,14 @@ final class RelayedNotificationContentTests: XCTestCase {
 
         XCTAssertNil(rewrite(try relayed(vectors.case("poke"), type: "test"), key: vectors.key))
         XCTAssertNil(rewrite(try relayed(vectors.case("poke")), key: SymmetricKey(size: .bits256)))
+    }
+
+    /// An old poke the relay sends again shows the fallback, not the poke.
+    func testLeavesTheFallbackForAStalePush() throws {
+        let vectors = try EnvelopeVectors.load()
+        let late = vectorTime.addingTimeInterval(RelayedPush.maximumAge)
+
+        XCTAssertNil(rewrite(try relayed(vectors.case("poke")), key: vectors.key, now: late))
     }
 
     func testLeavesADirectPushAlone() {
@@ -106,8 +116,12 @@ final class RelayedNotificationContentTests: XCTestCase {
         ]
     }
 
-    private func rewrite(_ userInfo: [AnyHashable: Any], key: SymmetricKey) -> RelayedNotificationContent? {
-        RelayedNotificationContent(userInfo: userInfo, key: { _, _ in key }, timeZone: prague, locale: britishEnglish)
+    private func rewrite(
+        _ userInfo: [AnyHashable: Any], key: SymmetricKey, now: Date? = nil
+    ) -> RelayedNotificationContent? {
+        RelayedNotificationContent(
+            userInfo: userInfo, key: { _, _ in key }, now: now ?? vectorTime, timeZone: prague, locale: britishEnglish
+        )
     }
 
     private func text(_ poke: PokePushPayload) -> PushAlertText {

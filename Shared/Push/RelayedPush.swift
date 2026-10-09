@@ -25,7 +25,19 @@ enum RelayedPush {
         /// relay can put anything in a push it forwards; only a sealed one is
         /// known to come from the server.
         case missingEnvelope
+        /// `sentAt` missing, older than `maximumAge`, or further ahead than
+        /// `allowedClockSkew`. A relay that kept a sealed push can send it
+        /// again later, and it would still open.
+        case stale
     }
+
+    /// How old a relayed push may be: the server gives pokes and tests 300
+    /// seconds to live, because a stimulus that arrives late is worse than
+    /// one that never does (C4). Apple enforces that for a direct push; for a
+    /// relayed one only this check does.
+    static let maximumAge: TimeInterval = 300
+    /// How far ahead of this phone's clock the server's may run.
+    static let allowedClockSkew: TimeInterval = 60
 
     /// What the receiver knows about how pushes should reach it.
     enum Expectation: Equatable {
@@ -55,10 +67,13 @@ enum RelayedPush {
     /// `serverId`. Anything without an envelope passes through untouched
     /// unless `expecting` rules it out (C9).
     ///
+    /// A relayed poke or test must also be fresh: see `maximumAge`.
+    ///
     /// - Parameter key: the key held for a `serverId` and `kid`, if any.
     static func open(
         _ userInfo: [AnyHashable: Any],
         expecting: Expectation,
+        now: Date = Date(),
         key: (_ serverId: String, _ kid: String) -> SymmetricKey?
     ) -> Result<[AnyHashable: Any], Failure> {
         guard isRelayed(userInfo) else {
@@ -82,9 +97,9 @@ enum RelayedPush {
         case .success(let decrypted): object = decrypted
         case .failure(let failure): return .failure(failure)
         }
-        guard object["type"] as? String == type else { return .failure(.typeMismatch) }
-        guard let inner = object[type] as? [String: Any],
-              inner["serverId"] as? String == serverId else { return .failure(.serverMismatch) }
+        if let refusal = refusal(of: object, type: type, serverId: serverId, now: now) {
+            return .failure(refusal)
+        }
 
         // The decrypted fields win over anything the relay put alongside
         // them. `enc` stays, so a copy the extension has already opened is
@@ -94,6 +109,22 @@ enum RelayedPush {
             opened[field] = value
         }
         return .success(opened)
+    }
+
+    /// The checks on what the envelope held: the same `type` as outside, the
+    /// sending server's `serverId`, and a fresh `sentAt`.
+    private static func refusal(of object: [String: Any], type: String, serverId: String, now: Date) -> Failure? {
+        guard object["type"] as? String == type else { return .typeMismatch }
+        guard let inner = object[type] as? [String: Any],
+              inner["serverId"] as? String == serverId else { return .serverMismatch }
+        guard isFresh(inner["sentAt"] as? String, now: now) else { return .stale }
+        return nil
+    }
+
+    private static func isFresh(_ sentAt: String?, now: Date) -> Bool {
+        guard let sentAt, let sent = PushAlertText.parseTimestamp(sentAt) else { return false }
+        let age = now.timeIntervalSince(sent)
+        return age <= maximumAge && age >= -allowedClockSkew
     }
 
     private static func refusal(of serverId: String, expecting: Expectation) -> Failure? {
@@ -132,15 +163,17 @@ struct RelayedNotificationContent {
     var userInfo: [AnyHashable: Any]
 
     /// Nil when there is nothing to show: not a relayed push, or one that
-    /// failed any check — the alert then keeps the fallback text.
+    /// failed any check, staleness included — the alert then keeps the
+    /// fallback text.
     init?(
         userInfo: [AnyHashable: Any],
         key: (_ serverId: String, _ kid: String) -> SymmetricKey?,
+        now: Date = Date(),
         timeZone: TimeZone = .current,
         locale: Locale = .current
     ) {
         guard RelayedPush.isRelayed(userInfo),
-              case .success(let opened) = RelayedPush.open(userInfo, expecting: .anyKeyedServer, key: key) else {
+              case .success(let opened) = RelayedPush.open(userInfo, expecting: .anyKeyedServer, now: now, key: key) else {
             return nil
         }
         let text: PushAlertText
