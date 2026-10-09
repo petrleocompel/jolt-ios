@@ -45,11 +45,26 @@ struct NotificationTestView: View {
             if let host = dependencies.serverConfiguration?.baseURL.host() {
                 LabeledContent("Server", value: host)
             }
+            LabeledContent("Delivery", value: viewModel.pushRegistration.transport.displayName)
+                .accessibilityIdentifier("pushTransportRow")
+            if let serverId = viewModel.pushRegistration.serverId {
+                LabeledContent("Server ID") {
+                    Text(serverId)
+                        .font(.footnote.monospaced())
+                        .textSelection(.enabled)
+                }
+            }
+            if let problem = viewModel.pushRegistration.problem {
+                Text(problem)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
         } header: {
             Text("This device")
         } footer: {
             Text("A push has to clear all three: iOS must allow it, Apple must have a token for "
-                + "this install, and the server must know that token belongs to your account.")
+                + "this install, and the server must know that token belongs to your account. "
+                + "Through a relay, the relay forwards it without being able to read it.")
         }
     }
 

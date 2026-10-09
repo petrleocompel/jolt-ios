@@ -11,6 +11,10 @@ extension MockSocialBackend: PushDiagnosticsRepository {
     /// Stable across calls so the screen can mark it as "this device".
     private static let demoDeviceID = UUID(uuidString: "3FA85F64-5717-4562-B3FC-2C963F66AFA6") ?? UUID()
 
+    var pushRegistration: PushRegistrationState {
+        PushRegistrationState(transport: .apns)
+    }
+
     func registeredDevices() async throws -> [RegisteredDevice] {
         [
             RegisteredDevice(

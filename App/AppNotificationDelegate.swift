@@ -60,6 +60,10 @@ final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate 
             activeAlarmID = id
             return
         }
+        // A relayed alert reaches here already rewritten by the extension,
+        // but still sealed: it is opened and checked again rather than
+        // trusting what the extension put next to the envelope.
+        guard let userInfo = pokeRepository.openIncomingPush(userInfo) else { return }
         if let payload = TestPushPayload(userInfo: userInfo) {
             await pushDiagnostics.handleIncomingTestPush(payload, path: path)
             return

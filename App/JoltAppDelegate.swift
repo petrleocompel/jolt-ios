@@ -39,23 +39,30 @@ final class JoltAppDelegate: NSObject, UIApplicationDelegate {
         didReceiveRemoteNotification userInfo: [AnyHashable: Any],
         fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
     ) {
-        // A diagnostic push takes the same silent path a poke does — that is
-        // the point of it, since this is the half of delivery that tends to
-        // break quietly.
-        if let test = TestPushPayload(userInfo: userInfo) {
-            Task { @MainActor in
-                await AppDependencies.shared?.pushDiagnostics
-                    .handleIncomingTestPush(test, path: .background)
-                completionHandler(.newData)
-            }
-            return
-        }
-        guard let payload = PokePushPayload(userInfo: userInfo) else {
-            completionHandler(.noData)
-            return
-        }
+        // `[AnyHashable: Any]` isn't Sendable; this copy crosses to the main
+        // actor once and is only read there.
+        nonisolated(unsafe) let received = userInfo
         Task { @MainActor in
-            let status = await AppDependencies.shared?.pokeRepository.handleIncomingPoke(payload)
+            // Relayed pushes arrive sealed; this decrypts them, or refuses
+            // one that doesn't check out.
+            guard let dependencies = AppDependencies.shared,
+                  let userInfo = dependencies.pokeRepository.openIncomingPush(received) else {
+                completionHandler(.noData)
+                return
+            }
+            // A diagnostic push takes the same silent path a poke does — that
+            // is the point of it, since this is the half of delivery that
+            // tends to break quietly.
+            if let test = TestPushPayload(userInfo: userInfo) {
+                await dependencies.pushDiagnostics.handleIncomingTestPush(test, path: .background)
+                completionHandler(.newData)
+                return
+            }
+            guard let payload = PokePushPayload(userInfo: userInfo) else {
+                completionHandler(.noData)
+                return
+            }
+            let status = await dependencies.pokeRepository.handleIncomingPoke(payload)
             completionHandler(status == .fired ? .newData : .failed)
         }
     }

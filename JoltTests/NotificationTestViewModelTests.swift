@@ -6,6 +6,7 @@ import XCTest
 @MainActor
 private final class FakePushDiagnostics: PushDiagnosticsRepository {
     var devices: [RegisteredDevice] = []
+    var pushRegistration = PushRegistrationState()
     var statusToReturn: TestPushStatus?
     var sendError: Error?
 
@@ -92,6 +93,24 @@ final class NotificationTestViewModelTests: XCTestCase {
 
         XCTAssertEqual(model.thisDevice?.id, deviceID)
         XCTAssertTrue(model.isRegistered)
+    }
+
+    /// Through the relay, the server knows this phone by the relay's token,
+    /// not Apple's, so that is the tail to look for.
+    func testMatchesThisDeviceByItsRelayTokenWhenRelayed() async {
+        let repository = FakePushDiagnostics()
+        repository.devices = [device(tokenSuffix: "relaytkn")]
+        repository.pushRegistration = PushRegistrationState(
+            transport: .relay(serverId: "srv_kzdvvj2umnduyauf35o36k6kw4"),
+            registeredToken: "rt_0123456789relaytkn"
+        )
+        let model = viewModel(repository)
+
+        await model.refresh()
+
+        XCTAssertEqual(model.thisDevice?.id, deviceID)
+        XCTAssertEqual(model.pushRegistration.transport.displayName, "Relay")
+        XCTAssertEqual(model.pushRegistration.serverId, "srv_kzdvvj2umnduyauf35o36k6kw4")
     }
 
     func testReportsUnregisteredWhenNoDeviceMatchesTheToken() async {

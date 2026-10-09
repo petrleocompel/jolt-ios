@@ -23,6 +23,8 @@ final class NotificationTestViewModel {
 
     private(set) var authorization: UNAuthorizationStatus = .notDetermined
     private(set) var devices: [RegisteredDevice] = []
+    /// Directly, through the relay, or not at all.
+    private(set) var pushRegistration = PushRegistrationState()
     private(set) var status: TestPushStatus?
     private(set) var isSending = false
     /// True while the confirmation window is open — the difference between
@@ -42,10 +44,12 @@ final class NotificationTestViewModel {
     }
 
     /// The row in `devices` that is this phone, matched on the token tail the
-    /// server exposes. Nil before Apple has answered, or when this device has
-    /// never registered against the current server.
+    /// server exposes: of the relay's token for a relayed registration, of
+    /// the APNs token otherwise. Nil before Apple has answered, or when this
+    /// device has never registered against the current server.
     var thisDevice: RegisteredDevice? {
-        guard let suffix = apnsToken?.suffix(8), !suffix.isEmpty else { return nil }
+        let token = pushRegistration.registeredToken ?? apnsToken
+        guard let suffix = token?.suffix(8), !suffix.isEmpty else { return nil }
         return devices.first { $0.tokenSuffix == String(suffix) }
     }
 
@@ -81,6 +85,7 @@ final class NotificationTestViewModel {
     func refresh() async {
         authorization = await UNUserNotificationCenter.current().notificationSettings()
             .authorizationStatus
+        pushRegistration = repository.pushRegistration
         devices = (try? await repository.registeredDevices()) ?? []
     }
 

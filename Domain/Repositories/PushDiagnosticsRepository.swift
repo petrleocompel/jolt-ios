@@ -12,6 +12,10 @@ protocol PushDiagnosticsRepository {
     /// Every phone signed in to this account.
     func registeredDevices() async throws -> [RegisteredDevice]
 
+    /// How pushes reach this phone: directly, through the relay, or not at
+    /// all, as the last registration left it.
+    var pushRegistration: PushRegistrationState { get }
+
     /// Asks the server to push to `deviceID`, or to all of them when nil.
     /// Pass a `stimulus` to have the phone fire it as well; omit it for a
     /// notification-only test that needs no wearable connected.
@@ -30,4 +34,8 @@ protocol PushDiagnosticsRepository {
         _ payload: TestPushPayload,
         path: TestPushPath
     ) async -> PokeDeliveryStatus?
+}
+
+extension PushDiagnosticsRepository {
+    var pushRegistration: PushRegistrationState { PushRegistrationState() }
 }

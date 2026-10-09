@@ -20,9 +20,22 @@ protocol PokeRepository {
     /// UI convenience: builds a `PokePushPayload` from a known friend and
     /// runs it through `handleIncomingPoke`.
     func simulateIncomingPoke(from friendID: Friend.ID, stimulus: StimulusConfig) async
+
+    /// A push's `userInfo` as the poke and test parsers should read it:
+    /// decrypted if it came through the relay, as it came otherwise. Nil
+    /// when it must be dropped instead — sealed for another server, failing
+    /// to open, or arriving in plaintext where only sealed pushes are
+    /// expected. Called by every notification path before anything else.
+    func openIncomingPush(_ userInfo: [AnyHashable: Any]) -> [AnyHashable: Any]?
 }
 
 extension PokeRepository {
+    /// For a backend that never registers through the relay: a relayed push
+    /// can't be meant for it.
+    func openIncomingPush(_ userInfo: [AnyHashable: Any]) -> [AnyHashable: Any]? {
+        RelayedPush.isRelayed(userInfo) ? nil : userInfo
+    }
+
     /// A new poke, for callers that never retry it themselves.
     func sendPoke(to friendID: Friend.ID, stimulus: StimulusConfig) async throws {
         try await sendPoke(to: friendID, stimulus: stimulus, pokeID: UUID())

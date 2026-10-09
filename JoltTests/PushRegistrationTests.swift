@@ -1,0 +1,446 @@
+import CryptoKit
+import XCTest
+@testable import Jolt
+
+/// Which way this phone registers for pushes — directly, through the relay,
+/// or not at all — as the server's `GET /push/config` decides, and keeping
+/// that registration in step with the session.
+@MainActor
+final class PushRegistrationTests: XCTestCase {
+    private let configuration = ServerConfiguration(baseURL: URL(string: "https://unit-test.invalid/api/v1")!)
+    private let serverId = "srv_kzdvvj2umnduyauf35o36k6kw4"
+    private let apnsToken = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"
+    private let keys = PayloadKeyStore(service: "cz.peelco.jolt.tests.payloadKey")
+    private let registrations = RelayRegistrationStore(service: "cz.peelco.jolt.tests.relayRegistration")
+    private let relayConfig = """
+    {"transport":"relay","relay":{"url":"https://relay.example/","serverId":"srv_kzdvvj2umnduyauf35o36k6kw4"}}
+    """
+
+    override func tearDown() {
+        AuthTokenStore().clear(for: configuration)
+        keys.remove(for: serverId)
+        registrations.clear()
+        StubURLProtocol.handler = nil
+        super.tearDown()
+    }
+
+    // MARK: - Choosing the transport
+
+    func testRegistersThroughATrustedRelay() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+
+        let relayRequest = try XCTUnwrap(stub.requests("POST", "relay.example/v1/devices").first?.body)
+        XCTAssertEqual(relayRequest["platform"] as? String, "ios")
+        XCTAssertEqual(relayRequest["provider"] as? String, "apns")
+        XCTAssertEqual(relayRequest["token"] as? String, apnsToken)
+        XCTAssertEqual(relayRequest["environment"] as? String, "sandbox")
+        XCTAssertEqual(relayRequest["appId"] as? String, "cz.peelco.jolt")
+        XCTAssertEqual(relayRequest["serverId"] as? String, serverId)
+
+        let serverRequest = try XCTUnwrap(stub.requests("POST", "/devices/push-token").first?.body)
+        XCTAssertEqual(serverRequest["transport"] as? String, "relay")
+        XCTAssertEqual(serverRequest["platform"] as? String, "ios")
+        XCTAssertEqual(serverRequest["relayToken"] as? String, "rt_issued1")
+        XCTAssertNil(serverRequest["token"], "the server must never see the APNs token")
+
+        let key = try XCTUnwrap(keys.key(for: serverId), "the payload key must be kept for the extension")
+        let sentKey = try XCTUnwrap((serverRequest["payloadKey"] as? String).flatMap(Base64URL.decode))
+        XCTAssertEqual(sentKey, key.withUnsafeBytes { Data($0) })
+        XCTAssertEqual(serverRequest["keyId"] as? String, PushEnvelope.keyID(for: key))
+
+        XCTAssertEqual(backend.pushRegistration.transport, .relay(serverId: serverId))
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued1")
+        XCTAssertNil(backend.pushRegistration.problem)
+    }
+
+    /// A server that predates `/push/config` answers 404, and gets exactly
+    /// the registration every earlier build sent.
+    func testRegistersDirectlyWithAServerThatPredatesPushConfig() async throws {
+        let stub = PushStub(pushConfig: (404, #"{"message":"Route GET:/api/v1/push/config not found"}"#))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+
+        try assertRegisteredDirectly(stub, backend)
+    }
+
+    func testRegistersDirectlyWhenTheServerHasItsOwnAPNsCredentials() async throws {
+        let stub = PushStub(pushConfig: (200, #"{"transport":"apns","apnsEnvironment":"production"}"#))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+
+        try assertRegisteredDirectly(stub, backend)
+    }
+
+    func testRegistersNothingWhenTheServerHasNoPush() async throws {
+        let stub = PushStub(pushConfig: (200, #"{"transport":"none"}"#))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertTrue(stub.requests("POST", "/devices/push-token").isEmpty)
+        XCTAssertEqual(backend.pushRegistration.transport, .none)
+    }
+
+    func testRefusesARelayThatIsNotOnTheAllowList() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub, trustedHosts: TrustedRelayHosts(["other.example"]))
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertTrue(stub.requests(nil, "relay.example").isEmpty, "the APNs token must not reach an untrusted relay")
+        XCTAssertTrue(stub.requests("POST", "/devices/push-token").isEmpty)
+        XCTAssertEqual(backend.pushRegistration.transport, .relay(serverId: serverId))
+        XCTAssertNil(backend.pushRegistration.registeredToken)
+        XCTAssertNotNil(backend.pushRegistration.problem)
+    }
+
+    /// Offline, or the server is down: keep what was registered rather than
+    /// guessing at a transport.
+    func testLeavesTheRegistrationAloneWhenPushConfigCannotBeFetched() async throws {
+        let stub = PushStub(pushConfig: (503, #"{"message":"down"}"#))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertTrue(stub.requests("POST", "/devices/push-token").isEmpty)
+        XCTAssertEqual(backend.pushRegistration.transport, .unknown)
+        XCTAssertNotNil(backend.pushRegistration.problem)
+    }
+
+    // MARK: - App Attest
+
+    func testRegistersWithoutAttestationWhereAppAttestIsUnavailable() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub, attestor: FakeAttestor(isSupported: false))
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertTrue(stub.requests("GET", "/v1/challenge").isEmpty)
+        let body = try XCTUnwrap(stub.requests("POST", "relay.example/v1/devices").first?.body)
+        XCTAssertNil(body["attestation"])
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued1")
+    }
+
+    func testAttestsTheFirstRegistrationAndAssertsLaterOnes() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let attestor = FakeAttestor(isSupported: true)
+        let backend = try await signedInBackend(stub, attestor: attestor)
+
+        await backend.registerPushToken(apnsToken)
+        await backend.reregisterPush()
+
+        let bodies = stub.requests("POST", "relay.example/v1/devices").compactMap { $0.body?["attestation"] as? [String: Any] }
+        XCTAssertEqual(bodies.count, 2)
+        XCTAssertEqual(bodies[0]["type"] as? String, "apple-app-attest")
+        XCTAssertEqual(bodies[0]["challenge"] as? String, "Y2hhbGxlbmdlLTE")
+        XCTAssertEqual(bodies[0]["keyId"] as? String, "key-1")
+        XCTAssertEqual(bodies[0]["attestationObject"] as? String, Data("attestation".utf8).base64EncodedString())
+        XCTAssertNil(bodies[0]["assertion"])
+        XCTAssertNil(bodies[1]["attestationObject"])
+        XCTAssertEqual(bodies[1]["assertion"] as? String, Data("assertion".utf8).base64EncodedString())
+
+        let expectedHash = Data(SHA256.hash(data: Data("jolt-relay-v1|Y2hhbGxlbmdlLTE|\(apnsToken)|\(serverId)".utf8)))
+        XCTAssertEqual(attestor.hashes.first, expectedHash)
+    }
+
+    // MARK: - Keeping it in step
+
+    func testReassertsAnExistingRelayRegistrationWithoutRegisteringAgain() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+        await backend.registerLastPushToken()
+
+        XCTAssertEqual(stub.requests("POST", "relay.example/v1/devices").count, 1)
+        let tokens = stub.requests("POST", "/devices/push-token").map { $0.body?["relayToken"] as? String }
+        XCTAssertEqual(tokens, ["rt_issued1", "rt_issued1"])
+    }
+
+    func testRegistersAgainWhenApplesTokenChanges() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+
+        await backend.registerPushToken(apnsToken)
+        await backend.registerPushToken("ffff")
+
+        let relayTokens = stub.requests("POST", "relay.example/v1/devices").map { $0.body?["token"] as? String }
+        XCTAssertEqual(relayTokens, [apnsToken, "ffff"])
+        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued2")
+    }
+
+    /// The server moved from the relay to its own credentials: the relay
+    /// registration is revoked everywhere before the direct one is made.
+    func testMovingOffTheRelayRevokesItsRegistration() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        stub.pushConfig = (200, #"{"transport":"apns","apnsEnvironment":"production"}"#)
+        await backend.registerLastPushToken()
+
+        XCTAssertEqual(stub.requests("DELETE", "/devices/push-token").first?.body?["relayToken"] as? String, "rt_issued1")
+        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertNil(keys.key(for: serverId))
+        XCTAssertNil(registrations.load())
+        XCTAssertEqual(stub.requests("POST", "/devices/push-token").last?.body?["token"] as? String, apnsToken)
+    }
+
+    /// An ack the server 404s means this phone fired a poke meant for
+    /// another account. A fresh relay token cuts that account off.
+    func testAPokeThatWasNotOursRegistersThroughTheRelayAfresh() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        stub.ackStatus = 404
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        await backend.handleIncomingPoke(PokePushPayload(
+            pokeID: UUID(), senderHandle: "alice", senderDisplayName: "Alice",
+            recipientHandle: nil, stimulus: StimulusConfig(kind: .vibe)
+        ))
+
+        XCTAssertEqual(stub.requests("POST", "relay.example/v1/devices").count, 2)
+        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertEqual(backend.pushRegistration.registeredToken, "rt_issued2")
+    }
+
+    func testSigningOutRevokesTheRelayRegistrationAndForgetsTheKey() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        await backend.logOut()
+
+        XCTAssertEqual(stub.requests("DELETE", "/devices/push-token").first?.body?["relayToken"] as? String, "rt_issued1")
+        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_issued1").count, 1)
+        XCTAssertNil(keys.key(for: serverId))
+        XCTAssertNil(registrations.load())
+        XCTAssertEqual(backend.pushRegistration, PushRegistrationState())
+    }
+
+    /// A registration made for the server the user has since switched away
+    /// from is revoked at the relay as soon as the app starts. The old server
+    /// can't be told — this session can't sign in to it — so the relay is
+    /// what cuts it off.
+    func testARegistrationForAnotherServerIsRevokedAtTheRelay() async throws {
+        let oldKey = SymmetricKey(size: .bits256)
+        keys.save(oldKey, for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa")
+        defer { keys.remove(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa") }
+        registrations.save(RelayRegistration(
+            serverBaseURL: URL(string: "https://old.invalid/api/v1")!, relayURL: URL(string: "https://relay.example/")!,
+            serverId: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa", relayToken: "rt_old", apnsToken: apnsToken,
+            keyId: PushEnvelope.keyID(for: oldKey)
+        ))
+        let stub = PushStub(pushConfig: (200, relayConfig))
+
+        // Signing in waits for the launch-time revocation queued before it.
+        let backend = try await signedInBackend(stub)
+
+        XCTAssertEqual(stub.requests("DELETE", "relay.example/v1/devices/rt_old").count, 1)
+        XCTAssertTrue(stub.requests("DELETE", "/devices/push-token").isEmpty)
+        XCTAssertNil(keys.key(for: "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa"))
+        XCTAssertNil(registrations.load())
+
+        await backend.registerPushToken(apnsToken)
+
+        XCTAssertEqual(registrations.load()?.serverId, serverId)
+    }
+
+    // MARK: - Receiving
+
+    func testOpensOnlyPushesSealedForTheRegisteredServer() async throws {
+        let stub = PushStub(pushConfig: (200, relayConfig))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+        let key = try XCTUnwrap(keys.key(for: serverId))
+
+        let poke = #"{"type":"poke","poke":{"pokeID":"7d6f0c1e-2b3a-4c5d-8e9f-0a1b2c3d4e5f","serverId":"\#(serverId)","#
+            + #""senderHandle":"alice","senderDisplayName":"Alice","stimulus":{"kind":"zap","intensity":30,"repetitions":1}}}"#
+        let envelope = try PushEnvelope.seal(Data(poke.utf8), with: key, serverId: serverId, kind: "poke")
+        let relayed: [AnyHashable: Any] = ["type": "poke", "srv": serverId, "enc": envelope.jsonObject]
+
+        let opened = try XCTUnwrap(backend.openIncomingPush(relayed))
+        XCTAssertEqual(PokePushPayload(userInfo: opened)?.senderHandle, "alice")
+
+        var fromAnotherServer = relayed
+        fromAnotherServer["srv"] = "srv_aaaaaaaaaaaaaaaaaaaaaaaaaa"
+        XCTAssertNil(backend.openIncomingPush(fromAnotherServer))
+
+        let plaintext: [AnyHashable: Any] = ["type": "poke", "poke": ["pokeID": UUID().uuidString]]
+        XCTAssertNil(backend.openIncomingPush(plaintext), "registered through the relay, only sealed pushes count")
+    }
+
+    func testRefusesRelayedPushesWhenRegisteredDirectly() async throws {
+        let stub = PushStub(pushConfig: (404, "{}"))
+        let backend = try await signedInBackend(stub)
+        await backend.registerPushToken(apnsToken)
+
+        let relayed: [AnyHashable: Any] = ["type": "poke", "srv": serverId, "enc": ["v": 1]]
+        XCTAssertNil(backend.openIncomingPush(relayed))
+        let direct: [AnyHashable: Any] = ["type": "poke", "poke": ["pokeID": UUID().uuidString]]
+        XCTAssertNotNil(backend.openIncomingPush(direct))
+    }
+
+    // MARK: - Helpers
+
+    private func assertRegisteredDirectly(
+        _ stub: PushStub, _ backend: HTTPSocialBackend, file: StaticString = #filePath, line: UInt = #line
+    ) throws {
+        let body = try XCTUnwrap(stub.requests("POST", "/devices/push-token").first?.body, file: file, line: line)
+        XCTAssertEqual(body["token"] as? String, apnsToken, file: file, line: line)
+        XCTAssertEqual(body["platform"] as? String, "ios", file: file, line: line)
+        XCTAssertNil(body["transport"], "an old server must get the body it always got", file: file, line: line)
+        XCTAssertTrue(stub.requests(nil, "relay.example").isEmpty, file: file, line: line)
+        XCTAssertEqual(backend.pushRegistration.transport, .apns, file: file, line: line)
+        XCTAssertEqual(backend.pushRegistration.registeredToken, apnsToken, file: file, line: line)
+    }
+
+    private func signedInBackend(
+        _ stub: PushStub,
+        trustedHosts: TrustedRelayHosts = TrustedRelayHosts(["relay.example"]),
+        attestor: AppAttesting? = nil
+    ) async throws -> HTTPSocialBackend {
+        AuthTokenStore().save("valid-token", for: configuration)
+        StubURLProtocol.handler = { stub.handle($0) }
+
+        let session = URLSession(configuration: {
+            let config = URLSessionConfiguration.ephemeral
+            config.protocolClasses = [StubURLProtocol.self]
+            return config
+        }())
+        let backend = HTTPSocialBackend(
+            configuration: configuration,
+            deviceRepository: FakeDeviceRepository(),
+            session: session,
+            relay: RelayEnvironment(
+                trustedHosts: trustedHosts,
+                attestor: attestor ?? FakeAttestor(isSupported: false),
+                keys: keys,
+                registrations: registrations,
+                session: session,
+                appId: "cz.peelco.jolt",
+                apnsEnvironment: "sandbox"
+            )
+        )
+        // `restoreSession` runs as a detached task from `init`; wait for it
+        // rather than assuming an ordering against it.
+        for await user in backend.currentUser where user != nil { break }
+        return backend
+    }
+}
+
+/// App Attest without a Secure Enclave: the first evidence is an
+/// attestation, every one after the relay accepted it an assertion.
+@MainActor
+private final class FakeAttestor: AppAttesting {
+    let isSupported: Bool
+    private(set) var hashes: [Data] = []
+    private var attested = false
+
+    init(isSupported: Bool) {
+        self.isSupported = isSupported
+    }
+
+    func evidence(for clientDataHash: Data) async throws -> AppAttestEvidence {
+        hashes.append(clientDataHash)
+        return attested
+            ? AppAttestEvidence(keyId: "key-1", assertion: Data("assertion".utf8))
+            : AppAttestEvidence(keyId: "key-1", attestationObject: Data("attestation".utf8))
+    }
+
+    func accepted(_ evidence: AppAttestEvidence) {
+        if evidence.attestationObject != nil { attested = true }
+    }
+
+    func reset() {
+        attested = false
+    }
+}
+
+/// A Jolt server and a relay in one `StubURLProtocol` handler, recording
+/// every request with its JSON body.
+final class PushStub: @unchecked Sendable {
+    struct Request {
+        var method: String
+        var url: String
+        var body: [String: Any]?
+    }
+
+    private let lock = NSLock()
+    private var recorded: [Request] = []
+    private var issued = 0
+    private var challenges = 0
+    private var _pushConfig: (Int, String)
+    private var _ackStatus = 204
+
+    init(pushConfig: (Int, String)) {
+        _pushConfig = pushConfig
+    }
+
+    var pushConfig: (Int, String) {
+        get { locked { _pushConfig } }
+        set { locked { _pushConfig = newValue } }
+    }
+
+    var ackStatus: Int {
+        get { locked { _ackStatus } }
+        set { locked { _ackStatus = newValue } }
+    }
+
+    /// Requests whose method matches (any, for nil) and whose URL contains
+    /// `fragment`.
+    func requests(_ method: String?, _ fragment: String) -> [Request] {
+        locked { recorded.filter { (method == nil || $0.method == method) && $0.url.contains(fragment) } }
+    }
+
+    func handle(_ request: URLRequest) -> (Int, Data) {
+        let method = request.httpMethod ?? "GET"
+        let url = request.url?.absoluteString ?? ""
+        let path = request.url?.path ?? ""
+        let body = try? JSONSerialization.jsonObject(with: request.bodyData) as? [String: Any]
+        locked { recorded.append(Request(method: method, url: url, body: body)) }
+
+        if request.url?.host() == "relay.example" {
+            switch (method, path) {
+            case ("GET", "/v1/challenge"):
+                let challenge = locked { challenges += 1; return Base64URL.encode(Data("challenge-\(challenges)".utf8)) }
+                return (200, Data(#"{"challenge":"\#(challenge)","expiresAt":"2026-10-09T12:37:00Z"}"#.utf8))
+            case ("POST", "/v1/devices"):
+                let token = locked { issued += 1; return "rt_issued\(issued)" }
+                return (201, Data(#"{"relayToken":"\#(token)"}"#.utf8))
+            default:
+                return (204, Data())
+            }
+        }
+        if method == "GET", path.hasSuffix("/me") {
+            let json = """
+            {"id":"\(UUID().uuidString)","handle":"me","displayName":"Me","email":"me@example.com","inviteCode":"JOLT-1234"}
+            """
+            return (200, Data(json.utf8))
+        }
+        if method == "GET", path.hasSuffix("/friends") || path.hasSuffix("/pokes") { return (200, Data("[]".utf8)) }
+        if method == "GET", path.hasSuffix("/friends/requests") {
+            return (200, Data(#"{"incoming":[],"outgoing":[]}"#.utf8))
+        }
+        if method == "GET", path.hasSuffix("/push/config") {
+            let (status, json) = pushConfig
+            return (status, Data(json.utf8))
+        }
+        if path.hasSuffix("/ack") {
+            return (ackStatus, ackStatus == 404 ? Data(#"{"message":"Not found"}"#.utf8) : Data())
+        }
+        return (204, Data())
+    }
+
+    private func locked<T>(_ body: () -> T) -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return body()
+    }
+}
