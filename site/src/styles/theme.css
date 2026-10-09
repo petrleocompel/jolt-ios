@@ -1,0 +1,35 @@
+/* Jolt electric green (docs/BRAND.md), as Starlight's accent. */
+:root {
+	--sl-color-accent-low: #00391c;
+	--sl-color-accent: #00b85c;
+	--sl-color-accent-high: #a8ffd0;
+}
+:root[data-theme='light'] {
+	--sl-color-accent-low: #c9f7dd;
+	--sl-color-accent: #007a3d;
+	--sl-color-accent-high: #00391c;
+}
+.screenshots {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 1.5rem;
+	max-width: 54rem;
+}
+.sl-markdown-content .screenshots > * {
+	margin-top: 0 !important;
+}
+.screenshots img {
+	border-radius: 1.5rem;
+	box-shadow: var(--sl-shadow-md);
+}
+/* Show the whole phone screen rather than Starlight's cropped hero box. */
+.hero img {
+	width: auto;
+	max-height: 34rem;
+	object-fit: contain;
+	border-radius: 1.5rem;
+}
+.screenshots img {
+	width: 100%;
+	height: auto;
+}

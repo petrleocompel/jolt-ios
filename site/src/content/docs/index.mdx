@@ -1,0 +1,93 @@
+---
+title: Jolt Remote
+description: An independent iOS companion app for Pavlok wearables. Fire stimuli, set alarms that live on the device, and let friends poke you from anywhere.
+template: splash
+hero:
+  title: Your Pavlok, on your terms.
+  tagline: Jolt is an independent iPhone and iPad app for Pavlok wearables. Pair over Bluetooth, fire a zap, vibration or beep, set alarms that live on the device itself, and let friends send you a jolt. Coming soon to the App Store; open source today.
+  image:
+    # Raw HTML: Starlight's optimised hero image is cropped to a square.
+    html: '<img src="/jolt-ios/hero-remote.png" width="506" height="1100" alt="The Remote tab with a connected Pavlok 3 and zap, vibe and beep controls." />'
+  actions:
+    - text: View on GitHub
+      link: https://github.com/petrleocompel/jolt-ios
+      icon: github
+    - text: Build from source
+      link: https://github.com/petrleocompel/jolt-ios#build-from-source
+      icon: right-arrow
+      variant: secondary
+    - text: Run your own server
+      link: https://github.com/petrleocompel/jolt-server
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import alarms from '../../assets/02-alarms.png';
+import alarmEdit from '../../assets/03-alarm-edit.png';
+import remote from '../../assets/01-remote.png';
+
+Independent and unofficial: not affiliated with, endorsed by, or sponsored by
+Pavlok Inc. Works with retail Pavlok 2 and Pavlok 3; Shock Clock Max connects
+but cannot fire a stimulus yet.
+
+## Everything the wristband can do, from your pocket
+
+<CardGrid stagger>
+	<Card title="Zap, vibe and beep" icon="rocket">
+		Fire any of the three stimuli with the intensity and repeat count your
+		device reports it supports.
+	</Card>
+	<Card title="Alarms on the device" icon="seti:clock">
+		Device alarms are stored on the wearable and fired by its own clock, so
+		they go off on your wrist even when the phone is off, silenced or out of
+		range.
+	</Card>
+	<Card title="Wake-up guarantee" icon="puzzle">
+		Make an alarm impossible to snooze through: solve a math puzzle, do
+		jumping jacks, or scan a QR code across the room before it stops.
+	</Card>
+	<Card title="Button, your way" icon="setting">
+		Choose what the physical button does, and read battery, firmware and
+		connection state live.
+	</Card>
+	<Card title="Friends and pokes" icon="comment">
+		Add friends, decide exactly which stimuli each may send and how strong,
+		and get poked from anywhere through Apple Push.
+	</Card>
+	<Card title="Private and self-hostable" icon="approve-check">
+		Controlling your own device needs no account. The optional friends
+		server is open source and runs on your own box.
+	</Card>
+</CardGrid>
+
+## See it on your phone
+
+<div class="screenshots">
+	<Image src={remote} alt="Remote tab: connected Pavlok 3 with zap, vibe and beep cards." />
+	<Image src={alarms} alt="Alarms tab with a 07:00 wake-up and a 14:30 stand-up alarm." />
+	<Image src={alarmEdit} alt="New alarm sheet: time, repeat days, device or phone, stimulus and intensity." />
+</div>
+
+## Pokes, with you in control
+
+Send a friend a zap, buzz or beep and it arrives on their wrist wherever they
+are. Every friend can only send what you allowed, each stimulus has its own
+intensity cap and cooldown per friend, and a Do Not Disturb switch mutes every
+incoming poke. Friends
+can even poke you from scripts with API tokens, but only for the stimuli you
+allow automated pokes for.
+
+1. **A friend taps poke.** They pick a stimulus you allowed and send it.
+2. **The server pushes it.** A notification lands on your phone right away.
+3. **Your device fires.** Jolt relays the stimulus to your wearable over Bluetooth.
+
+Pokes go through a [Jolt Server](https://github.com/petrleocompel/jolt-server).
+The app lets you point it at any instance under **Settings → Server**.
+
+## Open source
+
+Jolt is licensed under the [Mozilla Public License 2.0](https://github.com/petrleocompel/jolt-ios/blob/main/LICENSE).
+Read the [privacy policy](/jolt-ios/privacy/), get [support](/jolt-ios/support/),
+or follow [releases](https://github.com/petrleocompel/jolt-ios/releases).

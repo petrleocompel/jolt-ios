@@ -1,0 +1,46 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    # Lint, unit tests and the mock-backend UI tests on a simulator, signed
+    # ad hoc (entitlements such as keychain access need a signature, but no
+    # Apple account). Signed builds, TestFlight and the live-server UI test
+    # run on the maintainer's private pipeline.
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - run: brew install swiftlint xcodegen
+      - run: swiftlint --strict
+      - run: xcodegen --spec project.yml
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Jolt.xcodeproj \
+            -scheme Jolt \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -derivedDataPath DerivedData \
+            -only-testing:JoltTests \
+            -only-testing:JoltUITests/DeviceFreeUsageUITests \
+            -only-testing:JoltUITests/FriendsFlowUITests \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 180 \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= \
+            | tee xcodebuild.log | grep -E '(error|warning):|Test Case .*(failed|skipped)|Executed|\*\* TEST'
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs
+          path: |
+            xcodebuild.log
+            DerivedData/Logs/Test
+          retention-days: 7

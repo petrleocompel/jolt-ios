@@ -1,5 +1,4 @@
-# XcodeGen project — substitute placeholders, then `xcodegen --spec project.yml`
-# Optional: add JoltTests unit-test target (recommended).
+# XcodeGen source of truth: edit here, then `xcodegen --spec project.yml`.
 name: Jolt
 options:
   bundleIdPrefix: cz.peelco
