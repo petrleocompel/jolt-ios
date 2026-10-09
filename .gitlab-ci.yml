@@ -2,8 +2,11 @@
 # App Store assets). Public checks run in .github/workflows instead.
 # Runner tag: macos. CI variables: APP_STORE_CONNECT_KEY_ID,
 # APP_STORE_CONNECT_ISSUER_ID, APPSTORE_CONNECT_API_KEY (base64 .p8, group),
-# JOLT_DEFAULT_SERVER_URL, JOLT_TEST_EMAIL, JOLT_TEST_PASSWORD; optional
-# APP_IDENTIFIER, APPLE_TEAM_ID.
+# JOLT_DEFAULT_SERVER_URL, JOLT_TRUSTED_RELAY_HOSTS, JOLT_TEST_EMAIL,
+# JOLT_TEST_PASSWORD; optional APP_IDENTIFIER, APPLE_TEAM_ID.
+# Signed builds cover two bundle IDs, the app and its Notification Service
+# Extension (cz.peelco.jolt.NotificationService); automatic signing with the
+# App Store Connect key provisions both.
 
 stages:
   - validate
