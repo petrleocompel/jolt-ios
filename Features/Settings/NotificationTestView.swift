@@ -190,8 +190,8 @@ private struct OutcomeRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Label("Server can't send pushes", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
-                Text("It has no Apple credentials, so it logged the push instead of delivering it. "
-                    + "Pokes will reach you only while the app is open.")
+                Text("It has neither Apple credentials nor a push relay, so it logged the push "
+                    + "instead of delivering it. Pokes will reach you only while the app is open.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

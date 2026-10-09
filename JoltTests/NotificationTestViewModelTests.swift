@@ -55,6 +55,7 @@ final class NotificationTestViewModelTests: XCTestCase {
     private func status(
         accepted: Bool = true,
         apnsConfigured: Bool = true,
+        pushTransport: String? = nil,
         acks: [TestPushAck] = []
     ) -> TestPushStatus {
         TestPushStatus(
@@ -70,7 +71,8 @@ final class NotificationTestViewModelTests: XCTestCase {
                     detail: accepted ? nil : "BadDeviceToken"
                 )
             ],
-            acks: acks
+            acks: acks,
+            pushTransport: pushTransport
         )
     }
 
@@ -223,6 +225,25 @@ final class NotificationTestViewModelTests: XCTestCase {
 
         // Nothing will ever arrive, so "waiting" would be a lie.
         XCTAssertEqual(model.outcome, .notConfigured)
+        model.cancelPolling()
+    }
+
+    /// `pushTransport` is what the server says (C19); `apnsConfigured` only
+    /// counts for a server that predates it.
+    func testTakesTheServersPushTransportOverApnsConfigured() async {
+        let repository = FakePushDiagnostics()
+        repository.devices = [device()]
+        repository.statusToReturn = status(apnsConfigured: true, pushTransport: "none")
+        let model = viewModel(repository)
+        await model.refresh()
+
+        await model.send()
+        XCTAssertEqual(model.outcome, .notConfigured)
+        model.cancelPolling()
+
+        repository.statusToReturn = status(apnsConfigured: false, pushTransport: "relay")
+        await model.send()
+        XCTAssertEqual(model.outcome, .waiting)
         model.cancelPolling()
     }
 

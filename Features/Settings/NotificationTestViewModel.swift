@@ -65,7 +65,7 @@ final class NotificationTestViewModel {
         if let ack = status.acks.first {
             return .delivered(ack)
         }
-        if !status.apnsConfigured {
+        if !status.canPush {
             return .notConfigured
         }
         return isWaiting ? .waiting : .noConfirmation
@@ -78,7 +78,7 @@ final class NotificationTestViewModel {
         case rejected(reason: String)
         /// The window closed with no word from any device.
         case noConfirmation
-        /// The server has no Apple credentials, so nothing will ever arrive.
+        /// The server can't push at all, so nothing will ever arrive.
         case notConfigured
     }
 
